@@ -1,0 +1,345 @@
+/*******************************
+Clifford algebra
+a lightweight package for performing Geometric Algebra calculations
+
+ v 1.0 
+**********************************
+ * @license This library is free software; you can redistribute it and/or
+ *      modify it under the terms of the GNU Lesser General Public
+ *      License as published by the Free Software Foundation; either
+ *      version 2.1 of the License, or (at your option) any later version.
+ *
+ *      This library is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *       Lesser General Public License for more details.
+ *
+ *      You should have received a copy of the GNU Lesser General Public
+ *      License along with this library; if not, write to the Free Software
+ *      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+matchdeclare(aa, lambda([u], not freeof(asymbol,u)), [bb,cc], all, [kk, mm, nn], integerp);
+
+"vector symbol";
+asymbol:e;
+"number of dimensions";
+ndim:0;
+signature:0;
+"pseudoscalar";
+%iv:1;
+_debug:false;
+dotexptsimp :false;
+noundisp :true;
+dotscrules:true;
+
+(	
+	"vector product",
+	infix ("&", 130, 129),
+	"&"(a, b):=expand((a.b - b.a)/2)
+);
+ 
+dotsimp1(ab):=block([a, b],
+  if atom(ab) or op(ab)#"." then return(ab),
+  a:part(ab,1),
+  b:part(ab,2),
+ if orderlessp(a,b) then -b.a else ab
+);
+
+dotsimp2(ab):=block([a, b],
+  if atom(ab) or op(ab)#"." then return(ab),
+  a:part(ab,1),
+  b:part(ab,2),
+ if ordergreatp(a,b) then -b.a else ab
+);
+
+dotsimpleft(ab):=block([ba, a, b, ret, w:1],
+  if atom(ab) or freeof(".", ab) then return(ab),
+  ba:copy(ab),
+  if op(ba)="-" then ( 
+	w:-1,
+	ba:-ba
+  ),
+  a:part(ba,1),
+  b:rest(ba,1),
+  if _debug=true then print(a,b),
+ if orderlessp(a,b) then ret:-dotsimpleft(b).a else ret:a.dotsimpleft(b),
+ ev(w*ret,simp)
+);
+
+dotsimpright(ab):=block([ba, a, b, ret, w:1],
+  if atom(ab) or freeof(".", ab) then return(ab),
+  ba:copy(ab),
+  if op(ba)="-" then ( 
+	w:-1,
+	ba:-ba
+  ),
+  a:part(ba,1),
+  b:rest(ba,1),
+  if _debug=true then  print(a,b),
+ if ordergreatp(a,b) then ret:-dotsimpright(b).a else ret:a.dotsimpright(b),
+ ev(w*ret,simp)
+);
+
+toggle_debug():= _debug: not _debug;
+
+declare (dotsimpc, evfun);
+ 
+dotsimpc(ab):=block([ba, c:1, v, len, w:1, q],
+  if atom(ab) or freeof(".", ab) then return(ab),
+  ba:copy(ab),
+  if op(ba)="-" then ( 
+	w:-1,
+	ba:-ba
+  ),
+  v:args(ba),
+  if _debug=true then print(v),
+  "len:length(v)",
+  w:w*permsign(v),
+  v:sort(v),
+  for q in v do
+    c:c.q,
+ if _debug=true then  print(w, v),
+  w*c 
+);
+
+matchdeclare(dd, lambda([u],  freeof(asymbol,u)));
+defrule (clifsimp1, dd*aa, dd*dotsimpc(aa));
+defrule (clifsimp3, dd*aa, scprodsimp(dd*aa));
+defrule (clifsimp10, aa, dotsimpc(aa));
+defrule (clifsimp2, dd/aa, dd*dotinvsimp(1/aa));
+
+declare (cliffsimpall, evfun);
+cliffsimpall(expr):=block([res],
+	res:expand(expr),
+	apply1(res, clifsimp2, clifsimp1, clifsimp10)
+);
+
+permsign(arr):=block([k:0, len] ,
+	if not listp(arr) then return (false),
+	len:length(arr),
+	for i:1 thru len do
+		for j:i+1 thru len do
+			if ordergreatp(arr[i], arr[j]) then k:k+1,
+	if evenp(k) then 1 else -1
+);
+
+
+declare (dotinvsimp, evfun);
+dotinvsimp(ab):=block( [a,b,s],
+ if atom(ab) or freeof(".", ab) or op(ab)#"/" then return(ab),
+  a:part(ab,1),
+  b:part(ab,2),
+  s:b.b,
+  if s#0 then a.b/s else ab 
+);
+
+powsimp(aa):=block( [a,k,p],
+  if atom(aa)   then return(aa),
+  if op(aa)="^^" or op(aa)="^" then (
+	  a:inpart(aa,1),
+	  k:inpart(aa,2),
+	  p:inpart(a,1),
+	  if _debug=true then print(a,k,p),
+	  if not integerp(k) then return(aa),
+	  if evenp(k) then 
+	  aform[p,p]^fix(k/2) 
+  else  aform[p,p]^fix(k/2)*a )
+  else aa
+ );
+ 
+scprodsimp(ab):=block([ba, c, v:[], len, w:1],
+  if atom(ab) or freeof(".", ab) then return(ab),
+  ba:copy(ab),
+  v:partition(ba, "."),
+  expand(v[1].v[2]+v[2].v[1])/2
+);
+ 
+/* simplification rules
+*/
+if get('clifford,'version)=false then (
+	tellsimp(aa[kk].aa[kk], aform[kk,kk] ),
+	tellsimpafter(asymbol[mm]*asymbol[nn], aform[mm,nn] ),
+	tellsimpafter(asymbol[mm]*asymbol[nn]*cc, aform[mm,nn]*cc ),
+	tellsimp(bb.aa[kk].aa[kk].cc, bb.aform[kk,kk].cc),
+	tellsimpafter(aa[kk]^^nn, powsimp(aa[kk]^^nn)),
+	tellsimpafter(aa[kk]^nn, powsimp(aa[kk]^nn)),
+	tellsimpafter(aa[kk].aa[mm], dotsimp2(aa[kk].aa[mm]))
+); 
+
+clifford(var, p,n,r):=block([m:p+r+n],
+	if not (numberp(n) or numberp(p) or numberp(r)) then error(" provide numbers"),
+	if m<=0 then return (false),
+	local (a),
+	a[i,j]:= if i#j then 0 else (
+		if i<=p then 1 else if i>n+p then 0 else -1
+	),
+	ndim:m,
+	makebasis(var),
+	signature:makelist(a[i,i], i, m),
+	%iv:pscalar(),
+	aform:genmatrix (a, m, m) 
+);
+
+makebasis( var):= block([ ee], 
+	asymbol: var,
+	ee:buildq([asymbol], array(asymbol, ndim)), 
+	ev(ee,nons)
+);
+
+
+pscalar():=block([s:1],
+	for i:1 thru ndim do s:s.asymbol[i],
+	s
+);
+
+release():=block(
+	remrule ("^^",  all),
+	remrule ("^",  all),
+	remrule (".",  all),
+	rem('clifford,'version),
+	rem('clifford,'author),
+	rem('clifford,'copyright)
+);
+
+grade(expr):=block([c, v, k, r, l, s, err],
+	if atom(expr) or op(expr)=asymbol then return([expr]),
+	if op(expr)#"+" then return(false),
+	v:args(expr),
+	if _debug=true then print(v),
+	local(c),
+	array(c, fixnum, ndim),
+	for i:1 thru length(v) do (
+		if not freeof(".", v[i]) then (
+			if _debug=true then print(v[i]),
+			if freeof("*", v[i]) then (
+				k:length(v[i]),
+				c[k]:c[k]+v[i]
+			) else (				
+				[l,r]:partition(v[i], "."),
+				if _debug=true then print( l, r),
+				s:args(r),
+				k:length(s),
+				c[k]:c[k]+v[i]
+			)
+		) else 
+			if freeof(asymbol, v[i]) then 
+				c[0]:c[0]+v[i]
+			else 
+			    c[1]:c[1]+v[i]
+	),
+	listarray(c)
+);
+
+ctranspose(x):=block ([l, v:0, len, k],
+	l:grade(x),
+	len: length(l),
+	for i:1 thru len do (
+		k:mod(i-1,4), 
+		k: (if k<2 then 1 else -1),
+		v:v+ k * l[i] 
+	),
+	v
+);
+
+cconjugate(x):=block ([l, v:0, len, k],
+	if not freeof(".",x) then l: grade(expand(x))
+	else 
+	l:grade(x),
+	len: length(l),
+	for i:1 thru len do (
+		k:mod(i-1,4), 
+		k: (if k=1 or k=2 then -1 else 1),
+		v:v+ k * l[i] 
+	),
+	v
+);
+
+elements():=block([c:1, l:[], r:[], len ],
+	for i:1 thru ndim do c:c.(1+ asymbol[i] ),
+	c:expand (c),
+	l:grade(c),
+	if l#false then (
+		len: length(l),
+		for j:2 thru len do  
+			if op(l[j])="+" then 
+				r:append(r, sort(args(l[j])))
+			else
+				r:endcons(l[j], r)
+	),
+	r
+);
+
+mtable():=block([n, a, lst],
+	local (a, M),
+	lst: elements(),
+	lst:cons(1,lst),
+	n:length(lst),
+	a[i,j]:= (lst[i].lst[j]),
+	genmatrix(a,n,n)
+);
+
+mtable2():=block([n, a, lst],
+	local (a, M),
+	lst: elements(),
+	lst:cons(1,lst),
+	n:length(lst),
+	a[i,j]:= dotsimpc(lst[i].lst[j]),
+	genmatrix(a,n,n)
+);
+
+mtable1():=block([n, a, lst],
+	local (a, M),
+	lst: makelist(asymbol[i], i, ndim),
+	lst:cons(1,lst),
+	n:length(lst),
+	a[i,j]:= dotsimpc(lst[i].lst[j]),
+	genmatrix(a,n,n)
+);
+
+cliabs(x):=block([u:expand(x)],
+ u:sqrt(expand(u*cconjugate(u))),
+ radcan(u)
+ );
+
+
+/**
+ application functions
+*/
+idemp2(k,j):=block(
+	if k>ndim or j>ndim then return(false),
+	if signature[k]*signature[j] <0 then
+	[ (1 +asymbol[k]. asymbol[j])/2, (1 -asymbol[k]. asymbol[j])/2]
+	else [1]
+);
+
+idemp(k):=block(
+	if k>ndim   then return(false),
+	if signature[k] >0 then
+	[(1 +asymbol[k])/2, (1 -asymbol[k])/2]
+	else [1]
+);
+
+scdiff( f, x, k, n):= asymbol[k]*diff(f,x,n);
+scdiff1( f, x, k):= asymbol[k]*diff(f,x);
+vdiff( f, x, k, n):= asymbol[k] & diff(f,x,n);
+vdiff1( f, x, k):= asymbol[k] & diff(f,x);
+
+scalarpart(v):=block([gr],
+	gr:grade(v),
+	gr[1]
+);
+
+vectorpart(v):=block([gr],
+	gr:grade(v),
+	gr[2]
+);
+
+grpart(v,k):=block([gr],
+	if k>ndim+1 then k:ndim+1,
+	gr:grade(v),
+	gr[k]
+);
+
+put('clifford, 'v1,'version);
+put('clifford, "Dimiter Prodanov", 'author);
+put('clifford, "(C) - Dimiter Prodanov, 2015", 'copyright);
