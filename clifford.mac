@@ -31,11 +31,13 @@ dotexptsimp :false;
 noundisp :true;
 dotscrules:true;
 listarith:false;
+powerdisp:true;
 
 (	
 	"outer product",
 	infix ("&", 130, 129),
-	"&"(a, b):=expand((a.b - b.a)/2)
+	"&"(a, b):=expand((a.b - b.a)/2),
+	texput ("&", " \\Lambda ", infix)
 );
  
 dotsimp1(ab):=block([a, b],
@@ -50,34 +52,6 @@ dotsimp2(ab):=block([a, b],
   a:part(ab,1),
   b:part(ab,2),
  if ordergreatp(a,b) then -b.a else ab
-);
-
-dotsimpleft(ab):=block([ba, a, b, ret, w:1],
-  if atom(ab) or freeof(".", ab) then return(ab),
-  ba:copy(ab),
-  if op(ba)="-" then ( 
-	w:-1,
-	ba:-ba
-  ),
-  a:part(ba,1),
-  b:rest(ba,1),
-  if _debug=true then print(a,b),
- if orderlessp(a,b) then ret:-dotsimpleft(b).a else ret:a.dotsimpleft(b),
- ev(w*ret,simp)
-);
-
-dotsimpright(ab):=block([ba, a, b, ret, w:1],
-  if atom(ab) or freeof(".", ab) then return(ab),
-  ba:copy(ab),
-  if op(ba)="-" then ( 
-	w:-1,
-	ba:-ba
-  ),
-  a:part(ba,1),
-  b:rest(ba,1),
-  if _debug=true then  print(a,b),
- if ordergreatp(a,b) then ret:-dotsimpright(b).a else ret:a.dotsimpright(b),
- ev(w*ret,simp)
 );
 
 toggle_debug():= _debug: not _debug;
@@ -110,7 +84,13 @@ defrule (clifsimp2, dd/aa, dd*dotinvsimp(1/aa));
 declare (cliffsimpall, evfun);
 cliffsimpall(expr):=block([res],
 	res:expand(expr),
-	apply1(res, clifsimp2, clifsimp1, clifsimp10)
+	res:apply1(res, clifsimp2, clifsimp1, clifsimp10),
+	ratsimp(res)
+);
+
+cliffsimp1(expr):=block([res],
+	res:expand(expr),
+	apply1(res, clifsimp1, clifsimp10)
 );
 
 permsign(arr):=block([k:0, len] ,
@@ -125,10 +105,11 @@ permsign(arr):=block([k:0, len] ,
 
 declare (dotinvsimp, evfun);
 dotinvsimp(ab):=block( [a,b,s],
- if  atom(ab) or freeof(asymbol, ab) or op(ab)#"/" then return(ab),
+ if atom(ab) or freeof(asymbol, ab) or op(ab)#"/" then return(ab),
   a:part(ab,1),
   b:part(ab,2),
   s:b.b,
+  if not freeof(asymbol, s) then  s:cliffsimp1(s),
   if s#0 then a.b/s else ab 
 );
 
@@ -136,7 +117,7 @@ cinv(ab):=block( [s, b],
  if atom(ab) or freeof(asymbol, ab) then return(1/ab),
   b:cconjugate(ab),
   s:expand(ab.b),
-  s: cliffsimpall(s),
+  if not freeof(asymbol, s) then  s:cliffsimpall(s),
   if s#0 then b/s else 'nan
 );
 
@@ -154,7 +135,7 @@ powsimp(aa):=block( [a,k,p],
   else aa
  );
 
- declare (scprodsimp, evfun);
+declare (scprodsimp, evfun);
 scprodsimp(ab):=block([ba, c, v:[], len, w:1],
   if atom(ab) or freeof(".", ab) then return(ab),
   ba:copy(ab),
@@ -294,21 +275,14 @@ elements():=block([c:1, l:[], r:[], len ],
 	r
 );
 
-mtable():=block([n, a, lst],
-	local (a, M),
-	lst: elements(),
-	lst:cons(1,lst),
-	n:length(lst),
-	a[i,j]:= (lst[i].lst[j]),
-	genmatrix(a,n,n)
-);
-
 mtable2():=block([n, a, lst],
 	local (a, M),
 	lst: elements(),
 	lst:cons(1,lst),
 	n:length(lst),
-	a[i,j]:= dotsimpc(lst[i].lst[j]),
+	if _debug then 
+	a[i,j]:= (lst[i].lst[j]) else
+		a[i,j]:= dotsimpc(lst[i].lst[j]),
 	genmatrix(a,n,n)
 );
 
@@ -325,9 +299,25 @@ cliabs(x):=block([u:expand(x)],
  u:sqrt(expand(u*cconjugate(u))),
  radcan(u)
  );
+ 
+/**
+ grading functions
+*/
+scalarpart(v):=block([gr],
+	gr:grade(v),
+	gr[1]
+);
 
+vectorpart(v):=block([gr],
+	gr:grade(v),
+	gr[2]
+);
 
-
+grpart(v,k):=block([gr],
+	if k>ndim+1 then k:ndim+1,
+	gr:grade(v),
+	gr[k]
+);
 
 /**
  application functions
@@ -352,23 +342,9 @@ scdiff1( f, x, k):= asymbol[k]*diff(f,x);
 vdiff( f, x, k, n):= asymbol[k] & diff(f,x,n);
 vdiff1( f, x, k):= asymbol[k] & diff(f,x);
 
-vectdiff(f,x):=sum (dotinvsimp((1/asymbol[i]). (diff( f, x[i] )), i, 1, ndim);
+vectdiff(f,x):=sum(dotinvsimp(1/asymbol[i]). (diff( f, x[i] )), i, 1, ndim);
 
-scalarpart(v):=block([gr],
-	gr:grade(v),
-	gr[1]
-);
 
-vectorpart(v):=block([gr],
-	gr:grade(v),
-	gr[2]
-);
-
-grpart(v,k):=block([gr],
-	if k>ndim+1 then k:ndim+1,
-	gr:grade(v),
-	gr[k]
-);
 
 put('clifford, 'v1,'version);
 put('clifford, "Dimiter Prodanov", 'author);

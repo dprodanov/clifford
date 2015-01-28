@@ -23,10 +23,52 @@ clifford(e,0,1,0);
 ("complex multiplication table")$
 mtable2();
 
-("quaternion algebra")$
+("split-complex algebra")$
+clifford(e,1,0,0);
+
+("split-complex multiplication table")$
+mtable2();
+
+("dual number algebra")$
+clifford(e,0,0,1);
+
+("dual number full  multiplication table")$
+mtable2();
+
+("Quaternion algebra")$
 clifford(e,0,2,0);
 
-("complex multiplication table")$
+("here are all elements of the algebra")$
+elements();
+
+("quaternion multiplication table")$
 mtable2();
+
+("anticommutativity")$
+e[2].e[1];
+
+e[1].e[2].e[1].e[2];
+("simplification of products")$
+e[1].e[2].e[1].e[2], dotsimpc;
+e[2].e[1].e[1].e[2];
+e[2].e[1].e[1].e[2], dotsimpc;
+
+("simplification of inversions")$
+1/e[2] ;
+1/e[2], dotinvsimp;
+1/(e[1].e[2]);
+1/(e[1].e[2]), dotinvsimp;
+
+("full simplification")$
+1/(1+e[1]);
+1/(1+e[1]), cliffsimpall;
+
+("inner product")$
+e[1]*e[2];
+(1+e[1])*(1+e[1]),expand;
+
+("outer product")$
+e[1] & e[2];
+(1+e[1])&(1+e[1]),expand;
 
 /* End of demo -- comment line needed by MAXIMA to resume demo menu */
