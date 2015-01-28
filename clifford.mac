@@ -19,7 +19,6 @@ a lightweight package for performing Geometric Algebra calculations
  *      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 matchdeclare(aa, lambda([u], not freeof(asymbol,u)), [bb,cc], all, [kk, mm, nn], integerp);
-
 "vector symbol";
 asymbol:e;
 "number of dimensions";
@@ -31,9 +30,10 @@ _debug:false;
 dotexptsimp :false;
 noundisp :true;
 dotscrules:true;
+listarith:false;
 
 (	
-	"vector product",
+	"outer product",
 	infix ("&", 130, 129),
 	"&"(a, b):=expand((a.b - b.a)/2)
 );
@@ -83,7 +83,6 @@ dotsimpright(ab):=block([ba, a, b, ret, w:1],
 toggle_debug():= _debug: not _debug;
 
 declare (dotsimpc, evfun);
- 
 dotsimpc(ab):=block([ba, c:1, v, len, w:1, q],
   if atom(ab) or freeof(".", ab) then return(ab),
   ba:copy(ab),
@@ -126,11 +125,19 @@ permsign(arr):=block([k:0, len] ,
 
 declare (dotinvsimp, evfun);
 dotinvsimp(ab):=block( [a,b,s],
- if atom(ab) or freeof(".", ab) or op(ab)#"/" then return(ab),
+ if  atom(ab) or freeof(asymbol, ab) or op(ab)#"/" then return(ab),
   a:part(ab,1),
   b:part(ab,2),
   s:b.b,
   if s#0 then a.b/s else ab 
+);
+
+cinv(ab):=block( [s, b],
+ if atom(ab) or freeof(asymbol, ab) then return(1/ab),
+  b:cconjugate(ab),
+  s:expand(ab.b),
+  s: cliffsimpall(s),
+  if s#0 then b/s else 'nan
 );
 
 powsimp(aa):=block( [a,k,p],
@@ -146,7 +153,8 @@ powsimp(aa):=block( [a,k,p],
   else  aform[p,p]^fix(k/2)*a )
   else aa
  );
- 
+
+ declare (scprodsimp, evfun);
 scprodsimp(ab):=block([ba, c, v:[], len, w:1],
   if atom(ab) or freeof(".", ab) then return(ab),
   ba:copy(ab),
@@ -196,6 +204,7 @@ release():=block(
 	remrule ("^^",  all),
 	remrule ("^",  all),
 	remrule (".",  all),
+	remrule ("*",  all),
 	rem('clifford,'version),
 	rem('clifford,'author),
 	rem('clifford,'copyright)
@@ -203,39 +212,55 @@ release():=block(
 
 grade(expr):=block([c, v, k, r, l, s, err],
 	if atom(expr) or op(expr)=asymbol then return([expr]),
-	if op(expr)#"+" then return(false),
-	v:args(expr),
-	if _debug=true then print(v),
+	if op(expr)#"+" and op(expr)#"." then return(false),
 	local(c),
 	array(c, fixnum, ndim),
-	for i:1 thru length(v) do (
-		if not freeof(".", v[i]) then (
-			if _debug=true then print(v[i]),
-			if freeof("*", v[i]) then (
-				k:length(v[i]),
-				c[k]:c[k]+v[i]
-			) else (				
-				[l,r]:partition(v[i], "."),
-				if _debug=true then print( l, r),
-				s:args(r),
-				k:length(s),
-				c[k]:c[k]+v[i]
-			)
-		) else 
-			if freeof(asymbol, v[i]) then 
-				c[0]:c[0]+v[i]
-			else 
-			    c[1]:c[1]+v[i]
+	if op(expr)="." then (
+		k:length(expr),
+		c[k]:expr
+	) else (
+		v:args(expr),
+		if _debug=true then print(v),
+		for i:1 thru length(v) do (
+			if not freeof(".", v[i]) then (
+				if _debug=true then print(v[i]),
+				if freeof("*", v[i]) then (
+					k:length(v[i]),
+					c[k]:c[k]+v[i]
+				) else (				
+					[l,r]:partition(v[i], "."),
+					if _debug=true then print( l, r),
+					s:args(r),
+					k:length(s),
+					c[k]:c[k]+v[i]
+				)
+			) else 
+				if freeof(asymbol, v[i]) then 
+					c[0]:c[0]+v[i]
+				else 
+					c[1]:c[1]+v[i]
+		)
 	),
 	listarray(c)
 );
 
-ctranspose(x):=block ([l, v:0, len, k],
+ctransp(x):=block ([l, v:0, len, k],
 	l:grade(x),
 	len: length(l),
 	for i:1 thru len do (
 		k:mod(i-1,4), 
 		k: (if k<2 then 1 else -1),
+		v:v+ k * l[i] 
+	),
+	v
+);
+
+ccinvolve(x):=block ([l, v:0, len, k],
+	l:grade(x),
+	len: length(l),
+	for i:1 thru len do (
+		k:mod(i-1,4), 
+		k: (if k=0 or k=2 then 1 else -1),
 		v:v+ k * l[i] 
 	),
 	v
@@ -302,6 +327,8 @@ cliabs(x):=block([u:expand(x)],
  );
 
 
+
+
 /**
  application functions
 */
@@ -318,11 +345,14 @@ idemp(k):=block(
 	[(1 +asymbol[k])/2, (1 -asymbol[k])/2]
 	else [1]
 );
+cvect(x):=sum (x[i]*asymbol[i], i, 1, ndim);
 
 scdiff( f, x, k, n):= asymbol[k]*diff(f,x,n);
 scdiff1( f, x, k):= asymbol[k]*diff(f,x);
 vdiff( f, x, k, n):= asymbol[k] & diff(f,x,n);
 vdiff1( f, x, k):= asymbol[k] & diff(f,x);
+
+vectdiff(f,x):=sum (dotinvsimp((1/asymbol[i]). (diff( f, x[i] )), i, 1, ndim);
 
 scalarpart(v):=block([gr],
 	gr:grade(v),
