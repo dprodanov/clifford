@@ -63,7 +63,7 @@ e[2].e[1].e[1].e[2], dotsimpc;
 1/(1+e[1]);
 1/(1+e[1]), cliffsimpall;
 
-("inner product")$
+("scalar product")$
 e[1]*e[2];
 (1+e[1])*(1+e[1]),expand;
 

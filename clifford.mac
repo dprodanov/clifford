@@ -58,14 +58,14 @@ toggle_debug():= _debug: not _debug;
 
 declare (dotsimpc, evfun);
 dotsimpc(ab):=block([ba, c:1, v, len, w:1, q],
-  if atom(ab) or freeof(".", ab) then return(ab),
+  if atom(ab) or freeof(".", ab) or op(ab)="+"  then return(ab),
   ba:copy(ab),
   if op(ba)="-" then ( 
 	w:-1,
 	ba:-ba
   ),
   v:args(ba),
-  if _debug=true then print(v),
+  if _debug=true then print("op ", op(ba), "v ", v),
   "len:length(v)",
   w:w*permsign(v),
   v:sort(v),
@@ -342,8 +342,13 @@ scdiff1( f, x, k):= asymbol[k]*diff(f,x);
 vdiff( f, x, k, n):= asymbol[k] & diff(f,x,n);
 vdiff1( f, x, k):= asymbol[k] & diff(f,x);
 
-vectdiff(f,x):=sum(dotinvsimp(1/asymbol[i]). (diff( f, x[i] )), i, 1, ndim);
-
+vectdiff(f,x):=block ([s, n:ndim, ee ],
+	if listp(x) then n:length(x),
+	if n>ndim then error("size mismatch"),
+	s:sum(dotinvsimp(1/asymbol[i]). (diff( f, x[i] )), i, 1, n),
+	s:expand(s),
+	cliffsimpall(s)
+);
 
 
 put('clifford, 'v1,'version);
