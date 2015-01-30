@@ -80,6 +80,10 @@ defrule (clifsimp1, dd*aa, dd*dotsimpc(aa));
 defrule (clifsimp3, dd*aa, scprodsimp(dd*aa));
 defrule (clifsimp10, aa, dotsimpc(aa));
 defrule (clifsimp2, dd/aa, dd*dotinvsimp(1/aa));
+/*
+defrule (clifrev, dd*aa, dd*dotreverse(aa));
+defrule (clifrev1, aa, dotreverse(aa));
+*/
 
 declare (cliffsimpall, evfun);
 cliffsimpall(expr):=block([res],
@@ -108,14 +112,14 @@ dotinvsimp(ab):=block( [a,b,s],
  if atom(ab) or freeof(asymbol, ab) or op(ab)#"/" then return(ab),
   a:part(ab,1),
   b:part(ab,2),
-  s:b.b,
+  s: expand(b.b),
   if not freeof(asymbol, s) then  s:cliffsimp1(s),
   if s#0 then a.b/s else ab 
 );
 
 cinv(ab):=block( [s, b],
  if atom(ab) or freeof(asymbol, ab) then return(1/ab),
-  b:cconjugate(ab),
+  b:creverse(ab),
   s:expand(ab.b),
   if not freeof(asymbol, s) then  s:cliffsimpall(s),
   if s#0 then b/s else 'nan
@@ -155,7 +159,7 @@ if get('clifford,'version)=false then (
 	tellsimpafter(aa[kk].aa[mm], dotsimp2(aa[kk].aa[mm]))
 ); 
 
-clifford(var, p,n,r):=block([m:p+r+n],
+clifford(var, p,n,r):=block([m:p+r+n, a],
 	if not (numberp(n) or numberp(p) or numberp(r)) then error(" provide numbers"),
 	if m<=0 then return (false),
 	local (a),
@@ -167,6 +171,13 @@ clifford(var, p,n,r):=block([m:p+r+n],
 	signature:makelist(a[i,i], i, m),
 	%iv:pscalar(),
 	aform:genmatrix (a, m, m) 
+);
+
+set_signature(arr):=block(
+	if not listp(arr) or length(arr)#ndim then return(false),
+	signature:arr,
+	for i:1 thru ndim do
+		aform[i,i]:arr[i]
 );
 
 makebasis( var):= block([ ee], 
@@ -192,13 +203,18 @@ release():=block(
 );
 
 grade(expr):=block([c, v, k, r, l, s, err],
-	if atom(expr) or op(expr)=asymbol then return([expr]),
-	if op(expr)#"+" and op(expr)#"." then return(false),
+	if atom(expr) or op(expr)=asymbol or freeof(".", expr) then return([expr]),
+	if op(expr)#"+" and op(expr)#"*" then return(false),
 	local(c),
 	array(c, fixnum, ndim),
 	if op(expr)="." then (
 		k:length(expr),
 		c[k]:expr
+	) elseif op(expr)="*" then (
+		s:part(expr,1), l:rest(expr,1),
+		if _debug=true then print( s, l),
+		k:length(l),
+		c[k]:s*l
 	) else (
 		v:args(expr),
 		if _debug=true then print(v),
@@ -225,8 +241,11 @@ grade(expr):=block([c, v, k, r, l, s, err],
 	listarray(c)
 );
 
-ctransp(x):=block ([l, v:0, len, k],
-	l:grade(x),
+ctranspose(x):=block ([l, v:0, len, k],
+	if not freeof(".",x) then 
+		l:grade(expand(x))
+	else 
+		l:grade(x),
 	len: length(l),
 	for i:1 thru len do (
 		k:mod(i-1,4), 
@@ -236,8 +255,46 @@ ctransp(x):=block ([l, v:0, len, k],
 	v
 );
 
+creverse(x):=block ([l, v:0, len, k, a,b],
+	if not freeof(".",x) then 
+		l:grade(expand(x))
+	else 
+		l:grade(x),
+	len: length(l),
+	for i:1 thru len do (
+		if not freeof(".",l[i]) then (
+			[a, b]: partition(l[i], "."),
+			b:reverse(b),
+			v:v+ a*b )
+		else  v:v +l[i]
+	),
+	v
+);
+
+/*
+creverse2(x):=block ([l, v:0, ret],
+	if freeof(".",x) then return(x),
+	ret:expand(x),
+	ret:apply1(ret, clifrev),
+	ret
+);
+*/
+
+dotreverse(ab):=block([a, b],
+  if atom(ab) or op(ab)#"." then return(ab),
+  a:part(ab,1),
+  b:rest(ab,1),
+  if _debug=true then print(a,b),
+  dotreverse(b). dotreverse(a)
+);
+
+dual(x):=x/%iv;
+
 ccinvolve(x):=block ([l, v:0, len, k],
-	l:grade(x),
+	if not freeof(".",x) then 
+		l:grade(expand(x))
+	else 
+		l:grade(x),
 	len: length(l),
 	for i:1 thru len do (
 		k:mod(i-1,4), 
@@ -248,9 +305,10 @@ ccinvolve(x):=block ([l, v:0, len, k],
 );
 
 cconjugate(x):=block ([l, v:0, len, k],
-	if not freeof(".",x) then l: grade(expand(x))
+	if not freeof(".",x) then 
+		l: grade(expand(x))
 	else 
-	l:grade(x),
+		l:grade(x),
 	len: length(l),
 	for i:1 thru len do (
 		k:mod(i-1,4), 
@@ -296,10 +354,15 @@ mtable1():=block([n, a, lst],
 );
 
 cliabs(x):=block([u:expand(x)],
- u:sqrt(expand(u*cconjugate(u))),
+ u:expand(u*creverse(u)),
+ u:sqrt(u),
  radcan(u)
- );
+);
  
+cnorm(x):=block([u:expand(x)],
+ u:(expand(u*creverse(u))),
+ ratsimp(u)
+ );
 /**
  grading functions
 */
@@ -322,6 +385,19 @@ grpart(v,k):=block([gr],
 /**
  application functions
 */
+
+project(a, v):=block ([ n: v/cliabs(v)] ,
+	cliffsimpall(n.(a*n))
+);
+
+reject(a, v):=block ([ n: v/cliabs(v)] ,
+	cliffsimpall(n.(n & a))
+);
+
+reflect(a, v):=block ([ n: v/cliabs(v)] ,
+	cliffsimpall(n.a.n)
+);
+
 idemp2(k,j):=block(
 	if k>ndim or j>ndim then return(false),
 	if signature[k]*signature[j] <0 then
