@@ -23,14 +23,14 @@ matchdeclare(aa, lambda([u], not freeof(asymbol,u)), [bb,cc], all, [kk, mm, nn],
 asymbol:e;
 "number of dimensions";
 ndim:0;
-signature:0;
+signature:[];
+esignature:[];
 "pseudoscalar";
 %iv:1;
 _debug:false;
 dotexptsimp :false;
 noundisp :true;
 dotscrules:true;
-listarith:false;
 powerdisp:true;
 
 (	
@@ -119,7 +119,7 @@ dotinvsimp(ab):=block( [a,b,s],
 
 cinv(ab):=block( [s, b],
  if atom(ab) or freeof(asymbol, ab) then return(1/ab),
-  b:creverse(ab),
+  b:cconjugate(ab),
   s:expand(ab.b),
   if not freeof(asymbol, s) then  s:cliffsimpall(s),
   if s#0 then b/s else 'nan
@@ -159,7 +159,7 @@ if get('clifford,'version)=false then (
 	tellsimpafter(aa[kk].aa[mm], dotsimp2(aa[kk].aa[mm]))
 ); 
 
-clifford(var, p,n,r):=block([m:p+r+n, a],
+clifford(var, p,n,r):=block([m:p+r+n, a, lst],
 	if not (numberp(n) or numberp(p) or numberp(r)) then error(" provide numbers"),
 	if m<=0 then return (false),
 	local (a),
@@ -203,7 +203,7 @@ release():=block(
 );
 
 grade(expr):=block([c, v, k, r, l, s, err],
-	if atom(expr) or op(expr)=asymbol or freeof(".", expr) then return([expr]),
+	if atom(expr) or (op(expr)=asymbol and freeof(".", expr)) then return([expr]),
 	if op(expr)#"+" and op(expr)#"*" then return(false),
 	local(c),
 	array(c, fixnum, ndim),
@@ -271,14 +271,6 @@ creverse(x):=block ([l, v:0, len, k, a,b],
 	v
 );
 
-/*
-creverse2(x):=block ([l, v:0, ret],
-	if freeof(".",x) then return(x),
-	ret:expand(x),
-	ret:apply1(ret, clifrev),
-	ret
-);
-*/
 
 dotreverse(ab):=block([a, b],
   if atom(ab) or op(ab)#"." then return(ab),
@@ -287,8 +279,6 @@ dotreverse(ab):=block([a, b],
   if _debug=true then print(a,b),
   dotreverse(b). dotreverse(a)
 );
-
-dual(x):=x/%iv;
 
 ccinvolve(x):=block ([l, v:0, len, k],
 	if not freeof(".",x) then 
@@ -354,15 +344,48 @@ mtable1():=block([n, a, lst],
 );
 
 cliabs(x):=block([u:expand(x)],
- u:expand(u*creverse(u)),
+ u:expand(u*cconjugate(u)),
  u:sqrt(u),
  radcan(u)
 );
+
+multtrace():=block([s:[1], lst],
+	lst:elements(),
+	lst:cons(1, lst),
+	for i:1 thru length(lst) do 
+		s:endcons(dotsimpc(lst[i].lst[i]),  s),
+	s
+);
+
+
+cnorm(x):=block([u:expand(x), z, v],
+ u:expand(u. cconjugate(u)),
+ u:cliffsimpall(u),
+ u:ratsimp(u)
+);
  
-cnorm(x):=block([u:expand(x)],
- u:(expand(u*creverse(u))),
- ratsimp(u)
- );
+
+
+/*
+
+defrule(csubst2, bb*asymbol[kk], sqrt(aform[kk,kk])*bb);
+*/
+defrule(csubst, bb*asymbol[kk], aform[kk,kk]*bb);
+psnorm(x):=block([u:expand(x), z, v],
+	if atom(x) then return (x*x),
+	if op(u)="+" then ( 
+		v:args(u),
+		v:sort(v),
+		z:apply1(v,csubst),
+		u:z.z,
+		ratsimp(u)
+	) else (
+		z:apply1(u,csubst),
+		u:z.z,
+		ratsimp(u)
+	)	
+);
+
 /**
  grading functions
 */
@@ -385,6 +408,8 @@ grpart(v,k):=block([gr],
 /**
  application functions
 */
+
+dual(x):=x/%iv;
 
 project(a, v):=block ([ n: v/cliabs(v)] ,
 	cliffsimpall(n.(a*n))
@@ -412,6 +437,12 @@ idemp(k):=block(
 	else [1]
 );
 cvect(x):=sum (x[i]*asymbol[i], i, 1, ndim);
+
+celem(x):=block([ee:elements(), n],
+	ee:cons(1,ee),
+	n:length(ee),
+	sum (x[i]*ee[i], i, 1, n)
+);
 
 scdiff( f, x, k, n):= asymbol[k]*diff(f,x,n);
 scdiff1( f, x, k):= asymbol[k]*diff(f,x);
