@@ -125,6 +125,15 @@ cinv(ab):=block( [s, b],
   if s#0 then b/s else 'nan
 );
 
+cpinv(ab):=block( [s, b],
+ if atom(ab) or freeof(asymbol, ab) then return(1/ab),
+  b:ctranspose(ab),
+  s:expand(ab.b),
+  if not freeof(asymbol, s) then  s:cliffsimpall(s),
+  s:scalarpart(s),
+  if s#0 then b/s else 'nan
+);
+
 powsimp(aa):=block( [a,k,p],
   if atom(aa)   then return(aa),
   if op(aa)="^^" or op(aa)="^" then (
@@ -203,30 +212,32 @@ release():=block(
 );
 
 grade(expr):=block([c, v, k, r, l, s, err],
-	if atom(expr) or (op(expr)=asymbol and freeof(".", expr)) then return([expr]),
-	if op(expr)#"+" and op(expr)#"*" then return(false),
+	if op(expr)#"+" and op(expr)#"-" and op(expr)#"*" and op(expr)#asymbol then return(false),
 	local(c),
 	array(c, fixnum, ndim),
+	if op(expr)=asymbol then  (
+		if _debug=true then print("case 1 ", expr),
+		c[1]:expr
+	)else
 	if op(expr)="." then (
 		k:length(expr),
 		c[k]:expr
 	) elseif op(expr)="*" then (
-		s:part(expr,1), l:rest(expr,1),
-		if _debug=true then print( s, l),
-		k:length(l),
-		c[k]:s*l
+		if _debug=true then print("case 3 " , expr),
+		c[1]:expr
 	) else (
 		v:args(expr),
-		if _debug=true then print(v),
+		if _debug=true then print("case 4 " , op(expr), v),
+		if op(expr)="-" then v:-v,
 		for i:1 thru length(v) do (
 			if not freeof(".", v[i]) then (
-				if _debug=true then print(v[i]),
+				if _debug=true then print( "case 5 " , v[i]),
 				if freeof("*", v[i]) then (
 					k:length(v[i]),
 					c[k]:c[k]+v[i]
 				) else (				
 					[l,r]:partition(v[i], "."),
-					if _debug=true then print( l, r),
+					if _debug=true then print("case 6 " , l, r),
 					s:args(r),
 					k:length(s),
 					c[k]:c[k]+v[i]
@@ -344,7 +355,14 @@ mtable1():=block([n, a, lst],
 );
 
 cliabs(x):=block([u:expand(x)],
- u:expand(u*cconjugate(u)),
+ u:expand(u.cconjugate(u)),
+ u:sqrt(u),
+ radcan(u)
+);
+
+cpliabs(x):=block([u:expand(x)],
+ u:expand(u.ctranspose(u)),
+ u:scalarpart(u),
  u:sqrt(u),
  radcan(u)
 );
@@ -364,7 +382,12 @@ cnorm(x):=block([u:expand(x), z, v],
  u:ratsimp(u)
 );
  
-
+cpnorm(x):=block([u:expand(x), z, v],
+ u:expand(u. ctranspose(u)),
+ u:cliffsimpall(u),
+ u:scalarpart(u),
+ u:ratsimp(u)
+);
 
 /*
 
@@ -390,7 +413,8 @@ psnorm(x):=block([u:expand(x), z, v],
  grading functions
 */
 scalarpart(v):=block([gr],
-	gr:grade(v),
+	gr:expand(v),
+	gr:partition(gr, asymbol),
 	gr[1]
 );
 
@@ -423,19 +447,25 @@ reflect(a, v):=block ([ n: v/cliabs(v)] ,
 	cliffsimpall(n.a.n)
 );
 
-idemp2(k,j):=block(
+idempotent2(k,j):=block(
 	if k>ndim or j>ndim then return(false),
 	if signature[k]*signature[j] <0 then
 	[ (1 +asymbol[k]. asymbol[j])/2, (1 -asymbol[k]. asymbol[j])/2]
 	else [1]
 );
 
-idemp(k):=block(
+idempotent(k):=block(
 	if k>ndim   then return(false),
 	if signature[k] >0 then
 	[(1 +asymbol[k])/2, (1 -asymbol[k])/2]
 	else [1]
 );
+
+idemp(u):=block([v],
+	v:expand(u.u),
+	is(equal (v,u))
+);
+
 cvect(x):=sum (x[i]*asymbol[i], i, 1, ndim);
 
 celem(x):=block([ee:elements(), n],

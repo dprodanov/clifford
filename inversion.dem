@@ -1,0 +1,42 @@
+/* Copyright (C) 2015 Dimiter Prodanov
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU General Public License for more details.
+ *
+ * Clfford 1.0 demo based on atensor demo by Viktor T. Toth  
+ */
+
+if get('clifford,'version)=false then load(clifford)$
+
+
+("split-quaternion algebra")$
+clifford(e,1,1,0);
+
+("split-quaternion multiplication table")$
+mtable2();
+
+declare([a,b,c,d],scalar);
+
+("we create a general element")$
+cc:a+b*e[1]+c*e[2]+d*e[1].e[2];
+
+("computing the inverse")$
+dd:cinv(cc);
+
+("we check if it is really an inverse")$
+dd.cc, expand, ratsimp;
+%,cliffsimpall;
+
+("component simplifications")$
+((e[1] . e[2] . e[1] . e[2])*d^2)/(-a^2+b^2-c^2+d^2), cliffsimpall;
+((e[2] . e[1] . e[2])*c*d)/(-a^2+b^2-c^2+d^2),cliffsimpall;
+
+
+/* End of demo -- comment line needed by MAXIMA to resume demo menu */
