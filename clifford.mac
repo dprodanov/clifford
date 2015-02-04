@@ -2,7 +2,7 @@
 Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
- v 1.0 
+ v 1.1
 **********************************
  * @license This library is free software; you can redistribute it and/or
  *      modify it under the terms of the GNU Lesser General Public
@@ -120,8 +120,9 @@ dotinvsimp(ab):=block( [a,b,s],
 cinv(ab):=block( [s, b],
  if atom(ab) or freeof(asymbol, ab) then return(1/ab),
   b:cconjugate(ab),
-  s:expand(ab.b),
+  s:expand(b.ab),
   if not freeof(asymbol, s) then  s:cliffsimpall(s),
+  s:scalarpart(s),
   if s#0 then b/s else 'nan
 );
 
@@ -189,6 +190,11 @@ set_signature(arr):=block(
 		aform[i,i]:arr[i]
 );
 
+toggle_signature():=block(
+	signature:-signature,
+	aform:-aform
+);
+
 makebasis( var):= block([ ee], 
 	asymbol: var,
 	ee:buildq([asymbol], array(asymbol, ndim)), 
@@ -211,19 +217,28 @@ release():=block(
 	rem('clifford,'copyright)
 );
 
-grade(expr):=block([c, v, k, r, l, s, err],
-	if op(expr)#"+" and op(expr)#"-" and op(expr)#"*" and op(expr)#asymbol then return(false),
+grade(expr):=block([c, v, k, r, l, s],	
+	"atomic cases",
+	if atom(expr) then (
+		if _debug=true then print("case atom ", expr),
+		c:makelist(0,ndim+1),
+		c[1]:expr,
+		return(c)
+	)elseif op(expr)=asymbol then  (
+		if _debug=true then print("case asymbol ", expr),
+		c:makelist(0,ndim+1),
+		c[2]:expr,
+		return(c)
+	),
+	"compound cases",
+	if op(expr)#"+" and op(expr)#"-" and op(expr)#"*" and op(expr)#"." then return(false),
 	local(c),
 	array(c, fixnum, ndim),
-	if op(expr)=asymbol then  (
-		if _debug=true then print("case 1 ", expr),
-		c[1]:expr
-	)else
 	if op(expr)="." then (
 		k:length(expr),
 		c[k]:expr
 	) elseif op(expr)="*" then (
-		if _debug=true then print("case 3 " , expr),
+		if _debug=true then print("case * " , expr),
 		c[1]:expr
 	) else (
 		v:args(expr),
@@ -356,6 +371,7 @@ mtable1():=block([n, a, lst],
 
 cliabs(x):=block([u:expand(x)],
  u:expand(u.cconjugate(u)),
+ u:scalarpart(u),
  u:sqrt(u),
  radcan(u)
 );
@@ -379,6 +395,7 @@ multtrace():=block([s:[1], lst],
 cnorm(x):=block([u:expand(x), z, v],
  u:expand(u. cconjugate(u)),
  u:cliffsimpall(u),
+ u:scalarpart(u),
  u:ratsimp(u)
 );
  
@@ -390,20 +407,28 @@ cpnorm(x):=block([u:expand(x), z, v],
 );
 
 /*
-
-defrule(csubst2, bb*asymbol[kk], sqrt(aform[kk,kk])*bb);
 */
+defrule(csubst2, bb*asymbol[kk], sqrt(-aform[kk,kk])*bb);
 defrule(csubst, bb*asymbol[kk], aform[kk,kk]*bb);
-psnorm(x):=block([u:expand(x), z, v],
+defrule(csubst3,  asymbol[kk], 0);
+defrule(csubst31, bb*asymbol[kk], 0);
+psnorm(x, sgn):=block([u, z, v, neg:true ],
+	if not freeof(".",x) then 
+		u:expand(x) 
+	else u:x,
 	if atom(x) then return (x*x),
+	if sgn=plus then neg:false 
+	elseif sgn#minus then 
+		error("plus or minus expected"),
 	if op(u)="+" then ( 
 		v:args(u),
 		v:sort(v),
-		z:apply1(v,csubst),
+		if _debug=true then print(v),
+		z: (if neg then apply1(v, csubst2) else apply1(v, csubst)),
 		u:z.z,
 		ratsimp(u)
 	) else (
-		z:apply1(u,csubst),
+		z:(if neg then apply1(u,csubst2) else apply1(u,csubst)),
 		u:z.z,
 		ratsimp(u)
 	)	
@@ -412,10 +437,12 @@ psnorm(x):=block([u:expand(x), z, v],
 /**
  grading functions
 */
-scalarpart(v):=block([gr],
-	gr:expand(v),
-	gr:partition(gr, asymbol),
-	gr[1]
+scalarpart(v):=block([gr, err ],
+	if not freeof(".",v) then 
+		gr:expand(v) 
+	else gr:v,
+	gr:apply1(gr, clifsimp2, clifsimp1, clifsimp10, csubst31, csubst3),
+	gr
 );
 
 vectorpart(v):=block([gr],
