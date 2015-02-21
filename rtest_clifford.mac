@@ -1,0 +1,87 @@
+/*******************************
+Clifford algebra
+a lightweight package for performing Geometric Algebra calculations
+
+ v 1.2
+ 
+ tests
+ 
+usage:
+file_search_maxima: append (file_search_maxima,["/path/to/clifford.mac"]);
+batch("rtest_clifford", test);
+
+@depends clifford.mac
+
+**********************************
+ * @license This library is free software; you can redistribute it and/or
+ *      modify it under the terms of the GNU Lesser General Public
+ *      License as published by the Free Software Foundation; either
+ *      version 2.1 of the License, or (at your option) any later version.
+ *
+ *      This library is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *       Lesser General Public License for more details.
+ *
+ *      You should have received a copy of the GNU Lesser General Public
+ *      License along with this library; if not, write to the Free Software
+ *      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+ (kill(all),
+  %start : absolute_real_time(),
+  load("clifford"),
+  'done);
+'done$
+get('clifford,'version);
+v1$
+/* initi clifford" */
+clifford(e,1,1,1);
+matrix([1,0,0],[0,-1,0],[0,0,0])$
+elements();
+[e[1],e[2],e[3],e[1] . e[2],e[1] . e[3],e[2] . e[3],e[1] . e[2] . e[3]]$
+/* clifford product tests" */
+e[1].e[1];
+1$
+e[2].e[2];
+-1$
+e[3].e[3];
+0$
+e[2].e[1];
+-e[1] . e[2]$
+/* inner product tests */ 
+e[1]*e[1]*e[1];
+e[1]$
+e[1]*e[1]*e[1] *e[1];
+1$
+e[1]*e[2];
+0$
+e[1] ~ e[1];
+1$
+e[1] ~ e[2];
+0$
+e[1]*e[1];
+1$
+e[3]*e[3];
+0$
+/* outer product tests */
+e[3] & e[3];
+0$
+e[1] & e[1];
+0$
+/* explicit simplificaton tests*/
+cliffsimpall(e[2] . e[1] . e[2]);
+e[1]$
+block(
+declare([a,b,c,d],scalar),
+cc:a+b*e[1]+c*e[2]+d*e[1].e[2],
+dd:cinv(cc)
+);
+a/(a^2-b^2+c^2-d^2)-(e[1]*b)/(a^2-b^2+c^2-d^2)-(e[2]*c)/(a^2-b^2+c^2-d^2)-((e[1] . e[2])*d)/(a^2-b^2+c^2-d^2)$
+dd.cc, expand, ratsimp, cliffsimpall;
+1$
+grade(cc);
+[a,e[1]*b+e[2]*c,(e[1] . e[2])*d]$
+grade(dd);
+[a/(a^2+b^2+c^2+d^2),-(e[1]*b)/(a^2+b^2+c^2+d^2)-(e[2]*c)/(a^2+b^2+c^2+d^2),-((e[1] . e[2])*d)/(a^2+b^2+c^2+d^2)]$
+
+

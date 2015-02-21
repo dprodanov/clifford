@@ -70,5 +70,10 @@ e[1]*e[2];
 ("outer product")$
 e[1] & e[2];
 (1+e[1])&(1+e[1]),expand;
-
+("computation of inverses")$
+declare([a,b,c,d],scalar);
+dd:cinv(cc);
+("checking the resutl")$
+dd.cc, expand, ratsimp;
+%,cliffsimpall;
 /* End of demo -- comment line needed by MAXIMA to resume demo menu */

@@ -2,7 +2,7 @@
 Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
- v 1.1
+ v 1.2
 **********************************
  * @license This library is free software; you can redistribute it and/or
  *      modify it under the terms of the GNU Lesser General Public
@@ -18,7 +18,9 @@ a lightweight package for performing Geometric Algebra calculations
  *      License along with this library; if not, write to the Free Software
  *      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-matchdeclare(aa, lambda([u], not freeof(asymbol,u)), [bb,cc], all, [kk, mm, nn], integerp);
+ matchdeclare(aa, lambda([u], not freeof(asymbol,u)), [bb,cc], all, [kk, mm, nn], integerp);
+/*matchdeclare(aa, "="(asymbol), [bb,cc], all, [kk, mm, nn], integerp);
+ */
 "vector symbol";
 asymbol:e;
 "number of dimensions";
@@ -34,6 +36,10 @@ dotscrules:true;
 powerdisp:true;
 
 (	
+	"innter product",
+	infix ("~", 130, 129),
+	"~"(a, b):= if scalarp(a) and scalarp(b) then a*b else expand((a.b + b.a)/2),
+	texput ("~", " \\circ ", infix),
 	"outer product",
 	infix ("&", 130, 129),
 	"&"(a, b):=expand((a.b - b.a)/2),
@@ -77,10 +83,10 @@ dotsimpc(ab):=block([ba, c:1, v, len, w:1, q],
 
 matchdeclare(dd, lambda([u],  freeof(asymbol,u)));
 defrule (clifsimp1, dd*aa, dd*dotsimpc(aa));
-defrule (clifsimp3, dd*aa, scprodsimp(dd*aa));
 defrule (clifsimp10, aa, dotsimpc(aa));
 defrule (clifsimp2, dd/aa, dd*dotinvsimp(1/aa));
 /*
+defrule (clifsimp3, dd*aa, scprodsimp(dd*aa));
 defrule (clifrev, dd*aa, dd*dotreverse(aa));
 defrule (clifrev1, aa, dotreverse(aa));
 */
@@ -123,7 +129,7 @@ cinv(ab):=block( [s, b],
   s:expand(b.ab),
   if not freeof(asymbol, s) then  s:cliffsimpall(s),
   s:scalarpart(s),
-  if s#0 then b/s else 'nan
+  if s#0 then expand(b/s) else 'nan
 );
 
 cpinv(ab):=block( [s, b],
@@ -149,22 +155,23 @@ powsimp(aa):=block( [a,k,p],
   else aa
  );
 
-declare (scprodsimp, evfun);
-scprodsimp(ab):=block([ba, c, v:[], len, w:1],
-  if atom(ab) or freeof(".", ab) then return(ab),
-  ba:copy(ab),
-  v:partition(ba, "."),
-  expand(v[1].v[2]+v[2].v[1])/2
-);
- 
-/* simplification rules
-*/
+
+/*
 if get('clifford,'version)=false then (
 	tellsimp(aa[kk].aa[kk], aform[kk,kk] ),
 	tellsimpafter(asymbol[mm]*asymbol[nn], aform[mm,nn] ),
 	tellsimpafter(asymbol[mm]*asymbol[nn]*cc, aform[mm,nn]*cc ),
 	tellsimp(bb.aa[kk].aa[kk].cc, bb.aform[kk,kk].cc),
 	tellsimpafter(aa[kk]^^nn, powsimp(aa[kk]^^nn)),
+	tellsimpafter(aa[kk]^nn, powsimp(aa[kk]^nn)),
+	tellsimpafter(aa[kk].aa[mm], dotsimp2(aa[kk].aa[mm]))
+); 
+*/
+if get('clifford,'version)=false then (
+	tellsimp(aa[kk].aa[kk], aform[kk,kk] ),
+	tellsimp(bb.aa[kk].aa[kk].cc, bb.aform[kk,kk].cc),
+	tellsimp(asymbol[mm]*asymbol[nn], aform[mm,nn] ),
+	tellsimpafter(asymbol[mm]*asymbol[nn]*cc, aform[mm,nn]*cc ),
 	tellsimpafter(aa[kk]^nn, powsimp(aa[kk]^nn)),
 	tellsimpafter(aa[kk].aa[mm], dotsimp2(aa[kk].aa[mm]))
 ); 
@@ -349,8 +356,75 @@ elements():=block([c:1, l:[], r:[], len ],
 	r
 );
 
+velem(expr):=block([cc:[], u : expand(expr)],
+	for i:1 thru ndim do
+		cc:endcons(coeff (u, asymbol[i]), cc),
+	cc
+);
+
+gpoly(expr):=block([cc:[], u : expand(expr)],
+	if op(u)#"." then  (
+		cc:partition(u,"."),
+		u:cc[2]
+	),
+	cc:args(u),
+	cc:endcons(cc[1]+cc[2], cc),
+	cc:maplist (velem, cc),
+	cons(makelist(0, ndim),cc)
+);
+
+vdraw(expr, [opt]):=block( [scenes:[], cc, cc1, m:1, dd, n:0],
+	if not listp(expr) then expr:[expr],
+	m:length(expr),
+	for j:1 thru m do (
+		cc:[], cc1:[], 
+		cc:velem(expr[j]),
+		dd:makelist(0, ndim),
+		if not emptyp(opt) then n:length(opt),
+		if n>ndim then (
+			for i:1 thru n do
+				cc1[i]:cc[opt[1]],
+			cc:cc1
+		),
+		scenes:cons([ 
+			  label(cons(string(expr[j]), makelist(1.25*cc[i],i,ndim) )),
+			  color = blue,
+			  head_length = 0.2,
+			  head_angle  = 20,
+			  line_width = 3,
+			  head_type = 'filled,
+			  vector(dd, cc)], scenes
+		)
+	),
+	if ndim<=2 then 
+		draw2d(scenes) 
+	else
+		draw3d(scenes)
+);
+
+vdraw2(expr):=block( [scenes:[], cc, cc1, m:1, dd, n:0],
+	if not listp(expr) then expr:[expr],
+	m:length(expr),
+	for j:1 thru m do (
+		cc:gpoly(expr[j]),
+		
+		scenes:cons([ 
+			  label(cons(string(expr[j]),  1.25*cc[3] )),
+			  color = blue,
+			  fill_color =red,
+			  line_width = 2,
+			  head_type = 'nofilled,
+			  quadrilateral (cc[1], cc[2], cc[3], cc[4]) ], scenes
+		)
+	),
+	if ndim<=2 then 
+		draw2d(scenes) 
+	else
+		draw3d(scenes)
+);
+
 mtable2():=block([n, a, lst],
-	local (a, M),
+	local (a),
 	lst: elements(),
 	lst:cons(1,lst),
 	n:length(lst),
@@ -361,7 +435,7 @@ mtable2():=block([n, a, lst],
 );
 
 mtable1():=block([n, a, lst],
-	local (a, M),
+	local (a),
 	lst: makelist(asymbol[i], i, ndim),
 	lst:cons(1,lst),
 	n:length(lst),
@@ -370,40 +444,40 @@ mtable1():=block([n, a, lst],
 );
 
 cliabs(x):=block([u:expand(x)],
- u:expand(u.cconjugate(u)),
- u:scalarpart(u),
- u:sqrt(u),
- radcan(u)
+	u:expand(u.cconjugate(u)),
+	u:scalarpart(u),
+	u:sqrt(u),
+	radcan(u)
 );
 
 cpliabs(x):=block([u:expand(x)],
- u:expand(u.ctranspose(u)),
- u:scalarpart(u),
- u:sqrt(u),
- radcan(u)
+	u:expand(u.ctranspose(u)),
+	u:scalarpart(u),
+	u:sqrt(u),
+	radcan(u)
 );
 
 multtrace():=block([s:[1], lst],
 	lst:elements(),
 	lst:cons(1, lst),
 	for i:1 thru length(lst) do 
-		s:endcons(dotsimpc(lst[i].lst[i]),  s),
+		s:endcons(dotsimpc(lst[i].lst[i]), s),
 	s
 );
 
 
 cnorm(x):=block([u:expand(x), z, v],
- u:expand(u. cconjugate(u)),
- u:cliffsimpall(u),
- u:scalarpart(u),
- u:ratsimp(u)
+	u:expand(u. cconjugate(u)),
+	u:cliffsimpall(u),
+	u:scalarpart(u),
+	u:ratsimp(u)
 );
  
 cpnorm(x):=block([u:expand(x), z, v],
- u:expand(u. ctranspose(u)),
- u:cliffsimpall(u),
- u:scalarpart(u),
- u:ratsimp(u)
+	u:expand(u. ctranspose(u)),
+	u:cliffsimpall(u),
+	u:scalarpart(u),
+	u:ratsimp(u)
 );
 
 /*
@@ -412,6 +486,7 @@ defrule(csubst2, bb*asymbol[kk], sqrt(-aform[kk,kk])*bb);
 defrule(csubst, bb*asymbol[kk], aform[kk,kk]*bb);
 defrule(csubst3,  asymbol[kk], 0);
 defrule(csubst31, bb*asymbol[kk], 0);
+
 psnorm(x, sgn):=block([u, z, v, neg:true ],
 	if not freeof(".",x) then 
 		u:expand(x) 
@@ -424,14 +499,12 @@ psnorm(x, sgn):=block([u, z, v, neg:true ],
 		v:args(u),
 		v:sort(v),
 		if _debug=true then print(v),
-		z: (if neg then apply1(v, csubst2) else apply1(v, csubst)),
-		u:z.z,
-		ratsimp(u)
+		z: (if neg then apply1(v, csubst2) else apply1(v, csubst))
 	) else (
-		z:(if neg then apply1(u,csubst2) else apply1(u,csubst)),
-		u:z.z,
-		ratsimp(u)
-	)	
+		z:(if neg then apply1(u, csubst2) else apply1(u, csubst))
+	),
+	u:z.z,
+	ratsimp(u)
 );
 
 /**
@@ -462,35 +535,45 @@ grpart(v,k):=block([gr],
 
 dual(x):=x/%iv;
 
-project(a, v):=block ([ n: v/cliabs(v)] ,
-	cliffsimpall(n.(a*n))
+project(a, v):=block ([ m:cnorm(v)] ,
+	cliffsimpall(v.(a*v)/m)
 );
 
-reject(a, v):=block ([ n: v/cliabs(v)] ,
-	cliffsimpall(n.(n & a))
+reject(a, v):=block ([ m:cnorm(v)] ,
+	cliffsimpall(v.(v & a)/m)
 );
 
-reflect(a, v):=block ([ n: v/cliabs(v)] ,
-	cliffsimpall(n.a.n)
+reflect(a, v):=block ([ m:cnorm(v)],
+	cliffsimpall(cconjugate(v).a.v/m)
 );
 
-idempotent2(k,j):=block(
+rotate(a, v):=block ([ m:cnorm(v)],
+	cliffsimpall(v.a.creverse(v)/m)
+);
+/*
+rotate(a, v):=block ([ m:cnorm(v)],
+	cliffsimpall(creverse(v).a.v/m)
+);
+*/
+idempotent2(k, j):=block(
 	if k>ndim or j>ndim then return(false),
 	if signature[k]*signature[j] <0 then
-	[ (1 +asymbol[k]. asymbol[j])/2, (1 -asymbol[k]. asymbol[j])/2]
+	[ (1+asymbol[k].asymbol[j])/2, (1-asymbol[k].asymbol[j])/2]
 	else [1]
 );
 
 idempotent(k):=block(
-	if k>ndim   then return(false),
+	if k>ndim then return(false),
 	if signature[k] >0 then
-	[(1 +asymbol[k])/2, (1 -asymbol[k])/2]
+	[(1+asymbol[k])/2, (1-asymbol[k])/2]
 	else [1]
 );
 
-idemp(u):=block([v],
+idemp(u):=block([v, ret],
 	v:expand(u.u),
-	is(equal (v,u))
+	v:ratsimp(v-u),
+	ret: is(equal (v, 0)),
+	if ret#true then false else true
 );
 
 cvect(x):=sum (x[i]*asymbol[i], i, 1, ndim);
