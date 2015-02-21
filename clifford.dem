@@ -70,10 +70,13 @@ e[1]*e[2];
 ("outer product")$
 e[1] & e[2];
 (1+e[1])&(1+e[1]),expand;
-("computation of inverses")$
-declare([a,b,c,d],scalar);
-dd:cinv(cc);
-("checking the resutl")$
+("computation of Quaternion inverses")$
+block(
+	declare([a,b,c,d],scalar),
+	cc:cc:a+b*e[1]+c*e[2]+d*e[1].e[2],
+	dd:cinv(cc)
+);
+("checking the result")$
 dd.cc, expand, ratsimp;
 %,cliffsimpall;
 /* End of demo -- comment line needed by MAXIMA to resume demo menu */
