@@ -169,11 +169,14 @@ if get('clifford,'version)=false then (
 */
 if get('clifford,'version)=false then (
 	tellsimp(aa[kk].aa[kk], aform[kk,kk] ),
-	tellsimp(bb.aa[kk].aa[kk].cc, bb.aform[kk,kk].cc),
-	tellsimp(asymbol[mm]*asymbol[nn], aform[mm,nn] ),
-	tellsimpafter(asymbol[mm]*asymbol[nn]*cc, aform[mm,nn]*cc ),
+	tellsimpafter(aa[kk].aa[mm], dotsimp2(aa[kk].aa[mm])),
+	tellsimpafter(bb.aa.cc, apply1(bb.aa.cc, clifsimp10)),
 	tellsimpafter(aa[kk]^nn, powsimp(aa[kk]^nn)),
-	tellsimpafter(aa[kk].aa[mm], dotsimp2(aa[kk].aa[mm]))
+	tellsimpafter(aa[kk]^^nn, powsimp(aa[kk]^^nn)),
+	
+	tellsimp(asymbol[mm]*asymbol[nn], aform[mm,nn] ),
+	tellsimpafter(asymbol[mm]*asymbol[nn]*cc, aform[mm,nn]*cc )
+
 ); 
 
 clifford(var, p,n,r):=block([m:p+r+n, a, lst],
