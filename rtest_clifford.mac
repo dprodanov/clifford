@@ -2,7 +2,7 @@
 Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
- v 1.2
+ v 1.3
  
  tests
  
@@ -33,10 +33,11 @@ batch("rtest_clifford", test);
   'done);
 'done$
 get('clifford,'version);
-v1$
+v13$
 /* initi clifford" */
 clifford(e,1,1,1);
-matrix([1,0,0],[0,-1,0],[0,0,0])$
+/*matrix([1,0,0],[0,-1,0],[0,0,0])$*/
+[1,-1,0]$
 elements();
 [e[1],e[2],e[3],e[1] . e[2],e[1] . e[3],e[2] . e[3],e[1] . e[2] . e[3]]$
 /* clifford product tests" */
@@ -48,21 +49,24 @@ e[3].e[3];
 0$
 e[2].e[1];
 -e[1] . e[2]$
-/* inner product tests */ 
+/* inner product tests 
 e[1]*e[1]*e[1];
 e[1]$
 e[1]*e[1]*e[1] *e[1];
 1$
 e[1]*e[2];
 0$
+*/ 
 e[1] ~ e[1];
 1$
 e[1] ~ e[2];
 0$
+/*
 e[1]*e[1];
 1$
 e[3]*e[3];
 0$
+*/
 /* outer product tests */
 e[3] & e[3];
 0$
@@ -87,7 +91,10 @@ declare([a,b,c,d],scalar),
 cc:a+b*e[1]+c*e[2]+d*e[1].e[2],
 dd:cinv(cc)
 );
+/*
 a/(a^2-b^2+c^2-d^2)-(e[1]*b)/(a^2-b^2+c^2-d^2)-(e[2]*c)/(a^2-b^2+c^2-d^2)-((e[1] . e[2])*d)/(a^2-b^2+c^2-d^2)$
+*/
+(a-e[1]*b-e[2]*c-(e[1] . e[2])*d)/(a^2-b^2+c^2-d^2)$
 dd.cc, expand, ratsimp, cliffsimpall;
 1$
 grade(cc);
