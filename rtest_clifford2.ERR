@@ -1,0 +1,10 @@
+
+/* Maxima error log from tests in C:/Documents and Settings/adminprodanov/My Documents/GitHub/clifford/rtest_clifford2.mac */
+
+/* Problem 2 */
+get('clifford,'version);
+/* Erroneous Result?:
+v13 */ 
+/* Expected result: */
+v1;
+

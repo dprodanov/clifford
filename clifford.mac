@@ -2,7 +2,7 @@
 Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
- v 1.2.5
+ v 1.3 Date 4 Jun 2015
 **********************************
  * @license This library is free software; you can redistribute it and/or
  *      modify it under the terms of the GNU Lesser General Public
@@ -39,10 +39,11 @@ powerdisp:true;
 	infix ("~", 130, 129),
 	"~"(a, b):= if scalarp(a) and scalarp(b) then a*b else expand((a.b + b.a)/2),
 	texput ("~", " \\circ ", infix),
+	
 	"outer product",
 	infix ("&", 130, 129),
 	"&"(a, b):=if scalarp(a) and scalarp(b) then 0 else expand((a.b - b.a)/2),
-	texput ("&", " \\Lambda ", infix)
+	texput ("&", " \\wedge ", infix)
 );
 
 oppart(expr, predf):=block([sop, lst, lsttrue:[], lstfalse:[]],
@@ -77,7 +78,6 @@ toggle_debug():= _debug: not _debug;
 
 /*
 simplification of dot-products
-
 */
 declare (dotsimpc, evfun);
 dotsimpc(ab):=block([ba, c:1, v, len, w:1, q],
@@ -98,33 +98,6 @@ dotsimpc(ab):=block([ba, c:1, v, len, w:1, q],
   w*c 
 );
 
-matchdeclare(dd, lambda([u],  freeof(asymbol,u)), dotprod, lambda([u], not freeof(".",u)));
-defrule (clifsimp1, dd*aa, dd*dotsimpc(aa));
-defrule (clifsimp10, aa, dotsimpc(aa));
-defrule (clifsimp2, dd/aa, dd*dotinvsimp(1/aa));
-defrule (clifsimp3, aa.dotprod, dotprod.aa);
-
-
-/*
-full simplification of expressions
-
-*/
-declare (cliffsimpall, evfun);
-cliffsimpall(expr):=block([res],
-	res:expand(expr),
-	res:apply1(res, clifsimp2, clifsimp1, clifsimp10),
-	ratsimp(res)
-);
-
-/*
-simplification of dot-products
-
-*/
-cliffsimp1(expr):=block([res],
-	res:expand(expr),
-	apply1(res, clifsimp1, clifsimp10)
-);
-
 /*
 internal function: parity of permutation calculation
 */
@@ -136,6 +109,41 @@ permsign(arr):=block([k:0, len] ,
 			if ordergreatp(arr[i], arr[j]) then k:k+1,
 	if evenp(k) then 1 else -1
 );
+
+/*
+matchdeclare(dd, lambda([u],  freeof(asymbol,u)), dotprod, lambda([u], not freeof(".",u)));
+defrule (clifsimp1, dd*aa, dd*dotsimpc(aa));
+defrule (clifsimp10, aa, dotsimpc(aa));
+defrule (clifsimp2, dd/aa, dd*dotinvsimp(1/aa));
+defrule (clifsimp3, aa.dotprod, dotprod.aa);
+*/
+
+/*
+simplification rules
+*/
+matchdeclare(dd, lambda([u],  freeof(asymbol,u)));
+defrule (clifsimp1, dd*aa, dd*dotsimpc(aa));
+defrule (clifsimp10, aa, dotsimpc(aa));
+defrule (clifsimp2, dd/aa, dd*dotinvsimp(1/aa));
+
+/*
+full simplification of expressions
+*/
+declare (cliffsimpall, evfun);
+cliffsimpall(expr):=block([res],
+	res:expand(expr),
+	res:apply1(res, clifsimp2, clifsimp1, clifsimp10),
+	ratsimp(res)
+);
+
+/*
+simplification of dot-products
+*/
+cliffsimp1(expr):=block([res],
+	res:expand(expr),
+	apply1(res, clifsimp1, clifsimp10)
+);
+
 
 /*
  simplification of inverses
@@ -206,10 +214,6 @@ if get('clifford,'version)=false then (
 	tellsimpafter(bb.aa.cc, apply1(bb.aa.cc, clifsimp10)),
 	tellsimpafter(aa[kk]^nn, powsimp(aa[kk]^nn)),
 	tellsimpafter(aa[kk]^^nn, powsimp(aa[kk]^^nn))
-	/*
-	tellsimp(asymbol[mm]*asymbol[nn], aform[mm,nn] ),
-	tellsimpafter(asymbol[mm]*asymbol[nn]*cc, aform[mm,nn]*cc )
-	*/
 ); 
 
 /*
@@ -665,15 +669,6 @@ psnorm(x, sgn):=block([u, z, v, neg:true ],
 
 vectorp(v):= freeof(".", v) and not freeof(asymbol, v);
 
-/*
-matrep(v):=block([n, a, lst],
-	local (a),
-	lst: elements(),
-	n:length(lst),
-	a[i,j]:= expand((v ~ lst[i]) & (v ~ lst[j])),
-	genmatrix(a,n,n)
-);
-*/
 
 /**
  grading functions
@@ -795,6 +790,18 @@ vectdiff(f, x,  k):=block ([s, n:ndim, ee ],
 	cliffsimpall(s)
 );
 
+/* community contribution for formatting of output.
+code courtesy to  Richard Fateman 
+*/
+paren_dot_in_prod(ex) :=
+  if mapatom(ex) then ex
+  elseif op(ex) # "*" then map(paren_dot_in_prod,ex)
+  else map(prod_paren_dot_in_prod,ex);
+
+prod_paren_dot_in_prod(ex) :=
+  if mapatom(ex) then ex
+  elseif op(ex) # "." then map(paren_dot_in_prod,ex)
+  else funmake("(",[map(paren_dot_in_prod,ex)]);
 
 put('clifford, 'v13,'version);
 put('clifford, "Dimiter Prodanov", 'author);
