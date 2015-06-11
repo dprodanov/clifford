@@ -1,7 +1,7 @@
 Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
- v 1.0 
+ v 1.3 
 **********************************
  * @license This library is free software; you can redistribute it and/or
  *      modify it under the terms of the GNU Lesser General Public
