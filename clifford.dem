@@ -13,7 +13,7 @@
  * Clfford 1.0 demo based on atensor demo by Viktor T. Toth  
  */
 
-if get('clifford,'version)=false then load(clifford);
+if get('clifford,'version)=false then load("clifford");
 
 ("\Cliford implements Clifford algebra for Maxima.")$
 

@@ -2,7 +2,7 @@
 Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
- v 1.3 Date 4 Jun 2015
+ v 1.3 Date 11 Jun 2015
 **********************************
  * @license This library is free software; you can redistribute it and/or
  *      modify it under the terms of the GNU Lesser General Public
@@ -28,12 +28,18 @@ signature:[];
 esignature:[];
 "pseudoscalar";
 %iv:1;
+"squre of pseudoscalar";
+%ivnorm:1;
+
 _debug:false;
 dotexptsimp :false;
 noundisp :true;
 dotscrules:true;
 powerdisp:true;
 
+/*
+ custom operators
+*/
 (	
 	"innter product",
 	infix ("~", 130, 129),
@@ -46,6 +52,9 @@ powerdisp:true;
 	texput ("&", " \\wedge ", infix)
 );
 
+/*
+partition by predicate with expression reconstruction
+*/
 oppart(expr, predf):=block([sop, lst, lsttrue:[], lstfalse:[]],
 	if atom(expr) then (
 		if predf(expr) then (lsttrue:expr, lstfalse:0)
@@ -60,6 +69,9 @@ oppart(expr, predf):=block([sop, lst, lsttrue:[], lstfalse:[]],
 	)
 );
 
+/*
+simplification of dot-products, ordergreat
+*/
 dotsimp1(ab):=block([a, b],
   if atom(ab) or op(ab)#"." then return(ab),
   a:part(ab,1),
@@ -67,6 +79,9 @@ dotsimp1(ab):=block([a, b],
  if orderlessp(a,b) then -b.a else ab
 );
 
+/*
+simplification of dot-products, orderless
+*/
 dotsimp2(ab):=block([a, b],
   if atom(ab) or op(ab)#"." then return(ab),
   a:part(ab,1),
@@ -74,13 +89,16 @@ dotsimp2(ab):=block([a, b],
  if ordergreatp(a,b) then -b.a else ab
 );
 
+/*
+toggles debugging
+*/
 toggle_debug():= _debug: not _debug;
 
 /*
 simplification of dot-products
 */
 declare (dotsimpc, evfun);
-dotsimpc(ab):=block([ba, c:1, v, len, w:1, q],
+dotsimpc(ab):=block([ba, c:1, v, w:1, q],
   if atom(ab) or freeof(".", ab) or op(ab)="+"  then return(ab),
   ba:copy(ab),
   if op(ba)="-" then ( 
@@ -89,7 +107,6 @@ dotsimpc(ab):=block([ba, c:1, v, len, w:1, q],
   ),
   v:args(ba),
   if _debug=true then print("op ", op(ba), "v ", v),
-  "len:length(v)",
   w:w*permsign(v),
   v:sort(v),
   for q in v do
@@ -147,7 +164,6 @@ cliffsimp1(expr):=block([res],
 
 /*
  simplification of inverses
-
 */
 declare (dotinvsimp, evfun);
 dotinvsimp(ab):=block( [a,b,s],
@@ -180,22 +196,12 @@ cinv(ab):=block( [s, b, u:1],
   )else return(1/ab)
 );
 
-/*
-cpinv(ab):=block( [s, b],
- if atom(ab) or freeof(asymbol, ab) then return(1/ab),
-  b:ctranspose(ab),
-  s:expand(ab.b),
-  if not freeof(asymbol, s) then  s:cliffsimpall(s),
-  "s:scalarpart(s)",
-  if s#0 then b/s else 1/ab
-);
-*/
 
 /*
 simplification of exponents
 */
 powsimp(aa):=block( [a,k,p],
-  if atom(aa)   then return(aa),
+  if atom(aa) then return(aa),
   if op(aa)="^^" or op(aa)="^" then (
 	  a:inpart(aa,1),
 	  k:inpart(aa,2),
@@ -217,7 +223,7 @@ if get('clifford,'version)=false then (
 ); 
 
 /*
-constuctor of the algebra
+constructor of the algebra
 */
 clifford(var, [lsig]):=block([m, a, p:0, n:0, r:0],
 	if emptyp(lsig) or length(lsig)>3 then error(" invalid signature"),
@@ -241,33 +247,54 @@ clifford(var, [lsig]):=block([m, a, p:0, n:0, r:0],
 	signature:makelist(a[i,i], i, m),
 	%iv:pscalar(),
 	aform:genmatrix (a, m, m),
+	%ivnorm:dotsimpc(%iv.%iv),
 	signature
 );
 
+
+/*
+sets the signature of the algebra
+*/
 set_signature(arr):=block(
 	if not listp(arr) or length(arr)#ndim then return(false),
 	signature:arr,
 	for i:1 thru ndim do
-		aform[i,i]:arr[i]
+		aform[i,i]:arr[i],
+	%iv:pscalar(),
+	%ivnorm:dotsimpc(%iv.%iv),
+	aform
 );
 
+/*
+toggles the signature of the algebra
+*/
 toggle_signature():=block(
 	signature:-signature,
-	aform:-aform
+	aform:-aform,
+	%iv:pscalar(),
+	%ivnorm:dotsimpc(%iv.%iv)
 );
 
-makebasis( var):= block([ ee], 
+/*
+constructs the complete basis of the algebra
+*/
+makebasis(var):= block([ ee], 
 	asymbol: var,
 	ee:buildq([asymbol], array(asymbol, ndim)), 
-	ev(ee,nons)
+	ev(ee,nouns)
 );
 
-
+/*
+constructs the pseudoscalar of the algebra
+*/
 pscalar():=block([s:1],
 	for i:1 thru ndim do s:s.asymbol[i],
 	s
 );
 
+/*
+releases all rules 
+*/
 release():=block(
 	remrule ("^^",  all),
 	remrule ("^",  all),
@@ -334,7 +361,6 @@ grade(expr):=block([c, v, k, r, l, s],
 
 /*
 Clifford transpose of product
-
 */
 ctranspose(x):=block ([l, v:0, len, k],
 	if not freeof(".",x) then 
@@ -492,21 +518,40 @@ gpoly(expr):=block([cc:[], u: expand(expr)],
 		u:cc[2]
 	),
 	cc:args(u),
+	print(cc),
 	cc:endcons(cc[1]+cc[2], cc),
+	print(cc),
 	cc:maplist (velem, cc),
 	cons(makelist(0, ndim),cc)
 );
 
+gpoly(expr):=block([cc:[], u:(expr), z, len],
+	if op(u)#"." then  (
+		cc:oppart(u, lambda([z], freeof(".", z))),
+		u:cc[2]
+	),
+	cc:substinpart("[", u, 0),
+	len:length(cc),
+	"print(cc, len)",
+	if len>1 then (
+		z: sum (cc[i], i, 1, len),
+		cc:endcons(z, cc)
+	), 
+	"print(cc)",
+	cc:maplist (velem, cc),
+	cons(makelist(0, ndim),cc)
+);
 /*
 draws a vector
-opt - which subspace to draw - list of indices
+opt - selects the subspace to draw - list of indices
 */
-vdraw(expr, [opt]):=block( [scenes:[], cc, cc1, m:1, dd, n:0],
+vdraw(expr, [opt]):=block( [scenes:[], cc, cc1, m:1, dd, n:0, cstr],
 	if not listp(expr) then expr:[expr],
 	m:length(expr),
 	for j:1 thru m do (
 		cc:[], cc1:[], 
-		cc:velem(expr[j]),
+		"print(expr[j])",
+		cc:velem(expand(expr[j])),
 		dd:makelist(0, ndim),
 		if not emptyp(opt) then n:length(opt),
 		if n>ndim then (
@@ -514,8 +559,10 @@ vdraw(expr, [opt]):=block( [scenes:[], cc, cc1, m:1, dd, n:0],
 				cc1[i]:cc[opt[1]],
 			cc:cc1
 		),
+		"cstr:string(tex(expr[j], false))",
+		cstr:(string(expr[j])),
 		scenes:cons([ 
-			  label(cons(string(expr[j]), makelist(1.25*cc[i],i,ndim) )),
+			  label(cons(cstr, makelist(1.25*cc[i],i,ndim) )),
 			  color = blue,
 			  head_length = 0.2,
 			  head_angle  = 20,
@@ -525,9 +572,9 @@ vdraw(expr, [opt]):=block( [scenes:[], cc, cc1, m:1, dd, n:0],
 		)
 	),
 	if ndim<=2 then 
-		draw2d(scenes) 
+		wxdraw2d(scenes) 
 	else
-		draw3d(scenes)
+		wxdraw3d(scenes)
 );
 
 
@@ -540,19 +587,20 @@ vdraw2(expr):=block( [scenes:[], cc, cc1, m:1, dd, n:0],
 	for j:1 thru m do (
 		cc:gpoly(expr[j]),
 		print(cc),
+		cstr:(string(expr[j])),
 		scenes:cons([ 
-			  label(cons(string(expr[j]),  1.25*cc[3] )),
+			  label(cons(cstr,  1.25*cc[3] )),
 			  color = blue,
 			  fill_color =red,
+			  fill_density=0.5,
 			  line_width = 2,
-			  head_type = 'nofilled,
 			  quadrilateral (cc[1], cc[2], cc[3], cc[4]) ], scenes
 		)
 	),
 	if ndim<=2 then 
-		draw2d(scenes) 
+		wxdraw2d(scenes) 
 	else
-		draw3d(scenes)
+		wxdraw3d(scenes)
 );
 
 
@@ -592,14 +640,7 @@ cliabs(x):=block([u:expand(x)],
 	radcan(u)
 );
 
-/*
-cpliabs(x):=block([u:expand(x)],
-	u:expand(u.ctranspose(u)),
-	u:scalarpart(u),
-	u:sqrt(u),
-	radcan(u)
-);
-*/
+
 /**
  scalar product
 */
@@ -623,22 +664,19 @@ multtrace():=block([s:[1], lst],
 
 /**
 norm^2, experimental
-*/
+
 cnorm(x):=block([u:expand(x), z, v],
 	u:expand(u. cconjugate(u)),
 	u:cliffsimpall(u),
 	u:scalarpart(u),
 	u:ratsimp(u)
 );
- 
-/*
-cpnorm(x):=block([u:expand(x), z, v],
-	u:expand(u. ctranspose(u)),
-	u:cliffsimpall(u),
-	u:scalarpart(u),
-	u:ratsimp(u)
+ */
+cnorm(x):=block([u:expand(x), z:0],
+	 if %ivnorm < 0 then z:psnorm (u, plus)
+	 else z:psnorm (u, minus),
+	 z
 );
-*/
 
 /*
 */
@@ -647,6 +685,10 @@ defrule(csubst, bb*asymbol[kk], aform[kk,kk]*bb);
 defrule(csubst3,  asymbol[kk], 0);
 defrule(csubst31, bb*asymbol[kk], 0);
 
+/**
+symmetric bilinear form of the algebra;
+used to compute the norm
+*/
 psnorm(x, sgn):=block([u, z, v, neg:true ],
 	if not freeof(".",x) then 
 		u:expand(x) 
@@ -667,6 +709,9 @@ psnorm(x, sgn):=block([u, z, v, neg:true ],
 	ratsimp(u)
 );
 
+/**
+vector predicate
+*/
 vectorp(v):= freeof(".", v) and not freeof(asymbol, v);
 
 
@@ -677,7 +722,6 @@ vectorp(v):= freeof(".", v) and not freeof(asymbol, v);
 /**
  scalar part
 */
-
 scalarpart(v):=block([gr:v ],
 	if not freeof(".",v) then (
 		gr:expand(gr),
@@ -690,7 +734,6 @@ scalarpart(v):=block([gr:v ],
 /**
  vector part
 */
-
 vectorpart(v):=block([gr],
 	gr:grade(v),
 	gr[2]
