@@ -451,7 +451,7 @@ dotreverse(ab):=block([a, b],
 /*
 Clifford involution of expressions
 */
-ccinvolve(x):=block ([l, v:0, len, k],
+cinvolve(x):=block ([l, v:0, len, k],
 	if not freeof(".",x) then 
 		l:grade(expand(x))
 	else 
