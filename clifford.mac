@@ -2,7 +2,10 @@
 Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
- v 1.3 Date 11 Jun 2015
+ v 	1.4 Date 22 Aug 2015
+	- oppart simplified
+	
+	1.3 Date 11 Jun 2015
 **********************************
  * @license This library is free software; you can redistribute it and/or
  *      modify it under the terms of the GNU Lesser General Public
@@ -54,33 +57,110 @@ powerdisp:true;
 
 /*
 partition by predicate with expression reconstruction
-*/
-oppart(expr, predf):=block([sop, lst, lsttrue:[], lstfalse:[], ret],
-	if atom(expr) then (
-		if predf(expr) then (lsttrue:expr, lstfalse:0)
-		else (lstfalse:expr, lsttrue:0),
+
+oppart(expr, predf):=block(
+	[sop, lst, lsttrue:[], lstfalse:[], lsttrue1:[], lstfalse1:[], sgn:1, a:0, b:1, ltrue:[], lfalse:[]  ],
+	if mapatom(expr) then (
+		if predf(expr) then (lsttrue:expr, lstfalse:1)
+		else (lstfalse:expr, lsttrue:1),
 		return( [lsttrue, lstfalse])
 	) else (
-		sop:op(expr), lst:args(expr),
-		for v in lst do 
+		sop:op(expr), 
+		"print("sop ", sop, "sgn ", sgn)", 
+		if sop#"-" then
+			lst:args(expr)
+		else (
+			expr:part(expr,1),
+			sop:op(expr), 
+			lst:args(expr),
+			sgn:-1
+		),
+		if sop="/" then (
+			a:part(expr, 1), 
+			if not mapatom(a) then 
+				if op(a)="-" then sgn:-1,
+			b:part(expr, 2),
+			"print(" a= ",a,"  b= ",b, " sgn=", sgn)",	 		
+			[ lsttrue, lstfalse ]: oppart(a, predf),
+			"print("lt= ", lsttrue, " lf= ", lstfalse)", 
+			[ lsttrue1, lstfalse1 ]: oppart(b, predf),
+			"print("lt1= ", lsttrue1, " lt1= ", lstfalse1),
+			ltrue:flatten([ lsttrue, lsttrue1 ]),
+			lfalse:flatten([ lstfalse, lstfalse1 ]), 
+			lsttrue: sgn*substinpart("/", ltrue, 0),
+			
+			"print("lt2= ", ltrue, "lf2= ", lfalse)", 
+			return ([ lsttrue, lstfalse])
+		),
+		for v in lst do (
+			"print(v)", 
+			if not mapatom(v) then (
+				sop:op(expr), 
+				if sop="-" then sgn:-1
+			),
 			if predf(v) then lsttrue:cons(v, lsttrue) 
-			else lstfalse:cons(v, lstfalse),
-		lsttrue:reverse(lsttrue),
-		lstfalse:reverse(lstfalse),
-		print(lst, lsttrue, lstfalse),
-		ret: [ substinpart(sop, lsttrue, 0), substinpart(sop, lstfalse, 0)],
-		if emptyp(lstfalse) then ret: reverse(ret),
-		return (ret)
+			else lstfalse:cons(v, lstfalse)
+		),
+		"print("sop ", sop, "sgn ", sgn)",
+		if sop#"-" then
+			return ([ sgn*substinpart(sop, lsttrue, 0), substinpart(sop, lstfalse, 0)])
+		else 
+			return ([ lsttrue, lstfalse])
 	)
-);
+); 
+*/
 
+inop(expr):=inpart(expr, 0); 
+inargs(expr):=substinpart( "[", expr, 0);
+
+/*
+partition by predicate with expression reconstruction
+literal meaning
+*/
+oppart(expr, predf):=block(
+	[sop, lst, lsttrue:[], lstfalse:[], ltrue, lfalse ],
+	mode_declare([lsttrue, lstfalse, lst], list),
+	mode_declare([sop, ltrue, lfalse], any),
+	
+	if mapatom(expr) then (
+		if predf(expr) then (ltrue:expr, lfalse:1)
+		else (lfalse:expr, ltrue:1),
+		return( [ltrue, lfalse])
+	) else (
+		sop:inop(expr),
+		expr:rest(expr, 0),
+		lst: inargs(expr),
+	 	/*print("sop ", sop, "lst ", lst),  */
+		for v in lst do (
+			/* print(v), */
+			if predf(v) then push(v, lsttrue) 
+			else push(v, lstfalse)
+		),
+		ltrue:substinpart(sop, lsttrue, 0), 
+		lfalse:substinpart(sop, lstfalse, 0),
+		return ([ ltrue, lfalse])
+	)
+); 
+ 
+ /*
+partition by predicate with expression reconstruction
+heuristical meaning
+*/
+ oppartexp(expr, predf):=block([ lsttrue, lstfalse],
+	expr:expand(expr),
+	[ lsttrue, lstfalse]:oppart(expr, predf),
+	lsttrue:ratsimp(lsttrue),
+	lstfalse:ratsimp(lstfalse),
+	return ([ lsttrue, lstfalse])
+ );
+ 
 /*
 simplification of dot-products, ordergreat
 */
 dotsimp1(ab):=block([a, b],
   if atom(ab) or op(ab)#"." then return(ab),
-  a:part(ab,1),
-  b:part(ab,2),
+  a:inpart(ab,1),
+  b:inpart(ab,2),
  if orderlessp(a,b) then -b.a else ab
 );
 
@@ -89,9 +169,9 @@ simplification of dot-products, orderless
 */
 dotsimp2(ab):=block([a, b],
   if atom(ab) or op(ab)#"." then return(ab),
-  a:part(ab,1),
-  b:part(ab,2),
- if ordergreatp(a,b) then -b.a else ab
+  a:inpart(ab,1),
+  b:inpart(ab,2),
+  if ordergreatp(a,b) then -b.a else ab
 );
 
 /*
@@ -103,7 +183,9 @@ toggle_debug():= _debug: not _debug;
 simplification of dot-products
 */
 declare (dotsimpc, evfun);
+/*
 dotsimpc(ab):=block([ba, c:1, v, w:1, q],
+  mode_declare([w], fixnum),
   if atom(ab) or freeof(".", ab) or op(ab)="+"  then return(ab),
   ba:copy(ab),
   if op(ba)="-" then ( 
@@ -119,11 +201,26 @@ dotsimpc(ab):=block([ba, c:1, v, w:1, q],
  if _debug=true then  print(w, v),
   w*c 
 );
+*/
+
+dotsimpc(ab):=block([ba, c:1, v, w:1, q],
+  mode_declare([w], fixnum),
+  if mapatom(ab) or freeof(".", ab) or inop(ab)="+"  then return(ab),
+  ba:copy(ab),
+  v:inargs(ba),
+  if _debug=true then print("op ", op(ba), "v ", v),
+  w:permsign(v),
+  v:sort(v),
+  for q in v do c:c.q,
+  if _debug=true then  print(w, v),
+  w*c 
+);
 
 /*
 internal function: parity of permutation calculation
 */
 permsign(arr):=block([k:0, len] ,
+	mode_declare([k, len], fixnum),
 	if not listp(arr) then return (false),
 	len:length(arr),
 	for i:1 thru len do
@@ -133,17 +230,9 @@ permsign(arr):=block([k:0, len] ,
 );
 
 /*
-matchdeclare(dd, lambda([u],  freeof(asymbol,u)), dotprod, lambda([u], not freeof(".",u)));
-defrule (clifsimp1, dd*aa, dd*dotsimpc(aa));
-defrule (clifsimp10, aa, dotsimpc(aa));
-defrule (clifsimp2, dd/aa, dd*dotinvsimp(1/aa));
-defrule (clifsimp3, aa.dotprod, dotprod.aa);
-*/
-
-/*
 simplification rules
 */
-matchdeclare(dd, lambda([u],  freeof(asymbol,u)));
+matchdeclare(dd, lambda([u],  freeof(asymbol, u)));
 defrule (clifsimp1, dd*aa, dd*dotsimpc(aa));
 defrule (clifsimp10, aa, dotsimpc(aa));
 defrule (clifsimp2, dd/aa, dd*dotinvsimp(1/aa));
@@ -172,6 +261,7 @@ cliffsimp1(expr):=block([res],
 */
 declare (dotinvsimp, evfun);
 dotinvsimp(ab):=block( [a,b,s],
+ mode_declare([a,b,s], any),
  if atom(ab) or freeof(asymbol, ab) or op(ab)#"/" then return(ab),
   a:part(ab,1),
   b:part(ab,2),
@@ -179,6 +269,8 @@ dotinvsimp(ab):=block( [a,b,s],
   if not freeof(asymbol, s) then  s:cliffsimp1(s),
   if s#0 then a.b/s else ab 
 );
+
+
 
 /*
 Clifford inverse
@@ -313,9 +405,9 @@ release():=block(
 /*
 grade decomposition of expressions
 */
-grade(expr):=block([c, v, k, r, l, s],	
+grade(expr):=block([ c, v, k, r, l, s],	
 	"atomic cases",
-	if atom(expr) then (
+	if mapatom(expr) then (
 		if _debug=true then print("case atom ", expr),
 		c:makelist(0,ndim+1),
 		c[1]:expr,
@@ -381,51 +473,17 @@ ctranspose(x):=block ([l, v:0, len, k],
 	v
 );
 
-/*
-creverse(x):=block ([l, v:0, len, k, a, b, sop],
-	if not freeof(".",x) then 
-		l:grade(expand(x))
-	else 
-		l:grade(x),
-	len: length(l),
-	for i:1 thru len do (
-		if not freeof(".",l[i]) then (
-		sop:op(l[i]),
-		if sop="." then (
-			b:reverse(l[i]),
-			v:v+b 
-		)
-		else (
-			[a, b]: partition(l[i], "."),
-			if a#0 then (
-				b:reverse(b),
-				v:v+a*b 	)
-			else (
-				b: args(l[i]),
-				b:reverse(b),
-				b:substinpart(sop,b,0),
-				v:v+b
-			)
-			)
-		)
-		else  v:v+l[i],
-		print(i, l[i], "v ",v)
-	),
-	v
-);
-
-*/
 
 /*
 Clifford reverse of expressions
 */
-creverse(ab):=block([a, b, sop: op(ab), len],
+creverse(ab):=block([a, b, sop: inop(ab), len],
   if atom(ab) or freeof(".",ab) then return(ab),
   if sop="." then (
 	  b: dotreverse(ab),
 	  return(b)
   ) else (
-	  b: args(ab),
+	  b: inargs(ab),
 	  len:length(b),
 	  for i: 1 thru len do
 		b[i]:dotreverse(b[i]),
@@ -441,12 +499,12 @@ Clifford reverse of dot-product, recursive
 dotreverse(ab):=block([a, b],
   if atom(ab) or subvarp (ab) then return(ab),
   errcatch (
-	a:part(ab,1),
+	a:inpart(ab,1),
 	b:rest(ab,1),
 	if _debug=true then print(a,b),
-	if op(ab)="." then
+	if inop(ab)="." then
 	  return(dotreverse(b). dotreverse(a))
-	elseif op(ab)="*" then
+	elseif inop(ab)="*" then
 	  return(dotreverse(b)* dotreverse(a))
   ),
   reverse(ab)
@@ -516,27 +574,21 @@ velem(expr):=block([cc:[], u : expand(expr)],
 		cc:endcons(coeff (u, asymbol[i]), cc),
 	cc
 );
- 
-gpoly(expr):=block([cc:[], u:(expr), z, len, minus:false],
+
+
+gpoly(expr):=block([cc:[], u:(expr), z, len],
 	if op(u)#"." then  (
-		if op(u)#"-" then 
-			cc:oppart(u, lambda([z], freeof(".", z)))
-		else (
-			cc:oppart(-u, lambda([z], freeof(".", z))),
-			minus:true
-			),
-		print(cc),
+		cc:oppartexp(u, lambda([z], freeof(".", z))),
 		u:cc[2]
 	),
 	cc:substinpart("[", u, 0),
 	len:length(cc),
-	print(cc, len),
+	"print(cc, len)",
 	if len>1 then (
 		z: sum (cc[i], i, 1, len),
 		cc:endcons(z, cc)
 	), 
-	print(cc),
-	if minus then cc:-cc,
+	"print(cc)",
 	cc:maplist (velem, cc),
 	cons(makelist(0, ndim),cc)
 );
@@ -609,7 +661,7 @@ vdraw2(expr):=block( [scenes:[], cc, cc1, m:1, dd, n:0],
 mtable2():=block([n, a, lst],
 	local (a),
 	lst: elements(),
-	lst:cons(1,lst),
+	push(1,lst),
 	n:length(lst),
 	if _debug then 
 	a[i,j]:= (lst[i].lst[j]) else
@@ -623,7 +675,7 @@ mtable2():=block([n, a, lst],
 mtable1():=block([n, a, lst],
 	local (a),
 	lst:makelist(asymbol[i], i, ndim),
-	lst:cons(1,lst),
+	push(1,lst),
 	n:length(lst),
 	a[i,j]:= dotsimpc(lst[i].lst[j]),
 	genmatrix(a,n,n)
@@ -655,7 +707,7 @@ scprod(x, y):=block([u:expand(x), v:expand(y)],
 */
 multtrace():=block([s:[1], lst],
 	lst:elements(),
-	lst:cons(1, lst),
+	push(1, lst),
 	for i:1 thru length(lst) do 
 		s:endcons(dotsimpc(lst[i].lst[i]), s),
 	s
@@ -763,6 +815,8 @@ dual(x):=x/%iv;
  projection
 */
 project(a, v):=block ([ m:cnorm(v)] ,
+	if m=0 then m:1,
+	if m<0 then m:-m,
 	cliffsimpall(v.(a ~ v)/m)
 );
 
@@ -771,6 +825,8 @@ project(a, v):=block ([ m:cnorm(v)] ,
 dual to the projection
 */
 reject(a, v):=block ([ m:cnorm(v)] ,
+	if m=0 then m:1,
+	if m<0 then m:-m,
 	cliffsimpall(v.(v & a)/m)
 );
 
@@ -779,6 +835,8 @@ reject(a, v):=block ([ m:cnorm(v)] ,
  reflection
 */
 reflect(a, v):=block ([ m:cnorm(v)],
+	if m=0 then m:1,
+	if m<0 then m:-m,
 	cliffsimpall(cconjugate(v).a.v/m)
 );
 
@@ -787,6 +845,8 @@ reflect(a, v):=block ([ m:cnorm(v)],
  rotation
 */
 rotate(a, v):=block ([ m:cnorm(v)],
+	if m=0 then m:1,
+	if m<0 then m:-m,
 	cliffsimpall(v.a.creverse(v)/m)
 );
 
@@ -832,19 +892,46 @@ vectdiff(f, x,  k):=block ([s, n:ndim, ee ],
 	cliffsimpall(s)
 );
 
-/* community contribution for formatting of output.
-code courtesy to  Richard Fateman 
+/*
+ experimental code for Clifford exponentiation
 */
-paren_dot_in_prod(ex) :=
-  if mapatom(ex) then ex
-  elseif op(ex) # "*" then map(paren_dot_in_prod,ex)
-  else map(prod_paren_dot_in_prod,ex);
+cliexp(expr):=block([v, gr, p, q:[], s:1], 
+	if not freeof(%e, expr) and op(expr)="^" then (
+		v:args(expr),
+		gr:grade(v[2]),
+		if not gr then gr:[v[2]],
+		print("gr ", gr),	
+		for p in gr do (
+			if not mapatom(p) then (		
+				if op(p)="+" then (
+					for pl in args(p) do
+					q:cons (ceparse(pl),q)
+				),
+				print(" + ",p, q)
+			) else 
+				q:cons(ceparse(p),q)
+		),
+		print ("p" ,p, " qf ", q),
+ 
+		s: substinpart(".", q, 0)
+	) else expr
+);
 
-prod_paren_dot_in_prod(ex) :=
-  if mapatom(ex) then ex
-  elseif op(ex) # "." then map(paren_dot_in_prod,ex)
-  else funmake("(",[map(paren_dot_in_prod,ex)]);
 
-put('clifford, 'v13,'version);
+ceparse(p):=block([l,r,s, q:1],
+	[l,r]:oppart(p, lambda([u], freeof (asymbol, u)) ),
+/* 	print ("l ", l,"r ", r), */
+	if r=1 then q:exp(l) 
+	else (
+		s: cliffsimp1(r.r),
+	/* 	print(s), */
+		if s<0 or sign(s)=minus then q: cos(l)+r*sin(l),
+		if s>0 or sign(s)=plus then q: cosh(l)+r*sinh(l),
+		if s=0 or sign(s)=zero then q: 1+ r*l
+	),
+	q
+);
+
+put('clifford, 'v14,'version);
 put('clifford, "Dimiter Prodanov", 'author);
 put('clifford, "(C) - Dimiter Prodanov, 2015", 'copyright);
