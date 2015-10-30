@@ -2,7 +2,9 @@
 Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
- v 	1.4 Date 22 Aug 2015
+ v 	1.5.1 Date 30 Oct 2015
+	- bugfixes oppart
+	1.4 Date 22 Aug 2015
 	- oppart simplified
 	
 	1.3 Date 11 Jun 2015
@@ -55,60 +57,7 @@ powerdisp:true;
 	texput ("&", " \\wedge ", infix)
 );
 
-/*
-partition by predicate with expression reconstruction
 
-oppart(expr, predf):=block(
-	[sop, lst, lsttrue:[], lstfalse:[], lsttrue1:[], lstfalse1:[], sgn:1, a:0, b:1, ltrue:[], lfalse:[]  ],
-	if mapatom(expr) then (
-		if predf(expr) then (lsttrue:expr, lstfalse:1)
-		else (lstfalse:expr, lsttrue:1),
-		return( [lsttrue, lstfalse])
-	) else (
-		sop:op(expr), 
-		"print("sop ", sop, "sgn ", sgn)", 
-		if sop#"-" then
-			lst:args(expr)
-		else (
-			expr:part(expr,1),
-			sop:op(expr), 
-			lst:args(expr),
-			sgn:-1
-		),
-		if sop="/" then (
-			a:part(expr, 1), 
-			if not mapatom(a) then 
-				if op(a)="-" then sgn:-1,
-			b:part(expr, 2),
-			"print(" a= ",a,"  b= ",b, " sgn=", sgn)",	 		
-			[ lsttrue, lstfalse ]: oppart(a, predf),
-			"print("lt= ", lsttrue, " lf= ", lstfalse)", 
-			[ lsttrue1, lstfalse1 ]: oppart(b, predf),
-			"print("lt1= ", lsttrue1, " lt1= ", lstfalse1),
-			ltrue:flatten([ lsttrue, lsttrue1 ]),
-			lfalse:flatten([ lstfalse, lstfalse1 ]), 
-			lsttrue: sgn*substinpart("/", ltrue, 0),
-			
-			"print("lt2= ", ltrue, "lf2= ", lfalse)", 
-			return ([ lsttrue, lstfalse])
-		),
-		for v in lst do (
-			"print(v)", 
-			if not mapatom(v) then (
-				sop:op(expr), 
-				if sop="-" then sgn:-1
-			),
-			if predf(v) then lsttrue:cons(v, lsttrue) 
-			else lstfalse:cons(v, lstfalse)
-		),
-		"print("sop ", sop, "sgn ", sgn)",
-		if sop#"-" then
-			return ([ sgn*substinpart(sop, lsttrue, 0), substinpart(sop, lstfalse, 0)])
-		else 
-			return ([ lsttrue, lstfalse])
-	)
-); 
-*/
 
 inop(expr):=inpart(expr, 0); 
 inargs(expr):=substinpart( "[", expr, 0);
@@ -118,27 +67,40 @@ partition by predicate with expression reconstruction
 literal meaning
 */
 oppart(expr, predf):=block(
-	[sop, lst, lsttrue:[], lstfalse:[], ltrue, lfalse ],
-	mode_declare([lsttrue, lstfalse, lst], list),
-	mode_declare([sop, ltrue, lfalse], any),
-	
+	[sop, lst, lsttrue:[], lstfalse:[], ltrue, lfalse, err ],
+	mode_declare([lsttrue, lstfalse, lst, err], list),
 	if mapatom(expr) then (
-		if predf(expr) then (ltrue:expr, lfalse:1)
-		else (lfalse:expr, ltrue:1),
+		if apply(predf,[expr]) then (ltrue:expr, lfalse:'nil)
+		else (lfalse:expr, ltrue:'nil),
 		return( [ltrue, lfalse])
 	) else (
 		sop:inop(expr),
 		expr:rest(expr, 0),
 		lst: inargs(expr),
-	 	/*print("sop ", sop, "lst ", lst),  */
+/*	 	print("sop ", sop, "lst ", lst),  */
 		for v in lst do (
-			/* print(v), */
-			if predf(v) then push(v, lsttrue) 
+			if apply(predf, [v]) then push(v, lsttrue) 
 			else push(v, lstfalse)
 		),
-		ltrue:substinpart(sop, lsttrue, 0), 
-		lfalse:substinpart(sop, lstfalse, 0),
-		return ([ ltrue, lfalse])
+		lsttrue:reverse(lsttrue),
+		lstfalse:reverse(lstfalse),
+		/* print(lsttrue, "l r ",lstfalse, "  op ", sop),  */
+		err:errcatch (
+			ltrue:if not emptyp(lsttrue) then 
+				substinpart(sop, lsttrue, 0) 
+				else  'nil,
+			lfalse:if not emptyp(lstfalse) then 
+				substinpart(sop, lstfalse, 0) 
+				else  'nil,	
+			/*	
+			print("1: ", ltrue, "l r ",lfalse, "  op ", sop), 
+			print("2: ", lsttrue, "l r ",lstfalse, "  op ", sop),
+			*/
+			lst:[ ltrue, lfalse],
+			subst ('nil, if sop="+" then 0 else  1, lst),
+			return(lst)
+		),
+		if emptyp(err) then return([expr, 'nil])
 	)
 ); 
  
@@ -146,7 +108,7 @@ oppart(expr, predf):=block(
 partition by predicate with expression reconstruction
 heuristical meaning
 */
- oppartexp(expr, predf):=block([ lsttrue, lstfalse],
+oppartexp(expr, predf):=block([ lsttrue, lstfalse],
 	expr:expand(expr),
 	[ lsttrue, lstfalse]:oppart(expr, predf),
 	lsttrue:ratsimp(lsttrue),
@@ -183,25 +145,6 @@ toggle_debug():= _debug: not _debug;
 simplification of dot-products
 */
 declare (dotsimpc, evfun);
-/*
-dotsimpc(ab):=block([ba, c:1, v, w:1, q],
-  mode_declare([w], fixnum),
-  if atom(ab) or freeof(".", ab) or op(ab)="+"  then return(ab),
-  ba:copy(ab),
-  if op(ba)="-" then ( 
-	w:-1,
-	ba:-ba
-  ),
-  v:args(ba),
-  if _debug=true then print("op ", op(ba), "v ", v),
-  w:w*permsign(v),
-  v:sort(v),
-  for q in v do
-    c:c.q,
- if _debug=true then  print(w, v),
-  w*c 
-);
-*/
 
 dotsimpc(ab):=block([ba, c:1, v, w:1, q],
   mode_declare([w], fixnum),
