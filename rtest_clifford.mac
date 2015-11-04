@@ -2,9 +2,8 @@
 Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
- v 1.4
- 
- tests
+tests for version
+ v 1.5
  
 usage:
 file_search_maxima: append (file_search_maxima,["/path/to/clifford.mac"]);
@@ -34,13 +33,12 @@ batch("rtest_clifford", test);
   */
   %path:"C:/Dropbox/maxima/$$$.{mac,mc}",
   file_search_maxima:append (file_search_maxima , [%path]),
-  print(file_search_maxima),
   %start : absolute_real_time(),
   load("clifford"),
   'done);
 'done$
 get('clifford,'version);
-v14$
+v15$
 /* init clifford" */
 (clifford(e,1,1,1),
 aform);
@@ -101,6 +99,8 @@ dd.cc, expand, ratsimp, cliffsimpall;
 1$
 grade(cc);
 [a,e[1]*b+e[2]*c,(e[1] . e[2])*d, 0]$
-grade(dd)-
-[a/(a^2-b^2+c^2-d^2),- (e[1]*b/(a^2-b^2+c^2-d^2))- e[2]*c/(a^2-b^2+c^2-d^2),- (e[1] . e[2]*d)/(a^2-b^2+c^2-d^2),0],eval;
+(grade(dd)-
+[a/(a^2-b^2+c^2-d^2),- (e[1]*b/(a^2-b^2+c^2-d^2))- e[2]*c/(a^2-b^2+c^2-d^2),- (e[1] . e[2]*d)/(a^2-b^2+c^2-d^2),0]),ratsimp;
 [0,0,0,0]$
+grade(e[1] . e[2]/5);
+[0,0,e[1] . e[2]/5,0]$

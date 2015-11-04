@@ -2,7 +2,11 @@
 Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
- v 	1.5.1 Date 30 Oct 2015
+ v 	1.5.5 Data 04 Nov 2015
+	- bugixes oppart
+	- unit tests
+	
+	1.5.1 Date 30 Oct 2015
 	- bugfixes oppart
 	1.4 Date 22 Aug 2015
 	- oppart simplified
@@ -57,10 +61,11 @@ powerdisp:true;
 	texput ("&", " \\wedge ", infix)
 );
 
+inop(expr):= if not mapatom (expr)  then 
+	inpart(expr, 0)
+	else 'nil; 
 
-
-inop(expr):=inpart(expr, 0); 
-inargs(expr):=substinpart( "[", expr, 0);
+inargs(expr):= if not mapatom (expr)  then  substinpart( "[", expr, 0) else 'nil;
 
 /*
 partition by predicate with expression reconstruction
@@ -77,14 +82,14 @@ oppart(expr, predf):=block(
 		sop:inop(expr),
 		expr:rest(expr, 0),
 		lst: inargs(expr),
-/*	 	print("sop ", sop, "lst ", lst),  */
+		if _debug=true then print("sop ", sop, "lst ", lst), 
 		for v in lst do (
 			if apply(predf, [v]) then push(v, lsttrue) 
 			else push(v, lstfalse)
 		),
 		lsttrue:reverse(lsttrue),
 		lstfalse:reverse(lstfalse),
-		/* print(lsttrue, "l r ",lstfalse, "  op ", sop),  */
+		if _debug=true then print("l ", lsttrue, " ; r ",lstfalse),  
 		err:errcatch (
 			ltrue:if not emptyp(lsttrue) then 
 				substinpart(sop, lsttrue, 0) 
@@ -92,17 +97,37 @@ oppart(expr, predf):=block(
 			lfalse:if not emptyp(lstfalse) then 
 				substinpart(sop, lstfalse, 0) 
 				else  'nil,	
-			/*	
-			print("1: ", ltrue, "l r ",lfalse, "  op ", sop), 
-			print("2: ", lsttrue, "l r ",lstfalse, "  op ", sop),
+		 	if _debug=true then print("lt ", ltrue, " ; lf ", lfalse), 
+			/*if lfalse=nil or ltrue=nil  then lst:[  lfalse, ltrue] else
 			*/
-			lst:[ ltrue, lfalse],
-			subst ('nil, if sop="+" then 0 else  1, lst),
-			return(lst)
+			lst:[ ltrue, lfalse]
+			/* if sop="+" then lst:subst('nil=0, lst),
+			if sop="*" or sop="."  then lst:subst('nil=1, lst) */
 		),
-		if emptyp(err) then return([expr, 'nil])
-	)
+		if emptyp(err) then lst([expr, 'nil])
+	),
+	lst
 ); 
+ 
+/*
+counts occurences of an operator in an expression
+*/
+countop(ab, sop):=block([a, b, c, s:0, piece, inflag :true ],
+if not mapatom(ab) then 
+	 errcatch (
+		a:inpart(ab,0),
+		b:inpart(ab,1),
+	 	c:rest(ab,1),
+		if _debug=true then print (b, c),
+		if a=sop then s:s+1,
+		if freeof (sop, c) then
+			s:s +  countop(b, sop) 
+		else 
+			s:s +  countop(c, sop) 
+	),
+	s
+);
+
  
  /*
 partition by predicate with expression reconstruction
@@ -348,6 +373,35 @@ release():=block(
 /*
 grade decomposition of expressions
 */
+grade(expr):=block([c, sop, k],	
+	local(c),
+	array(c, fixnum, ndim),	
+	if not mapatom(expr) then 
+		expr:expand(expr),
+	
+	sop: inop(expr),
+	if sop="+" then (
+		for v in expr do (	
+			k:countop(v, "."),
+			if _debug=true then print("k= ", k, " v= ", v),
+			if freeof (asymbol, v ) then
+				c[k]:c[k] +v 
+			else 
+				c[k+1]:c[k+1] +v
+		)
+	)else ( "simple expression, we count only the dots",
+		k:countop(expr, "."),
+		if freeof (asymbol, expr ) then
+			c[k]:c[k] +expr 
+		else 
+			c[k+1]:c[k+1] +expr
+	),
+	listarray(c)
+);
+
+/*
+grade decomposition of expressions
+ 
 grade(expr):=block([ c, v, k, r, l, s],	
 	"atomic cases",
 	if mapatom(expr) then (
@@ -398,7 +452,7 @@ grade(expr):=block([ c, v, k, r, l, s],
 	),
 	listarray(c)
 );
-
+*/
 /*
 Clifford transpose of product
 */
@@ -453,6 +507,8 @@ dotreverse(ab):=block([a, b],
   reverse(ab)
 );
 
+
+	
 
 /*
 Clifford involution of expressions
@@ -694,7 +750,7 @@ psnorm(x, sgn):=block([u, z, v, neg:true ],
 	if op(u)="+" then ( 
 		v:args(u),
 		v:sort(v),
-		if _debug=true then print(v),
+		if _debug=true then disp(v),
 		z: (if neg then apply1(v, csubst2) else apply1(v, csubst))
 	) else (
 		z:(if neg then apply1(u, csubst2) else apply1(u, csubst))
@@ -875,6 +931,13 @@ ceparse(p):=block([l,r,s, q:1],
 	q
 );
 
-put('clifford, 'v14,'version);
+put('clifford, 'v15,'version);
 put('clifford, "Dimiter Prodanov", 'author);
 put('clifford, "(C) - Dimiter Prodanov, 2015", 'copyright);
+
+disp("package name: clifford.mac");
+disp("author: Dimiter Prodanov, (C) 2015");
+disp("major version: 1");
+disp("minor version: 5");
+disp("Recommended location: share/contrib");
+disp("last update: 30 Oct 2015");
