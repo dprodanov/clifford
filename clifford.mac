@@ -470,16 +470,16 @@ clicoeff(expr):=block([c, ee, sop, k, r,l],
 		for v in expr do (				 
 			if _debug=true then  display(  v),
 			if freeof (asymbol, v ) then (
-				if not c[1]  then c[1]:v else
+				if c[1]=false  then c[1]:v else
 				c[1]:c[1]+v,
-				if not ee[1]  then ee[1]:1
+				if ee[1]=false  then ee[1]:1
 			)
 			else (
 				[l,r]: oppart (v, lambda ([u], freeof(asymbol, u))),
 				if _debug=true then display(r,l),
-				if not c[r]  then c[r]:l else
+				if c[r]=false  then c[r]:l else
 				c[r]:c[r] +l,
-				if not ee[r]  then ee[r]:r
+				if ee[r]=false  then ee[r]:r
 				)
 		)
 	)else ( "simple expression, separate",
@@ -922,7 +922,9 @@ rotate(a, v):=block ([ m:cnorm(v)],
 );
 
  
-
+/**
+ checks if an element is an idempotent
+*/
 idemp(u):=block([v, ret],
 	v:expand(u.u),
 	v:ratsimp(v-u),
@@ -942,7 +944,9 @@ celem(x):=block([ee:elements(), n],
 	sum (x[i]*ee[i], i, 1, n)
 );
 
-
+/*
+ vector derivative
+*/
 vectdiff(f, x, [k] ):=block ([s, n:1, m, i ],
 	if listp(x) then n:length(x) else x:[x],
 	if n>ndim then error("size mismatch"),
@@ -962,22 +966,53 @@ vectdiff(f, x, [k] ):=block ([s, n:1, m, i ],
 	s
 );
 
- EuLagEq1(_F, q, pvars):=block ([eq:0, p, z:1, len, ret:[]],
+/*  
+EuLagEq1(_F, q, pvars):=block ([eq:0, p, z:1, len, ret:[]],
 	if not listp(pvars) then pvars:[pvars], 
-	p:pvars[1],
-	eq:diff(_F, p),
-	
+	 p:pvars[1],
+	 eq:diff(_F, p),
+	 len:length(pvars),
+	 if len>1 then 
+		 for i :2 thru len do (
+			p:pvars[i],
+			depends(p, q),
+			eq:eq + (-1)^z*diff(diff(_F, p), q, z),
+			push(p='diff(pvars[1], q, i-1), ret),
+			z:z+1
+		 ),
 	ret:reverse(ret),
 	[ ret, eq=0]
 );
+  */
 
-EuLagEq2(_F, q, pvars):=block ([eql:[] ],
-	if not listp(pvars) then pvars:[pvars], 
-	for lv in pvars do
-		push (EuLagEq1(_F, q, lv), eql),
-	reverse(eql)
+
+EuLagEq1(_F, tt, pvars):=block ([eq:0, p, pv, len, ret:[]],
+	[p, pv]:pvars,
+	display(p, pv),	
+	if listp(p) then
+		for i:1 thru length (p) do
+			push(pv[i]='diff(p[i], tt), ret)
+	else 
+		push(pv='diff(p, tt), ret),
+	eq:vectdiff(_F, p)-diff(vectdiff(_F, pv), tt),	
+	[ ret, eq=0]
 );
 
+EuLagEq2(_F, tt, pvars):=block ([eq:0, p, pv,   ret:[]],
+	[p, pv]:pvars,
+	display(p, pv),
+	if listp(p) then
+		for i:1 thru length (p) do
+			push(pv[i]='diff(p[i], tt), ret)
+	else 
+		push(pv='diff(p, tt), ret),
+	depends(pv, tt),
+	eq:vectdiff(_F, p)-diff(vectdiff(_F, pv), tt),	
+	eq:subst(ret, eq=0),
+	remove (pv, dependency),
+	eq
+);
+ 
 
 dependsv(F, var):= block([ ee], 
 	ee:buildq([var], (
