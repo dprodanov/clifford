@@ -1,0 +1,46 @@
+
+/*
+idempotent elements
+*/
+ielements():=block([c:1, d:1, l:[1], r:[1], m:1, n:1],
+	for i:1 thru ndim do 
+		if asymbol[i].asymbol[i]=1 then (
+			c:c.(1+ asymbol[i])/2 ,
+			m:(psnorm(c, plus)),
+			n: (c)/m,
+			display(n),
+			if idemp(n) then
+			push(n, l)
+		),
+	l
+);
+
+mtable3():=block([n, a, lst],
+	local (a),
+	lst:makelist((1+asymbol[i])/2, i, ndim),
+	push(1,lst),
+	n:length(lst),
+	a[i,j]:= dotsimpc(expand(lst[i].lst[j])),
+	genmatrix(a,n,n)
+);
+
+idempotent2(k, j):=block(
+	if k>ndim or j>ndim then return(false),
+	if signature[k]*signature[j] <0 then
+	[ (1+asymbol[k].asymbol[j])/2, (1-asymbol[k].asymbol[j])/2]
+	else [1]
+);
+
+idempotent(k):=block(
+	if k>ndim then return(false),
+	if signature[k] >0 then
+	[(1+asymbol[k])/2, (1-asymbol[k])/2]
+	else [1]
+);
+
+
+scdiff( f, x, k, n):= asymbol[k] ~ diff(f,x,n);
+scdiff1( f, x, k):= asymbol[k] ~ diff(f,x);
+vdiff( f, x, k, n):= asymbol[k] & diff(f,x,n);
+vdiff1( f, x, k):= asymbol[k] & diff(f,x);
+

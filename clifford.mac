@@ -453,6 +453,49 @@ grade(expr):=block([ c, v, k, r, l, s],
 	listarray(c)
 );
 */
+
+/*
+computes the element decomposition
+*/
+clicoeff(expr):=block([c, ee, sop, k, r,l],	
+	local(c, ee),
+	c:make_array(hashed, 2^ndim),
+	 
+	ee:make_array(hashed, 2^ndim),
+	if not mapatom(expr) then 
+		expr:expand(expr),
+	
+	sop: inop(expr),
+	if sop="+" then (
+		for v in expr do (				 
+			if _debug=true then  display(  v),
+			if freeof (asymbol, v ) then (
+				if not c[1]  then c[1]:v else
+				c[1]:c[1]+v,
+				if not ee[1]  then ee[1]:1
+			)
+			else (
+				[l,r]: oppart (v, lambda ([u], freeof(asymbol, u))),
+				if _debug=true then display(r,l),
+				if not c[r]  then c[r]:l else
+				c[r]:c[r] +l,
+				if not ee[r]  then ee[r]:r
+				)
+		)
+	)else ( "simple expression, separate",
+		 if freeof (asymbol, expr ) then (
+				c[1]:expr, 
+				ee[1]:expr
+			)
+			else (
+			[l,r]: oppart (expr, lambda ([u], freeof(asymbol, u))),
+			if _debug=true then display(r,l),
+			c[ r]:l,
+			ee[ r]:r
+		 )
+	),
+	[listarray(ee), listarray(c)]
+);
 /*
 Clifford transpose of product
 */
@@ -549,20 +592,14 @@ cconjugate(x):=block ([l, v:0, len, k],
 /*
 constructs all  irreducible elements of the algebra 
 */
-elements():=block([c:1, l:[], r:[], len ],
+elements():=block([c:1, lst:[] ],
 	for i:1 thru ndim do c:c.(1+ asymbol[i] ),
-	c:expand (c),
-	l:grade(c),
-	if l#false then (
-		len: length(l),
-		for j:2 thru len do  
-			if op(l[j])="+" then 
-				r:append(r, sort(args(l[j])))
-			else
-				r:endcons(l[j], r)
-	),
-	r
+	c:expand(c),
+	lst:inargs(c),
+	pop(lst),
+	sort(lst, lambda([u,v], ordergreatp(u,v) and length(u)<length(v)))
 );
+
 
 
 /*
@@ -680,6 +717,8 @@ mtable1():=block([n, a, lst],
 	genmatrix(a,n,n)
 );
 
+
+
 /**
  norm
 */
@@ -729,34 +768,61 @@ cnorm(x):=block([u:expand(x), z:0],
 );
 
 /*
-*/
+ 
 defrule(csubst2, bb*asymbol[kk], sqrt(-aform[kk,kk])*bb);
 defrule(csubst, bb*asymbol[kk], aform[kk,kk]*bb);
+
+ 
 defrule(csubst3,  asymbol[kk], 0);
 defrule(csubst31, bb*asymbol[kk], 0);
-
-/**
+*/
+/*
 symmetric bilinear form of the algebra;
 used to compute the norm
-*/
+ 
 psnorm(x, sgn):=block([u, z, v, neg:true ],
 	if not freeof(".",x) then 
 		u:expand(x) 
 	else u:x,
-	if atom(x) then return (x*x),
+	if mapatom(x) then return (x*x),
 	if sgn=plus then neg:false 
 	elseif sgn#minus then 
 		error("plus or minus expected"),
-	if op(u)="+" then ( 
-		v:args(u),
+		
+	if inop(u)="+" then ( 
+		v:inargs(u),
 		v:sort(v),
-		if _debug=true then disp(v),
+		 disp(v),
 		z: (if neg then apply1(v, csubst2) else apply1(v, csubst))
 	) else (
 		z:(if neg then apply1(u, csubst2) else apply1(u, csubst))
 	),
 	u:z.z,
+	disp(u),
 	ratsimp(u)
+);
+*/
+psnorm(x, sgn):=block([u, z, v, neg:true ],
+	if mapatom(x) then return (x*x),
+	if sgn=plus then neg:false
+	elseif sgn#minus then 
+		error("plus or minus expected"),
+		
+	if not freeof(".",x) then 
+		u:expand(x) 
+	else u:x,
+ 	
+	if inop(u)="+" then ( 
+		v:inargs(u),
+		z: subst (asymbol= lambda([k], if neg then sqrt(-aform[k,k]) else (aform[k,k]) ), v )
+	) else  
+		z: subst (asymbol= lambda([k], if neg then sqrt(-aform[k,k]) else (aform[k,k]) ), u ),
+	if listp(z) then (
+		u: lsum(x^2, x, z),
+		if _debug=true then disp(u),
+		ratsimp(u)
+		)
+	else z
 );
 
 /**
@@ -765,30 +831,36 @@ vector predicate
 vectorp(v):= freeof(".", v) and not freeof(asymbol, v);
 
 
-/**
+/*
  grading functions
 */
 
-/**
+/*
  scalar part
 */
-scalarpart(v):=block([gr:v ],
-	if not freeof(".",v) then (
-		gr:expand(gr),
-		gr:apply1(gr, clifsimp2, clifsimp1, clifsimp10, csubst31, csubst3)
-	),
-	gr
+scalarpart(v):=block([ r, l ],
+	if not freeof(".", v) then v:expand(v),
+	[r,l]: oppart(v, lambda([u], freeof(asymbol, u))),
+	subst('nil=0, r)
 );
 
-
-/**
+/*
  vector part
 */
-vectorpart(v):=block([gr],
-	gr:grade(v),
-	gr[2]
+vectorpart(v):=block([ r, l ],
+	if not freeof(".", v) then v:expand(v),
+	[r,l]: oppart(v, lambda([u], vectorp(u))),
+	subst('nil=0, r)
 );
 
+/*
+ multivector part
+*/
+mvectorpart(v):=block([ r, l ],
+	if not freeof(".", v) then v:expand(v),
+	[r,l]: oppart(v, lambda([u],  freeof(".", u) )),
+	subst('nil=0, l)
+);
 
 /**
  grade of order k
@@ -849,19 +921,7 @@ rotate(a, v):=block ([ m:cnorm(v)],
 	cliffsimpall(v.a.creverse(v)/m)
 );
 
-idempotent2(k, j):=block(
-	if k>ndim or j>ndim then return(false),
-	if signature[k]*signature[j] <0 then
-	[ (1+asymbol[k].asymbol[j])/2, (1-asymbol[k].asymbol[j])/2]
-	else [1]
-);
-
-idempotent(k):=block(
-	if k>ndim then return(false),
-	if signature[k] >0 then
-	[(1+asymbol[k])/2, (1-asymbol[k])/2]
-	else [1]
-);
+ 
 
 idemp(u):=block([v, ret],
 	v:expand(u.u),
@@ -869,6 +929,10 @@ idemp(u):=block([v, ret],
 	ret: is(equal (v, 0)),
 	if ret#true then false else true
 );
+
+/*
+ application functions
+*/
 
 cvect(x):=sum (x[i]*asymbol[i], i, 1, ndim);
 
@@ -878,17 +942,50 @@ celem(x):=block([ee:elements(), n],
 	sum (x[i]*ee[i], i, 1, n)
 );
 
-scdiff( f, x, k, n):= asymbol[k] ~ diff(f,x,n);
-scdiff1( f, x, k):= asymbol[k] ~ diff(f,x);
-vdiff( f, x, k, n):= asymbol[k] & diff(f,x,n);
-vdiff1( f, x, k):= asymbol[k] & diff(f,x);
 
-vectdiff(f, x,  k):=block ([s, n:ndim, ee ],
-	if listp(x) then n:length(x),
+vectdiff(f, x, [k] ):=block ([s, n:1, m, i ],
+	if listp(x) then n:length(x) else x:[x],
 	if n>ndim then error("size mismatch"),
-	s:sum(dotinvsimp(1/asymbol[i]).(diff( f, x[i], k )), i, 1, n),
-	s:expand(s),
-	cliffsimpall(s)
+	if emptyp(k) then k:1 else k: k[1],
+	
+	for p:1 thru k do (
+		i:1, s:0,
+		for m in x do (
+			if not emptyp(m) then
+				s: s+ dotinvsimp(1/asymbol[i]).(diff( f, m )),
+			i:i+1
+		),
+		s:expand(s),
+		s:cliffsimpall(s),
+		f:s
+	),
+	s
+);
+
+ EuLagEq1(_F, q, pvars):=block ([eq:0, p, z:1, len, ret:[]],
+	if not listp(pvars) then pvars:[pvars], 
+	p:pvars[1],
+	eq:diff(_F, p),
+	
+	ret:reverse(ret),
+	[ ret, eq=0]
+);
+
+EuLagEq2(_F, q, pvars):=block ([eql:[] ],
+	if not listp(pvars) then pvars:[pvars], 
+	for lv in pvars do
+		push (EuLagEq1(_F, q, lv), eql),
+	reverse(eql)
+);
+
+
+dependsv(F, var):= block([ ee], 
+	ee:buildq([var], (
+		declare(var, scalar),
+		makelist(var[k],k, ndim)
+		)
+	), 
+	ev(depends(F,ee), nouns)
 );
 
 /*
@@ -899,14 +996,14 @@ cliexp(expr):=block([v, gr, p, q:[], s:1],
 		v:args(expr),
 		gr:grade(v[2]),
 		if not gr then gr:[v[2]],
-		print("gr ", gr),	
+		display(  gr),	
 		for p in gr do (
 			if not mapatom(p) then (		
 				if op(p)="+" then (
 					for pl in args(p) do
 					q:cons (ceparse(pl),q)
 				),
-				print(" + ",p, q)
+				print(" + ", p, q)
 			) else 
 				q:cons(ceparse(p),q)
 		),
@@ -931,13 +1028,12 @@ ceparse(p):=block([l,r,s, q:1],
 	q
 );
 
-put('clifford, 'v15,'version);
+put('clifford, 'v16,'version);
 put('clifford, "Dimiter Prodanov", 'author);
 put('clifford, "(C) - Dimiter Prodanov, 2015", 'copyright);
 
 disp("package name: clifford.mac");
-disp("author: Dimiter Prodanov, (C) 2015");
-disp("major version: 1");
-disp("minor version: 5");
+disp("author: ", get('clifford,'author));
+disp("version:", get('clifford,'version));
 disp("Recommended location: share/contrib");
-disp("last update: 30 Oct 2015");
+disp("last update: 07 Nov 2015");

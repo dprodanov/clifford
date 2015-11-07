@@ -34,7 +34,7 @@ batch("rtest_clifford", test);
   'done);
 'done$
 get('clifford,'version);
-v15$
+v16$
 block(
 	"init Cl(2,2)",
 	clifford(e,2,2,0)
