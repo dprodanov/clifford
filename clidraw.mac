@@ -1,0 +1,131 @@
+/*******************************
+Clifford algebra
+a lightweight package for performing Geometric Algebra calculations
+
+drawing of Clifford vectors and bivectors   
+
+@depends 'clifford, 'draw
+
+**********************************
+ * @license This library is free software; you can redistribute it and/or
+ *      modify it under the terms of the GNU Lesser General Public
+ *      License as published by the Free Software Foundation; either
+ *      version 2.1 of the License, or (at your option) any later version.
+ *
+ *      This library is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *       Lesser General Public License for more details.
+ *
+ *      You should have received a copy of the GNU Lesser General Public
+ *      License along with this library; if not, write to the Free Software
+ *      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
+if get('clifford,'version)=false then (
+	load('draw),
+	load("clifford")
+);
+
+ /*
+partition by predicate with expression reconstruction
+heuristical meaning
+*/
+oppartexp(expr, predf):=block([ lsttrue, lstfalse],
+	expr:expand(expr),
+	[ lsttrue, lstfalse]:oppart(expr, predf),
+	lsttrue:ratsimp(lsttrue),
+	lstfalse:ratsimp(lstfalse),
+	return ([ lsttrue, lstfalse])
+ );
+
+
+/*
+constructs coefficient list of the vector elements
+*/
+velem(expr):=block([cc:[], u : expand(expr)],
+	for i:1 thru ndim do
+		cc:endcons(coeff (u, asymbol[i]), cc),
+	cc
+);
+
+
+gpoly(expr):=block([cc:[], u:(expr), z, len],
+	if op(u)#"." then  (
+		cc:oppartexp(u, lambda([z], freeof(".", z))),
+		u:cc[2]
+	),
+	cc:substinpart("[", u, 0),
+	len:length(cc),
+	"print(cc, len)",
+	if len>1 then (
+		z: sum (cc[i], i, 1, len),
+		cc:endcons(z, cc)
+	), 
+	"print(cc)",
+	cc:maplist (velem, cc),
+	cons(makelist(0, ndim),cc)
+);
+
+
+/*
+draws a vector
+opt - selects the subspace to draw - list of indices
+*/
+vdraw(expr, [opt]):=block( [scenes:[], cc, cc1, m:1, dd, n:0, cstr],
+	if not listp(expr) then expr:[expr],
+	m:length(expr),
+	for j:1 thru m do (
+		cc:[], cc1:[], 
+		"print(expr[j])",
+		cc:velem(expand(expr[j])),
+		dd:makelist(0, ndim),
+		if not emptyp(opt) then n:length(opt),
+		if n>ndim then (
+			for i:1 thru n do
+				cc1[i]:cc[opt[1]],
+			cc:cc1
+		),
+		"cstr:string(tex(expr[j], false))",
+		cstr:(string(expr[j])),
+		scenes:cons([ 
+			  label(cons(cstr, makelist(1.25*cc[i],i,ndim) )),
+			  color = blue,
+			  head_length = 0.2,
+			  head_angle  = 20,
+			  line_width = 3,
+			  head_type = 'filled,
+			  vector(dd, cc)], scenes
+		)
+	),
+	if ndim<=2 then 
+		wxdraw2d(scenes) 
+	else
+		wxdraw3d(scenes)
+);
+
+
+/*
+draws a bi-vector
+*/
+vdraw2(expr):=block( [scenes:[], cc, cc1, m:1, dd, n:0],
+	if not listp(expr) then expr:[expr],
+	m:length(expr),
+	for j:1 thru m do (
+		cc:gpoly(expr[j]),
+		print(cc),
+		cstr:(string(expr[j])),
+		scenes:cons([ 
+			  label(cons(cstr,  1.25*cc[3] )),
+			  color = blue,
+			  fill_color =red,
+			  fill_density=0.5,
+			  line_width = 2,
+			  quadrilateral (cc[1], cc[2], cc[3], cc[4]) ], scenes
+		)
+	),
+	if ndim<=2 then 
+		wxdraw2d(scenes) 
+	else
+		wxdraw3d(scenes)
+);

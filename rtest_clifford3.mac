@@ -3,7 +3,7 @@ Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
 tests for version
- v 1.5
+ v 1.7
  
 usage:
 file_search_maxima: append (file_search_maxima,["/path/to/clifford.mac"]);
@@ -34,7 +34,7 @@ batch("rtest_clifford", test);
   'done);
 'done$
 get('clifford,'version);
-v16$
+v17$
 block(
 	"init Cl(2,2)",
 	clifford(e,2,2,0)
@@ -44,7 +44,7 @@ inop(e[1]);
 nil$
 inargs(e[1]);
 nil$
-/*counting operator */
+/*counting operator 
 countop( (e[1] . e[2]), ".");
 1$
 countop( -3*(e[1] . e[2].e[3]), ".");
@@ -52,7 +52,15 @@ countop( -3*(e[1] . e[2].e[3]), ".");
 countop(1, ".");
 0$
 countop(e[1] . e[2]/5, ".");
-1$
+1$*/
+countsym( (e[1] . e[2]), 'e);
+2$
+countsym( -3*(e[1] . e[2].e[3]), 'e);
+3$
+countsym(e[1] . e[2]/5, 'e);
+2$
+countsym(e[1] . e[2]/5, 1);
+0$
 oppart(e[1] + e[2],   lambda([u],  freeof(asymbol, u)));
 [nil,e[1]+e[2]]$
 oppart(e[1] . e[2],   lambda([u],  freeof(asymbol, u)));

@@ -1,0 +1,93 @@
+/*******************************
+Clifford algebra
+a lightweight package for performing Geometric Algebra calculations
+
+Clifford exponential simplifications
+
+@depends 'clifford
+
+**********************************
+ * @license This library is free software; you can redistribute it and/or
+ *      modify it under the terms of the GNU Lesser General Public
+ *      License as published by the Free Software Foundation; either
+ *      version 2.1 of the License, or (at your option) any later version.
+ *
+ *      This library is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *       Lesser General Public License for more details.
+ *
+ *      You should have received a copy of the GNU Lesser General Public
+ *      License along with this library; if not, write to the Free Software
+ *      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+ 
+if get('clifford,'version)=false then (
+	load("clifford"),
+	 
+	simp:false,
+	tellsimpafter(conjugate(rr),rr),
+	tellsimpafter(conjugate(aa), conjsimp(aa)),
+	defrule (rsimp1, conjugate(aa), conjsimp(aa) ),
+	simp:true
+);
+
+
+conjsimp(ab):=block([ sop, s ],
+ if mapatom(ab) or freeof(asymbol, ab) then conjugate(ab)
+ else (
+	sop:inop(ab),
+	s:inargs(ab),
+	s: map(conjugate, s),
+	substinpart(sop,s,0)
+ )
+);
+
+/*
+syntactic sign
+*/
+csign(expr):= 
+	if expr =0 then 0
+	else 
+		if atom (expr) then (if expr<0 then 'minus else 'plus)
+	else 
+	if op(expr)="-" then 'minus else 'plus; 
+
+/*
+	De Moivre argument
+*/
+ceparse(p):=block([l,r,s, q:1, sop],
+	sop: inop(p),
+	if sop = "+" then (
+		l:maplist(ceparse, p),
+		substinpart(".", l, 0)
+	) else (
+		[l,r]:oppart(p, lambda([u], freeof (asymbol, u)) ),
+		if _debug=true then display(l,r),
+		if r='nil then 
+			q:exp(l) 
+		else (
+			s: expand(r.r),
+			s: dotsimpc(s),
+			if l='nil then l:1,
+			if _debug=true then  display(s),
+			if s<0 or csign(s)=minus then q: cos(l)+r*sin(l),
+			if s>0 or csign(s)=plus then q: cosh(l)+r*sinh(l),
+			if s=0 or csign(s)=0 then q: 1+ r*l
+		),
+		q
+	)
+);
+
+/*
+  Clifford De Moivre
+*/
+climoivre(expr):=block([l, r, v],
+	if freeof(%e, expr) then expr
+	else (
+		[l,r]:oppart(expr, lambda([u], freeof (%e, u)) ),
+		v: inargs(r),
+		if l='nil then l:1,
+		l*ceparse(v[2])
+		)
+);
