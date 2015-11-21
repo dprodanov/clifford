@@ -56,12 +56,12 @@ prederror :false;
 /*
  custom operators
 */
-(
+(	
 	"innter product",
 	infix ("~", 130, 129),
 	"~"(a, b):= if scalarp(a) and scalarp(b) then a*b else ratexpand((a.b + b.a)/2),
 	texput ("~", " \\circ ", infix),
-
+	
 	"outer product",
 	infix ("&", 130, 129),
 	"&"(a, b):=if scalarp(a) and scalarp(b) then 0 else ratexpand((a.b - b.a)/2),
@@ -72,7 +72,7 @@ prederror :false;
 
 inop(expr):= if not mapatom (expr)  then 
 	inpart(expr, 0)
-	else 'nil;
+	else 'nil; 
 
 inargs(expr):= if not mapatom (expr)  then  substinpart( "[", expr, 0) else 'nil;
 
@@ -105,15 +105,15 @@ oppart(expr, predf):=block(
 				else  'nil,
 			lfalse:if not emptyp(lstfalse) then 
 				substinpart(sop, lstfalse, 0) 
-				else  'nil,
+				else  'nil,	
 		 	if _debug=true then display( ltrue, lfalse), 
 			lst:[ ltrue, lfalse]
 		),
 		if emptyp(err) then lst([expr, 'nil])
 	),
 	lst
-);
-  
+); 
+ 
 
 /* 
 extaracts equivalence information from the facts database
@@ -127,12 +127,8 @@ iseq(x):= block([ vv, nil, inflag:true],
 	) else nil 
 );
 
-/* 
-declares equivalence  
-*/ 
-eqassume(st):=block([simp:false, ll:lhs(st), rr:rhs(st) ] ,
-	if equal(ll,rr)#true then
-	assume(equal(ll,rr)) else 'done
+eqassume(st):=block([simp:false],
+	assume(equal(lhs(st), rhs(st)))
 );
 
 /* 
@@ -148,7 +144,7 @@ eqsubst( eq):=block( [aa, ss, sop, lst],
 	) else (
 		ss: factor(eq),
 		lst: inargs(ss),
-		for x in lst do (
+		for x in lst do (	
 			aa:iseq(x),
 			if aa#'nil then ss:ratsubst(rhs(aa), lhs(aa), ss)
 		)
@@ -340,7 +336,7 @@ if get('clifford,'version)=false then (
 	tellsimpafter(bb.ee.cc, dotsimpc(bb.ee.cc)),
 	tellsimpafter(aa[kk]^nn, powsimp(aa[kk]^nn)),
 	tellsimpafter(aa[kk]^^nn, powsimp(aa[kk]^^nn))
-);
+); 
 
 /*
 constructor of the algebra
@@ -408,7 +404,7 @@ makebasis(var):= block([ ee],
 	ev(ee,nouns),
 	ee:buildq([asymbol], array(asymbol, ndim)	), 
 	ev(ee,nouns)
-);
+);  
 
 /*
 constructs the pseudoscalar of the algebra
@@ -453,21 +449,31 @@ clidecode(ab):=block([r, l, aa, ret],
 /*
 counts occurences of a symbol in an expression
 */
-countsym(ab, sym):=block([sop, a, b, s:0, inflag:true ],
-	if freeof(sym, ab) then return(0),
-	if atom(ab) then  
-		if sym=ab then return(1),
-	if subvarp(ab) then  
-		if sym=op(ab) then return(1),
- 
-	sop:inop(ab),	 
-	if _debug=true then display(sop),
-	if member(sop, ["+", "*","."]) then (
-		a: part(ab, 1),
-		b: rest (ab, 1),
-		if _debug=true then display(a,b),
-		s:s+ countsym(a, sym)+ countsym(b, sym)
-	),
+countsym(ab, sym, [oplist]):=block([ sop, uu, ww, v, s:0, lst ],
+	 if freeof(sym, ab) then return (s),
+	 if atom(ab) then (
+		if sym=ab then s:s+1, 
+		return (s)
+	 ),
+	 if subvarp(ab) then (
+		if sym=op(ab) then s:s+1, 
+		return (s)
+	 ),
+	if not emptyp(oplist) then (
+		sop:inop(ab),
+		oplist:oplist[1],
+		uu: map(lambda ([u],  is(u=sop) ),  oplist),
+		if _debug=true then display(uu),
+		ww: substinpart("or", uu, 0),
+		if ww then (
+			v:inargs(ab),
+			lst:map (lambda([u],  countsym(u, sym)), v),
+			s:substinpart("+", lst, 0)
+		)
+	)else(
+			lst:maplist (lambda([u],  countsym(u, sym)), ab),
+			s:substinpart("+", lst, 0)
+		),
 	s
 );
 
@@ -475,20 +481,21 @@ countsym(ab, sym):=block([sop, a, b, s:0, inflag:true ],
 grade decomposition of expressions
  new implementation
  */
-grade(expr):=block([c, sop, k],
+grade(expr):=block([c, sop, k, oplist],	
 	local(c),
-	array(c, fixnum, ndim),
+	array(c, fixnum, ndim),	
+	oplist:["+",".", "*"],
 	if not mapatom(expr) then 
 		expr:expand(expr),
 	sop: inop(expr),
 	if sop="+" then (
-		for v in expr do (
-			k:countsym(v, asymbol),
+		for v in expr do (	
+			k:countsym(v, asymbol, oplist),
 			if _debug=true then display(k,v),
 			c[k]:c[k] +v 
 		)
 	)else ( "simple expression",
-		k:countsym(expr, asymbol),
+		k:countsym(expr, asymbol, oplist),
 		c[k]:c[k] +expr 
 	),
 	listarray(c)
@@ -497,18 +504,18 @@ grade(expr):=block([c, sop, k],
 factorby(expr, z):=block([a,b],
 	[a,b]:divide(expr, z),
 	factor(a)*z+factor(b)
-);
+); 
  
 /*
 computes the element decomposition
 */
-clicoeff(expr):=block([c, ee, sop,  r, l,  lst ],
+clicoeff(expr):=block([c, ee, sop,  r, l,  lst ],	
 	local(c, ee),
 	c:make_array(hashed, 2^ndim),
 	ee:make_array(hashed, 2^ndim),
 	if not mapatom(expr) then 
 		expr:expand(expr),
-
+	
 	sop: inop(expr),
 	if sop="+" then (
 		lst: inargs( (expr)),
@@ -559,7 +566,6 @@ creverse(x):=block ([l, v:0, len, k],
 	v
 );
 
-/*
 ainv(expr, n):=block( [rr:expr],
 	if n=0 then return (expr)
 	else (
@@ -568,7 +574,6 @@ ainv(expr, n):=block( [rr:expr],
 	ainv(rr, n-1)
 	)
 );
-*/
 
 /*
 Clifford involution of expressions
@@ -712,11 +717,11 @@ psnorm(x, sgn):=block([u, z, v, neg:true ],
 	if sgn=plus then neg:false
 	elseif sgn#minus then 
 		error("plus or minus expected"),
-	
+		
 	if not freeof(".",x) then 
 		u:expand(x) 
 	else u:x,
-
+ 	
 	if inop(u)="+" then ( 
 		v:inargs(u),
 		z: subst (asymbol= lambda([k], if neg then sqrt(-signature[k]) else (signature[k]) ), v )
@@ -746,37 +751,28 @@ vectorp(v):= (
 /*
  scalar part
 */
-scalarpart(v):=block([ r, l, sop ],
-	if freeof(asymbol, v) then return (v),
+scalarpart(v):=block([ r, l ],
 	if not freeof(".", v) then v:expand(v),
-	sop: inop(v),
-	if sop="+" then (
-		[r,l]: oppart(v, lambda([u], freeof(asymbol, u))),
-		r:subst('nil=0, r)
-	) else 
-		if freeof(asymbol, v) then  r:v 
-		else r:0,
-	r
+	[r,l]: oppart(v, lambda([u], freeof(asymbol, u))),
+	subst('nil=0, r)
 );
 
 /*
  vector part
 */
-vectorpart(v):=block([gr],
-	if freeof(asymbol, v) then return (0),
-	gr:grade(v),
-	gr[2]
+vectorpart(v):=block([ r, l ],
+	if not freeof(".", v) then v:expand(v),
+	[r,l]: oppart(v, lambda([u], vectorp(u))),
+	subst('nil=0, r)
 );
 
 /*
  multivector part
 */
 mvectorpart(v):=block([ r, l ],
-	if freeof(asymbol, v) then return (0),
-	gr:grade(v),
-	gr:sublist(gr, lambda([u], not freeof(".", u))),
-	if emptyp(gr) then 0 else
-		substinpart("+", gr, 0)
+	if not freeof(".", v) then v:expand(v),
+	[r,l]: oppart(v, lambda([u],  freeof(".", u) )),
+	subst('nil=0, l)
 );
 
 /**
@@ -798,8 +794,6 @@ grpart(v,k):=block([gr],
  dual element
 */
 dual(x):=x.%iv;
-
-conjel(x, k):= (asymbol[k]. x)/asymbol[k]	;
 
 /**
  projection
@@ -881,7 +875,7 @@ vectdiff(f, x, [k] ):=block ([s, n:1, m, i ],
 	if listp(x) then n:length(x) else x:[x],
 	if n>ndim then error("size mismatch"),
 	if emptyp(k) then k:1 else k: k[1],
-
+	
 	for p:1 thru k do (
 		i:1, s:0,
 		for m in x do (
@@ -947,13 +941,13 @@ vvectdiff(f, x, [k] ):=block ([s, n:1, m, i, ee, xx ],
 
 EuLagEq1(_F, tt, pvars):=block ([eq:0, p, pv, len, ret:[]],
 	[p, pv]:pvars,
-	display(p, pv),
+	display(p, pv),	
 	if listp(p) then
 		for i:1 thru length (p) do
 			push(pv[i]='diff(p[i], tt), ret)
 	else 
 		push(pv='diff(p, tt), ret),
-	eq:vectdiff(_F, p)-diff(vectdiff(_F, pv), tt),
+	eq:vectdiff(_F, p)-diff(vectdiff(_F, pv), tt),	
 	[ ret, eq=0]
 );
 
@@ -964,7 +958,7 @@ EuLagEq2(_F, tt, pvars):=block ([eq:0, p, pv,   ret:[]],
 		for i:1 thru length (p) do
 			push(pv[i]='diff(p[i], tt), ret)
 	else 
-		push(pv='diff(p, tt), ret),
+		push(pv='diff(p, tt), ret),	
 	eq:vectdiff(_F, pv),
 	eq:vectdiff(_F, p)-subst( 'diff(p, tt), 'pv(tt),  diff( subst('pv(tt), pv, eq), tt ) ) = 0
 );
@@ -977,6 +971,7 @@ dependsv(F, var):= block([ ee],
 	ev(depends(F,ee), nouns)
 );
 
+ 
 
 
 put('clifford, 'v17,'version);
