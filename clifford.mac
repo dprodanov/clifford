@@ -6,17 +6,17 @@ a lightweight package for performing Geometric Algebra calculations
         - refactoring
 	- change in grade
 	- chage in simp rules
-	
+
 	1.6 Date 04 Nov 2015
 	- bugixes oppart
 	- unit tests
-	
+
 	1.5.1 Date 30 Oct 2015
 	- bugfixes oppart
-	
+
 	1.4 Date 22 Aug 2015
 	- oppart simplified
-	
+
 	1.3 Date 11 Jun 2015
 **********************************
  * @license This library is free software; you can redistribute it and/or
@@ -59,12 +59,12 @@ prederror :false;
 (
 	"innter product",
 	infix ("~", 130, 129),
-	"~"(a, b):= if scalarp(a) and scalarp(b) then a*b else ratexpand((a.b + b.a)/2),
+	"~"(a, b):= if scalarp(a) and scalarp(b) then a*b else expand((a.b + b.a)/2),
 	texput ("~", " \\circ ", infix),
 
 	"outer product",
 	infix ("&", 130, 129),
-	"&"(a, b):=if scalarp(a) and scalarp(b) then 0 else ratexpand((a.b - b.a)/2),
+	"&"(a, b):=if scalarp(a) and scalarp(b) then 0 else expand((a.b - b.a)/2),
 	texput ("&", " \\wedge ", infix)
 );
 
@@ -139,6 +139,7 @@ eqassume(st):=block([simp:false, ll:lhs(st), rr:rhs(st) ] ,
 substitutes equivalences
 */
 declare (eqsubst, evfun);
+
 eqsubst( eq):=block( [aa, ss, sop, lst],
 	mode_declare(lst, list), 
 	sop: inop(eq),
@@ -155,7 +156,22 @@ eqsubst( eq):=block( [aa, ss, sop, lst],
 	),
 	ss
 );
-
+/*
+eqsubst( eq):=block( [aa, ss, sop, zz, quot],
+	sop: inop(eq),
+	if sop = 'nil then (
+		aa:iseq(eq),
+		if aa#'nil then (
+			zz:lhs(aa)-rhs(aa),
+			[quot, ss]:divide(eq, zz),
+			"display(zz, ss)"
+		) else ss: eq
+	) else(
+		ss:map(eqsubst, eq)
+	),
+	ss
+);
+*/
 /* 
 simplifies based on equivalences
 */
@@ -300,12 +316,14 @@ cinv(ab):=block( [s, b, u:1],
   b:cconjugate(ab),
   s:expand(b.ab),
   if not freeof(asymbol, s) then s: apply1(s, clifsimp10, clifsimp2),
+  display(s),
+  /*
   if s-scalarpart(s)#0 then ( 
 	u:creverse(s),
 	s:expand(s.u),
 	s: apply1(s, clifsimp10),
 	print(s)
-  ),
+  ),*/
   if s#0 then (
 	b:expand(b.u),
 	b:apply1(b, clifsimp10),
@@ -494,9 +512,17 @@ grade(expr):=block([c, sop, k],
 	listarray(c)
 );
 
-factorby(expr, z):=block([a,b],
-	[a,b]:divide(expr, z),
-	factor(a)*z+factor(b)
+factorby(expr, z):=block([quot, res, ret ],
+	if not listp(z) then (
+		[quot, res]:divide(expr, z),
+		ret:factor(quot)*z+factor(res) 
+	) else (
+		[quot, res]:divide(expr, z[1]),
+		if length(z)>1 then
+			res:factorby(res, rest(z)),
+		ret:factor(quot)*z[1]+res
+	),
+	ret
 );
  
 /*
@@ -559,16 +585,6 @@ creverse(x):=block ([l, v:0, len, k],
 	v
 );
 
-/*
-ainv(expr, n):=block( [rr:expr],
-	if n=0 then return (expr)
-	else (
-	rr:expand(rr.cinvolve(rr)),
-	rr: dotsimpc(rr),
-	ainv(rr, n-1)
-	)
-);
-*/
 
 /*
 Clifford involution of expressions
@@ -615,7 +631,6 @@ elements([cpl]):=block([c:1, lst:[] ],
 	)
 );
 
- 
 
 
 /**
@@ -686,48 +701,45 @@ multtrace():=block([s:[1], lst],
 	s
 );
 
-/**
-norm^2, experimental
-
 cnorm(x):=block([u:expand(x), z, v],
 	u:expand(u. cconjugate(u)),
 	u:cliffsimpall(u),
+	if not freeof (".", u) then 
+		error ("not free of non-scalars "),
 	u:scalarpart(u),
 	u:ratsimp(u)
 );
- */
-cnorm(x):=block([u:expand(x), z:0],
+	
+/**
+norm^2, experimental
+
+cnorm1(x):=block([u:expand(x), z:0, psd:psdet() ],
 	 if %ivnorm < 0 then z:psnorm (u, plus)
 	 else z:psnorm (u, minus),
 	 z
 );
-
+ */
+ 
+psdet():=product(aform[k,k], k, 1, ndim);
 /*
 symmetric bilinear form of the algebra;
-used to compute the norm
- 
+pseudonorm 
 */
-psnorm(x, sgn):=block([u, z, v, neg:true ],
+
+psnorm(x, sgn):=block([u, z, v, sop, ss:0, neg:-1 ],
 	if mapatom(x) then return (x*x),
-	if sgn=plus then neg:false
+	if sgn=plus then neg:1
 	elseif sgn#minus then 
-		error("plus or minus expected"),
-	
+		error("plus or minus expected"),	
 	if not freeof(".",x) then 
 		u:expand(x) 
 	else u:x,
-
-	if inop(u)="+" then ( 
-		v:inargs(u),
-		z: subst (asymbol= lambda([k], if neg then sqrt(-signature[k]) else (signature[k]) ), v )
-	) else  
-		z: subst (asymbol= lambda([k], if neg then sqrt(-signature[k]) else (signature[k]) ), u ),
-	if listp(z) then (
-		u: lsum(x^2, x, z),
-		if _debug=true then disp(u),
-		ratsimp(u)
-		)
-	else z
+	sop: inop(u),
+	if sop#"+" then error("not a sum"),
+	
+	for v in x do 
+		ss:ss + apply1(v.v, clifsimp10),
+	neg*ss
 );
 
 /**
