@@ -44,6 +44,8 @@ signature:[];
 %iv:1;
 "squre of pseudoscalar";
 %ivnorm:1;
+"elements of the algebra";
+%elements:[1];
 
 _debug:false;
 dotexptsimp :false;
@@ -362,8 +364,12 @@ if get('clifford,'version)=false then (
 
 /*
 constructor of the algebra
+lsig[1] - number of positive elements
+lsig[2] - number of negative elements
+lsig[3] - number of positive elements
+lsig[4] - sets signature
 */
-clifford(var, [lsig]):=block([m, a, p:0, n:0, r:0],
+clifford(var, [lsig]):=block([m, a, p:0, n:0, r:0, s:1],
 	if emptyp(lsig) or length(lsig)>3 then error(" invalid signature"),
 	p:lsig[1],
 	if length(lsig)=2 then 
@@ -372,13 +378,21 @@ clifford(var, [lsig]):=block([m, a, p:0, n:0, r:0],
 		n:lsig[2], 
 		r:lsig[3]
 	),
-	if not (numberp(n) or numberp(p) or numberp(r)) then error(" provide numbers"),
+	/* optinally we can reverse the sign convention */
+	if length(lsig)=4 then (
+		n:lsig[2], 
+		r:lsig[3],
+		s: signum (lsig[4]),
+		if s=0 then s:1
+	),
+	if not (numberp(n) or numberp(p) or numberp(r) or numberp(s) ) then error(" provide numbers"),
 	m:p+r+n,
 	if _debug=true then print(m,p,n,r),
 	if m<=0 then return (false),
+	
 	local (a),
 	a[i,j]:= if i#j then 0 else (
-		if i<=p then 1 else if i>n+p then 0 else -1
+		if i<=p then s else if i>n+p then 0 else -s
 	),
 	ndim:m,
 	makebasis(var),
@@ -386,6 +400,7 @@ clifford(var, [lsig]):=block([m, a, p:0, n:0, r:0],
 	%iv:pscalar(),
 	aform:genmatrix (a, m, m),
 	%ivnorm:dotsimpc(%iv.%iv),
+	%elements:elements(),
 	signature
 );
 
@@ -512,6 +527,9 @@ grade(expr):=block([c, sop, k],
 	listarray(c)
 );
 
+/*
+ Partial factoring by subexpression
+*/
 factorby(expr, z):=block([quot, res, ret ],
 	if not listp(z) then (
 		[quot, res]:divide(expr, z),
@@ -528,17 +546,18 @@ factorby(expr, z):=block([quot, res, ret ],
 /*
 computes the element decomposition
 */
-clicoeff(expr):=block([c, ee, sop,  r, l,  lst ],
+clicoeff(expr, smat):=block([c, ee, sop,  r, l,  lst ],
 	local(c, ee),
 	c:make_array(hashed, 2^ndim),
 	ee:make_array(hashed, 2^ndim),
 	if not mapatom(expr) then 
 		expr:expand(expr),
-
+	if emptyp(%elements) then 
+		%elements:elements(),
+	expr:factorby(expr, %elements),
 	sop: inop(expr),
 	if sop="+" then (
 		lst: inargs( (expr)),
-		lst: map(factor, lst),
 		for v in lst do (				 
 			if _debug=true then  display(  v),
 			if freeof (asymbol, v ) then (
@@ -556,17 +575,31 @@ clicoeff(expr):=block([c, ee, sop,  r, l,  lst ],
 	)else ( "simple expression, separate",
 		 if freeof (asymbol, expr ) then (
 			c[1]:expr, 
-			ee[1]:expr
+			if expr#0 then
+			ee[1]:1 else ee[1]:0
 		)else (
 			[l,r]: oppart (expr, lambda ([u], freeof(asymbol, u))),
 			if _debug=true then display(r,l),
-			c[ r]:l,
+			c[ r]:subst('nil=1, l),
 			ee[ r]:r
 		 )
 	),
-	[listarray(ee), listarray(c)]
+	lst:listarray(c),
+	if smat='list then 
+		[listarray(ee), lst]	
+	else if smat='mat then  
+		[listarray(ee), transpose(matrix(lst))]
 );
 
+/*
+computes the blade decomposition
+*/
+bdecompose(expr):=block([gr],
+	if not freeof(".", expr) then 
+		gr: expand(expr),
+	gr:grade(gr),
+	map(lambda([z], clicoeff(z, 'mat)),gr)
+);
 
 /*
 Clifford reverse of expressions
@@ -661,6 +694,12 @@ mtable1([lst]):=block([n, a],
 	a[i,j]:= dotsimpc(lst[i].lst[j]),
 	genmatrix(a,n)
 );
+
+mtable3(vlst, v):=block([lst],
+	lst:maplist(lambda([u], dotsimpc(dotinvsimp (v).u)), vlst ),
+	disp(lst),
+	mtable1(lst)
+);
  
 /*
  computes the commutation table with all basis vectors
@@ -676,7 +715,7 @@ commtable(ee):=
 cliabs(x):=block([u:expand(x)],
 	u:expand(u.cconjugate(u)),
 	u:scalarpart(u),
-	u:sqrt(u),
+	u:sqrt(abs(u)),
 	radcan(u)
 );
 
@@ -713,33 +752,38 @@ cnorm(x):=block([u:expand(x), z, v],
 /**
 norm^2, experimental
 
-cnorm1(x):=block([u:expand(x), z:0, psd:psdet() ],
-	 if %ivnorm < 0 then z:psnorm (u, plus)
-	 else z:psnorm (u, minus),
-	 z
-);
  */
- 
-psdet():=product(aform[k,k], k, 1, ndim);
-/*
-symmetric bilinear form of the algebra;
-pseudonorm 
-*/
 
-psnorm(x, sgn):=block([u, z, v, sop, ss:0, neg:-1 ],
-	if mapatom(x) then return (x*x),
-	if sgn=plus then neg:1
-	elseif sgn#minus then 
-		error("plus or minus expected"),	
-	if not freeof(".",x) then 
-		u:expand(x) 
-	else u:x,
-	sop: inop(u),
-	if sop#"+" then error("not a sum"),
+cnorm1(x):=block([u:expand(x), sgn:sign(%ivnorm) ],
+	 psnorm (u, sgn)
+);
+
+psdet():=product(aform[k,k], k, 1, ndim);
+
+/*
+symmetric bilinear form of the algebra; 
+*/
+psnorm(x, sgn):=block([u, z, v, ss:0, neg:-1, l, r, ret ],
+	if not (sgn='minus or sgn='neg or  sgn='plus or sgn='pos ) then 
+		error("plus, pos, neg or minus expected"),	
 	
-	for v in x do 
-		ss:ss + apply1(v.v, clifsimp10),
-	neg*ss
+	if mapatom(x) then return (x.x),
+	if sgn=plus or sgn=pos then neg:1,
+	if not freeof(".",x) then u:expand(x) 
+	else u:x,
+	
+	if nterms(u)>1 then (
+		[l,r]: oppart (u, lambda ([u], freeof(asymbol, u))),
+		if _debug=true then display(l,r),
+		if nterms(r)>1 then (
+			for v in r do 
+				ss:ss + apply1(v.v, clifsimp10),
+			ret:neg*ss + l^2
+		) else
+			ret: l^2+ neg*apply1(r.r, clifsimp10)
+	)else 
+		ret:neg*apply1(u.u, clifsimp10),
+	subst('nil=0, ret)	
 );
 
 /**
@@ -867,13 +911,16 @@ idemp(u):=block([v, ret],
  Analysis functions
 */
 
-cvect(x, [cc]):=block (
+cvect(x, [cc]):=block ([ss:0],
 	if emptyp(cc) then
-		sum (x[i]*asymbol[i], i, 1, ndim)
+		ss:sum (x[i]*asymbol[i], i, 1, ndim)
 	else (
 		cc:cc[1],
-		sum (x[ cc[i] ]*asymbol[i], i, 1, length(cc))
-		)
+		for i:1 thru length(cc) do 
+			if not emptyp(cc[i]) then
+			ss: ss+ x[ cc[i] ]*asymbol[i]
+		),
+	ss
 );
 
 celem(x, [cc]):=block([ee:elements(all), n],
@@ -907,14 +954,17 @@ vectdiff(f, x, [k] ):=block ([s, n:1, m, i ],
 	s
 );
 
+/*
+ multi vector derivative
+*/
 mvectdiff(f, x, [k] ):=block ([s, n:1, m, i, ee, xx ],
-	[ee, xx]:clicoeff(x),
+	[ee, xx]:clicoeff(x, 'list),
 	if emptyp(k) then k:1 else k: k[1],
 	for p:1 thru k do (
 		i:1, s:0,
 		for m in xx do (
-			if mapatom(m) then
-				s: s+  dotinvsimp(1/ ee[i]) . subst(".", "*", diff( f, m )),
+			if mapatom(m) then 
+				s: s+  dotinvsimp(1/ ee[i]) . subst(".", "*", diff( f, m ) ),
 			i:i+1
 		),
 		s:cliffsimpall(s),
@@ -923,8 +973,11 @@ mvectdiff(f, x, [k] ):=block ([s, n:1, m, i, ee, xx ],
 	s
 );
 
+/*
+ directional, inner, derivative
+*/
 svectdiff(f, x, [k] ):=block ([s, n:1, m, i, ee, xx ],
-	[ee, xx]:clicoeff(x),
+	[ee, xx]:clicoeff(x,'list),
 	if emptyp(k) then k:1 else k: k[1],
 	for p:1 thru k do (
 		i:1, s:0,
@@ -939,8 +992,11 @@ svectdiff(f, x, [k] ):=block ([s, n:1, m, i, ee, xx ],
 	s
 );
 
+/*
+ exterior, dual, vector derivative
+*/
 vvectdiff(f, x, [k] ):=block ([s, n:1, m, i, ee, xx ],
-	[ee, xx]:clicoeff(x),
+	[ee, xx]:clicoeff(x, 'list),
 	if emptyp(k) then k:1 else k: k[1],
 	for p:1 thru k do (
 		i:1, s:0,
