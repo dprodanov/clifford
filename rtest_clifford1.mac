@@ -3,7 +3,7 @@ Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
 tests for version
- v 1.7
+ v 1.8
  
 usage:
 file_search_maxima: append (file_search_maxima,["/path/to/clifford.mac"]);
@@ -70,30 +70,30 @@ e[1] ~ e[1];
 e[3] ~ e[3];
 0$
 */ 
-e[1] º e[1] º e[1];
+e[1] | e[1] | e[1];
 e[1]$
-e[1] º e[1] º e[1] º e[1];
+e[1] | e[1] | e[1] | e[1];
 1$
-e[1] º e[2];
+e[1] | e[2];
 0$
-e[1] º e[1];
+e[1] | e[1];
 1$
-e[1] º e[2];
+e[1] | e[2];
 0$
-e[1] º e[1];
+e[1] | e[1];
 1$
-e[3] º e[3];
+e[3] | e[3];
 0$
 /* outer product tests 
+*/
 e[3] & e[3];
 0$
 e[1] & e[1];
 0$ 
+/* mixed product tests 
 */
-e[3] ˄ e[3];
-0$
-e[1] ˄ e[1];
-0$ 
+(e[1] & e[2]) | e[3];
+e[1] . e[2] . e[3]$
 /* explicit simplificaton tests*/
 cliffsimpall(e[2] . e[1] . e[2]);
 e[1]$
@@ -107,6 +107,11 @@ e[1].e[1].e[2].e[1].e[2];
 e[1]$
 e[1].e[1].e[1].e[2].e[1];
 -e[2]$
+/* Jacobi identity*/
+aa & bb  & cc+ cc & aa & bb +bb & cc& aa;
+0$
+e[1] & e[2]  & e[3]+  e[3]& e[1] & e[2] +e[2] & e[3] & e[1];
+0$
 /* complex tests*/
 block(
 declare([a,b,c,d],scalar),

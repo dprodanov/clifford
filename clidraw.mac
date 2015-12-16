@@ -4,128 +4,303 @@ a lightweight package for performing Geometric Algebra calculations
 
 drawing of Clifford vectors and bivectors   
 
+version 1.0 Date 21 Nov 2015
+
 @depends 'clifford, 'draw
 
 **********************************
- * @license This library is free software; you can redistribute it and/or
+ * @license This library is free software	 you can redistribute it and/or
  *      modify it under the terms of the GNU Lesser General Public
- *      License as published by the Free Software Foundation; either
+ *      License as published by the Free Software Foundation	 either
  *      version 2.1 of the License, or (at your option) any later version.
  *
  *      This library is distributed in the hope that it will be useful,
- *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      but WITHOUT ANY WARRANTY	 without even the implied warranty of
  *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  *       Lesser General Public License for more details.
  *
  *      You should have received a copy of the GNU Lesser General Public
- *      License along with this library; if not, write to the Free Software
+ *      License along with this library	 if not, write to the Free Software
  *      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+stringdisp :true;
+ 
 if get('clifford,'version)=false then (
 	load('draw),
-	load("clifford")
+	err:errcatch(
+		load("clifford.mac")
+	),
+	/*
+		"inner product",
+	infix ("º", 130, 129),	
+	"º"(a, b):= if scalarp(a) and scalarp(b) then a*b else expand((a.b + b.a)/2),
+	texput ("º", " \\circ ", infix),
+ 
+	"outer product",
+	infix("˄", 130, 129),
+	"˄"(a, b):=if scalarp(a) and scalarp(b) then 0 else expand((a.b - b.a)/2),
+	texput ("˄", " \\wedge ", infix)*/
+	"inner product",
+	infix ("|", 130, 129),	
+	"|"(a, b):= if scalarp(a) and scalarp(b) then a*b else expand((a.b + b.a)/2),
+	texput ("|", " \\circ ", infix),
+ 
+	"outer product",
+	infix("&", 130, 129),
+	"&"(a, b):=if scalarp(a) and scalarp(b) then 0 else expand((a.b - b.a)/2),
+	texput ("&", " \\wedge ", infix)
 );
 
- /*
-partition by predicate with expression reconstruction
-heuristical meaning
-*/
-oppartexp(expr, predf):=block([ lsttrue, lstfalse],
-	expr:expand(expr),
-	[ lsttrue, lstfalse]:oppart(expr, predf),
-	lsttrue:ratsimp(lsttrue),
-	lstfalse:ratsimp(lstfalse),
-	return ([ lsttrue, lstfalse])
- );
+mvect(ord) :=block([c:1 ],
+	for i:1 thru ord do c:c.(1+ asymbol[i] ),
+	expand(c)
+);
 
 
 /*
 constructs coefficient list of the vector elements
 */
-velem(expr):=block([cc:[], u : expand(expr)],
+velem(expr):=block([cc:[], u : expand((expr))],
 	for i:1 thru ndim do
-		cc:endcons(coeff (u, asymbol[i]), cc),
-	cc
+		push(coeff (u, asymbol[i]), cc),
+	reverse(cc)
 );
 
 
-gpoly(expr):=block([cc:[], u:(expr), z, len],
-	if op(u)#"." then  (
-		cc:oppartexp(u, lambda([z], freeof(".", z))),
-		u:cc[2]
-	),
-	cc:substinpart("[", u, 0),
-	len:length(cc),
-	"print(cc, len)",
-	if len>1 then (
-		z: sum (cc[i], i, 1, len),
-		cc:endcons(z, cc)
-	), 
-	"print(cc)",
-	cc:maplist (velem, cc),
-	cons(makelist(0, ndim),cc)
+gpoly(expr):=block([cc:[], r, l:1, len],
+	if atom(expr) then error("argument must be non atom"),
+	if op(expr)#"." then   
+		[l, r]:oppart(expr, lambda([z], freeof(".", z))) 
+	else  r:expr,
+	cc:inargs(r),
+	if l#'nil then cc:l*cc,
+	map(velem,cc)
 );
 
+ 
+vproject(expr, vol):=block([ee, m],
+	ee:args(vol),
+	map(lambda( [u],  m:cnorm(u), 
+					if m=0 then m:1 else m: m/abs(m),  
+					scalarpart(m*cliffsimpall(u | expr)) 
+		), ee)
+);
+
+bvproject(expr, vol):=block([ee, m, ll, gr ],
+	ee:args(vol),
+	gr:grade(expr)[3],
+	ll:map(lambda( [u],  m:cnorm(u), 
+					if m=0 then m:1 else m: m/abs(m),  
+					(m*cliffsimpall( ( gr & u) )) 
+		), ee),
+	sort(ll)
+);
+
+bvprojectred(expr, vol):=block(
+	[ee, m, ll, gr, q, res, ret:[], offset:1, w, l, r ],
+	
+	expr:cliffsimpall(expr),
+	disp(expr),
+	ee:args(vol),
+	gr:grade(expr),
+	
+	ll:map(lambda( [u],  m:cnorm(u), 
+					if m=0 then m:1 else m: m/abs(m),  
+					w:m*cliffsimpall(  gr[3] & u ), factor(w)
+		), ee),
+	ll: sort(ll),
+	display(ll),
+	
+	n:length(ll),
+	while ll[offset]=0 and offset<=ndim do offset:offset+1,
+	push(ll[offset], ret), 
+
+	for i: offset thru n do
+		for j:i+1 thru n do (
+			[q, res]: divide(cliffsimpall( ll[i]. ll[j] ), expr),		
+			if res=0 then push ( (ll[j]) /q, ret)
+			),
+	w:substinpart(".", ret, 0),
+	
+	[l, r]:oppart(w, lambda([z], freeof(asymbol, z))), 
+	display(l,r),
+	if length(r)>1 then (
+		ret:inargs(r), 
+		ret:reverse(ret),
+		ret:map(velem, ret)
+	) else ret:velem(r),
+	display(ret),
+	ret
+);
+ 
+ 
+makescene():=block([dd, xx, yy, zz],
+		dd:[0, 0, 0],
+		xx:[1, 0, 0],
+		yy:[0, 1, 0],
+		zz:[0, 0, 1],
+		[
+		dimensions = [600,800],
+        terminal   = 'png,
+		axis_3d = false,
+		user_preamble = "unset tics",
+		enhanced3d   = false, 	
+	    surface_hide = true,	
+		view = [30, 70],	
+		line_width = 2, head_angle  = 10, head_length = 0.1,
+		color = red,
+		vector(dd, xx), /* 1*/
+		vector(dd, yy), /* 2*/
+		vector(dd, zz) /* 2*/
+		]
+);
+
+makescene2d():=block([dd, xx, yy],
+		dd:[0, 0],	
+		xx:[1, 0],
+		yy:[0, 1],
+		[
+		dimensions = [600,800],
+        terminal   = 'png,
+		user_preamble = "unset tics",
+		axis_3d = false,
+		enhanced3d   = false, proportional_axes = xy,
+		line_width = 2, head_angle  = 10, head_length = 0.1,
+		color = red,
+		vector(dd, xx), /* 1*/
+		vector(dd, yy) /* 2*/
+		]
+);
 
 /*
 draws a vector
 opt - selects the subspace to draw - list of indices
 */
-vdraw(expr, [opt]):=block( [scenes:[], cc, cc1, m:1, dd, n:0, cstr],
+vdraw(expr, [opt]):=block( [scenes:[], cc:[], ve, m:1, dd, n, cstr],
 	if not listp(expr) then expr:[expr],
-	m:length(expr),
-	for j:1 thru m do (
-		cc:[], cc1:[], 
-		"print(expr[j])",
-		cc:velem(expand(expr[j])),
-		dd:makelist(0, ndim),
-		if not emptyp(opt) then n:length(opt),
-		if n>ndim then (
-			for i:1 thru n do
-				cc1[i]:cc[opt[1]],
-			cc:cc1
-		),
-		"cstr:string(tex(expr[j], false))",
-		cstr:(string(expr[j])),
-		scenes:cons([ 
-			  label(cons(cstr, makelist(1.25*cc[i],i,ndim) )),
+	n: min(ndim, 3),
+	if not emptyp(opt) then 
+		opt:opt[1] 
+	else 
+		if ndim<=2 then opt:asymbol[1].asymbol[2] 
+		else  opt:asymbol[1].asymbol[2].asymbol[3],
+	
+	if n=2 then 
+		scenes:makescene2d()
+	else if n=3 then 
+		scenes:makescene(),
+		
+	dd:makelist(0, n),		
+
+	for ve in expr do (
+		cstr:(string(ve)),		
+		ve: expand(ve),					
+		cc: vproject(ve, opt),
+		
+		push([ 
+			font_size = 8,
+			label(cons(cstr, makelist(1.5*cc[i], i, length(cc)) )),
 			  color = blue,
-			  head_length = 0.2,
-			  head_angle  = 20,
+			  head_length = 0.1,
+			  head_angle  = 10,
 			  line_width = 3,
 			  head_type = 'filled,
-			  vector(dd, cc)], scenes
-		)
+			  vector(dd, cc)], 
+			  scenes)
 	),
+	
 	if ndim<=2 then 
 		wxdraw2d(scenes) 
 	else
+		wxdraw3d(scenes),
+	scenes
+);
+
+/*
+draws a bi-vector
+*/
+vdraw21(expr, [vol]):=block( [scenes:[], ve, n:0, v1:0, v2:0, v3,  listarith:true ],
+	if not listp(expr) then expr:[expr],
+	n: min(ndim, 3),
+	if not emptyp(vol) then 
+		vol:vol[1] 
+	else 
+	  vol:asymbol[1].asymbol[2].asymbol[3],
+	  
+	dd:makelist(0, n),	
+	scenes:makescene(),
+	
+	if ndim>= 3 then (
+		for ve in expr do (
+			[v1, v2]: bvprojectred(ve, vol),
+			v3:v1+v2,
+			/*display(v1, v2, v3),*/
+			cstr:(string(ve)),	
+			push([ 
+				  font_size = 8,
+				  label(cons(cstr,  1.25*v3 )),  /* 1*/
+
+				  line_width = 2,
+				  head_angle  = 10,
+				  head_length = 0.1,
+				  color = blue,
+				  vector(dd, v1), /* 2*/
+				  vector(dd, v2), /* 3*/
+				  color =blue,
+				  quadrilateral ( dd, v1, v2, v3)  /* 4*/
+				  ], scenes
+			)
+		),
 		wxdraw3d(scenes)
+	),
+	scenes
 );
 
 
 /*
 draws a bi-vector
 */
-vdraw2(expr):=block( [scenes:[], cc, cc1, m:1, dd, n:0],
+vdraw2(expr):=block( [scenes:[], v1:0, v2:0, v3, ve,  listarith:true],
 	if not listp(expr) then expr:[expr],
-	m:length(expr),
-	for j:1 thru m do (
-		cc:gpoly(expr[j]),
-		print(cc),
-		cstr:(string(expr[j])),
-		scenes:cons([ 
-			  label(cons(cstr,  1.25*cc[3] )),
-			  color = blue,
-			  fill_color =red,
-			  fill_density=0.5,
-			  line_width = 2,
-			  quadrilateral (cc[1], cc[2], cc[3], cc[4]) ], scenes
-		)
-	),
-	if ndim<=2 then 
-		wxdraw2d(scenes) 
-	else
+	scenes:makescene(),
+	
+	dd:makelist(0, 3),	
+ 
+	if ndim>= 3 then (		
+		for ve in expr do (
+			[v1, v2]:gpoly((ve)),
+			v3:v1+v2,
+			"disp(ve, v1, v2, v3)",
+			cstr:(string(ve)),
+			push([ 
+				  font_size = 8,
+				  label(cons(cstr,  1.25*v3)),  
+				  color = blue,
+				  proportional_axes = xyz,
+				  transparent = false,
+				  fill_color =red,
+				  fill_density=1,
+				  line_width = 2,
+				  head_angle  = 10,
+				  head_length = 0.1,
+				  vector(dd, v1), 
+				  vector(dd, v2),  
+				  quadrilateral ( dd, v1, v2, v3)  
+				], scenes
+			)
+		),	
 		wxdraw3d(scenes)
+	),
+	scenes
 );
+
+put('clidraw, 'v10,'version);
+put('clidraw, "Dimiter Prodanov", 'author);
+put('clidraw, "(C) - Dimiter Prodanov, 2015", 'copyright);
+
+disp("package name: cliffordan.mac");
+disp("author: ", get('clidraw,'author));
+disp("version:", get('clidraw,'version));
+disp("Recommended location: share/contrib");
+disp("last update: 15 Dec 2015");
