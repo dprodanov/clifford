@@ -3,7 +3,7 @@ Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
 tests for version
- v 1.8
+ v 1.9
  
 usage:
 file_search_maxima: append (file_search_maxima,["/path/to/clifford.mac"]);
@@ -38,7 +38,7 @@ batch("rtest_clifford", test);
   'done);
 'done$
 get('clifford,'version);
-v18$
+v19$
 /* init clifford" */
 (clifford(e,1,1,1),
 aform);

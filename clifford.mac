@@ -836,22 +836,27 @@ idemp(u):=block([v, ret],
 /* 
  constructs a vector
 */
-cvect(x, [cc]):=block ([ss:0],
+cvect(x, [cc]):=block ([ss:0, qq],
 	if emptyp(cc) then
 		ss:sum (x[i]*asymbol[i], i, 1, ndim)
 	else (
 		cc:cc[1],
 		for i:1 thru length(cc) do 
-			if not emptyp(cc[i]) then
-			ss: ss+ x[ cc[i] ]*asymbol[i]
+			if not emptyp(cc[i]) then (
+				qq:subst(x=cc[i], buildq([x], declare(x, scalar))),
+				ev(qq, nouns),
+				ss: ss+ x[ cc[i] ]*asymbol[i]
+			)
 		),
+	qq:buildq([x], declare(x, scalar)),
+	ev(qq, nouns),
 	ss
 );
 
 /* 
  constructs a multivector
 */
-celem(x, [cc]):=block([ee, ss:0, n],
+celem(x, [cc]):=block([ee, ss:0, n, qq],
 	 ee:elements(all),
 	n:length(ee),
 	if emptyp(cc) then
@@ -859,9 +864,14 @@ celem(x, [cc]):=block([ee, ss:0, n],
 	else (
 		cc:cc[1],
 		for i:1 thru length(cc) do 
-			if not emptyp(cc[i]) then
-			ss: ss+ x[ cc[i] ]*ee[i]
+			if not emptyp(cc[i]) then (
+				qq:subst(x=cc[i], buildq([x], declare(x, scalar))),
+				ev(qq, nouns),
+				ss: ss+ x[ cc[i] ]*ee[i]
+			)
 		),
+	qq:buildq([x], declare(x, scalar)),
+	ev(qq, nouns),
 	ss
 );
 
@@ -913,7 +923,7 @@ rotate(a, v):=block ([ m:cnorm(v)],
 	cliffsimpall(v.a.creverse(v)/m)
 );
 
-put('clifford, 'v18,'version);
+put('clifford, 'v19,'version);
 put('clifford, "Dimiter Prodanov", 'author);
 put('clifford, "(C) - Dimiter Prodanov, 2015", 'copyright);
 
@@ -921,4 +931,4 @@ disp("package name: clifford.mac");
 disp("author: ", get('clifford,'author));
 disp("version:", get('clifford,'version));
 disp("Recommended location: share/contrib");
-disp("last update: 14 Nov 2015");
+disp("last update: 19 Dec 2015");
