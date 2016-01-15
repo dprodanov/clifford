@@ -31,16 +31,7 @@ if get('clifford,'version)=false then (
 	err:errcatch(
 		load("clifford.mac")
 	),
-	/*
-		"inner product",
-	infix ("º", 130, 129),	
-	"º"(a, b):= if scalarp(a) and scalarp(b) then a*b else expand((a.b + b.a)/2),
-	texput ("º", " \\circ ", infix),
  
-	"outer product",
-	infix("˄", 130, 129),
-	"˄"(a, b):=if scalarp(a) and scalarp(b) then 0 else expand((a.b - b.a)/2),
-	texput ("˄", " \\wedge ", infix)*/
 	"inner product",
 	infix ("|", 130, 129),	
 	"|"(a, b):= if scalarp(a) and scalarp(b) then a*b else expand((a.b + b.a)/2),

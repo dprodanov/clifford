@@ -72,30 +72,14 @@ stringdisp:true;
 	infix("&", 130, 129),
 	"&"(a, b):=if scalarp(a) and scalarp(b) then 0 else expand((a.b - b.a)/2),
 	texput ("&", " \\wedge ", infix)
-	/*
-	"inner product",
-	infix ("º", 130, 129),	
-	"º"(a, b):= if scalarp(a) and scalarp(b) then a*b else expand((a.b + b.a)/2),
-	texput ("º", " \\circ ", infix),
- 
-	"outer product",
-	infix("˄", 130, 129),
-	"˄"(a, b):=if scalarp(a) and scalarp(b) then 0 else expand((a.b - b.a)/2),
-	texput ("˄", " \\wedge ", infix)
-	*/
+
 );
-/*
-inprod(a,b)::=buildq([a,b],"º"(a, b));
-wedgeprod(a,b)::=buildq([a,b],"˄"(a, b));	  
-*/
+
 inprod(a,b)::=buildq([a,b],"|"(a, b));
 wedgeprod(a,b)::=buildq([a,b],"&"(a, b));	  
 
 
-
-inop(expr):= if not mapatom (expr)  then 
-	inpart(expr, 0)
-	else 'nil;
+inop(expr):= if not mapatom (expr)  then inpart(expr, 0) else 'nil;
 
 inargs(expr):= if not mapatom (expr)  then  substinpart( "[", expr, 0) else 'nil;
 
@@ -266,25 +250,24 @@ dotinvsimp(ab):=block( [a,b,c,s],
 Clifford inverse
 */
 cinv(ab):=block( [s, b, u:1],
- if atom(ab) or freeof(asymbol, ab) then 
- if ab#0 then return(1/ab) else return('nan),
-  b:cconjugate(ab),
-  s:expand(b.ab),
-  if not freeof(asymbol, s) then s: apply1(s, clifsimp10, clifsimp2),
-  
-  /*display(s),
-  if s-scalarpart(s)#0 then ( 
-	u:creverse(s),
-	s:expand(s.u),
-	s: apply1(s, clifsimp10),
-	print(s)
-  ),*/
-  if s#0 then (
-	b:expand(b.u),
-	b:apply1(b, clifsimp10),
+	if atom(ab) or freeof(asymbol, ab) then 
+	if ab#0 then return(1/ab) else return('nan),
+	"first attempt - conjugattion",
+	b:cconjugate(ab),
+	s:expand(b.ab),
+	if not freeof(asymbol, s) then s: apply1(s, clifsimp10, clifsimp2),
+	"second attempt - reversal",
+	if not freeof(asymbol, s) then (
+	   b:creverse(ab),
+	   s:expand(b.ab),
+	   if not freeof(asymbol, s) then s: apply1(s, clifsimp10, clifsimp2)
+	),
+	if _debug=true then  display(s),
+	if s#0 and freeof(asymbol, s) then
 	return(b/s)
-  )else return(1/ab)
+	else return(1/ab)
 );
+
 
 
 /*
@@ -305,12 +288,9 @@ powsimp(aa):=block( [a,k,p],
  );
 
 
-
 if get('clifford,'version)=false then (
 	tellsimp(aa[kk].aa[kk], signature[kk] ),
 	tellsimpafter(aa[kk].aa[mm], dotsimp2(aa[kk].aa[mm])),
-	/*tellsimpafter(bb.cc, dotsimp2(bb.cc)),*/
-	/*tellsimpafter(bb.aa.cc, apply1(bb.aa.cc, clifsimp10)),*/
 	tellsimpafter(bb.ee.cc, dotsimpc(bb.ee.cc)),
 	tellsimpafter(aa[kk]^nn, powsimp(aa[kk]^nn)),
 	tellsimpafter(aa[kk]^^nn, powsimp(aa[kk]^^nn))
@@ -398,7 +378,6 @@ makebasis(var):= block([ ee],
 );
 
 
-
 /*
 constructs the pseudoscalar of the algebra
 */
@@ -420,23 +399,6 @@ release():=block(
 	rem('clifford,'author),
 	rem('clifford,'copyright)
 );
-
-clidecode(ab):=block([r, l, aa, ret],
-  [l, r]: oppart(ab, lambda([u], freeof(asymbol, u))),
-  if l#nil then l: signum(l) else l:1,
-  if r#'nil then (
-	r:dotsimpc(r),
-	if not freeof(".", r) then (
-		r:maplist(lambda([u], aa:args(u), 2^aa[1]), r),
-		ret:l*(substinpart("+", r, 0))
-	) else (
-		aa:args(r), 
-		ret: l*2^aa[1]
-	)
- ) else ret:1,
- ret
-);
-
 
 
 /*
@@ -464,12 +426,17 @@ countsym(ab, sym):=block([sop, a, b, s:0, inflag:true ],
 grade decomposition of expressions
  new implementation
  */
-grade(expr):=block([c, sop, k],
+grade(expr, [gradexpand]):=block([c, sop, k ],
 	local(c),
 	if ndim=0 then error("ndim =0"),
 	array(c, fixnum, ndim),
+	
+	if emptyp(gradexpand) then gradexpand:true
+	else gradexpand:gradexpand[1],
+	
 	if not mapatom(expr) then 
-		expr:expand(expr),
+	if gradexpand then expr:expand(expr),
+	
 	sop: inop(expr),
 	if sop="+" then (
 		for v in expr do (
@@ -492,48 +459,67 @@ maxgrade(expr):=countsym(expr, asymbol);
 /*
  Partial factoring by subexpression
 */
-factorby(expr, z):=block([quot, res, ret ],
-	if not listp(z) then (
-		[quot, res]:divide(expr, z),
-		ret:factor(quot)*z+factor(res) 
-	) else (
-		if not emptyp(z) then z:flatten(z)
-		else return(expr),
-		[quot, res]:divide(expr, z[1]),
-		if length(z)>1 then
-			res:factorby(res, rest(z)),
-		ret:factor(quot)*z[1]+res
+factorby(expr, z):=block([quot, res, ret, ee, n, sop ],
+	if atom(expr) then 
+		ret:expr
+	else (
+		if listp(z) then z:flatten(z)
+		else z:[z],	
+		sop:op(expr),
+		if _debug=true then display(expr, sop ),
+		if sop="*" then 
+			ret:(map( lambda([u], factorby(u, z) ), expr))
+		else if sop="/" then 
+			ret:factorby(num(expr), z)/factorby(denom(expr), z)
+		else	if sop="^" then (
+			[ee, n]:args(expr),
+			ret:factorby(ee, z),
+			ret:ret^n
+		) else (
+			[quot, res]:divide(expr, z[1]),
+			if length(z)>1 then
+				res:factorby(res, rest(z)),
+			ret:factor(quot)*z[1]+res
+		)
 	),
 	ret
 );
+
+declare (quotsimp, evfun);
+quotsimp(expr):=block([quot, res, dd:denom(expr) ],
+	[quot, res]:divide(expr, dd),
+	factor(quot)*factor(dd)+factor(res)
+);
+
+
+simpfact(expr, z):=block([ret:expr],
+	ret:factor(ret),
+	scanmap(lambda([u], factorby(u, z)), ret)
+);
  
-/*
+/* if _debug=true then 
 computes the element decomposition
 */
-clicoeff(expr, smat):=block([c, ee, sop,  r, l,  lst ],
+clicoeff(expr, smat):=block([c, ee, sop,  r, l, u, elst, lst, use_fast_arrays:false ],
 	local(c, ee),
-	c:make_array(hashed, 2^ndim),
-	ee:make_array(hashed, 2^ndim),
+	
 	if not mapatom(expr) then 
 		expr:expand(expr),
-	if emptyp(%elements) then 
-		%elements:elements(),
-	expr:factorby(expr, %elements),
 	sop: inop(expr),
 	if sop="+" then (
-		lst: inargs( (expr)),
-		for v in lst do (				 
-			if _debug=true then  display( v),
+		lst: inargs( (expr)),		
+		for v in lst do (	
+			if _debug=true then display( v),
 			if freeof (asymbol, v ) then (
-				if c[1]=false  then c[1]:v else
+				if c[1] =arraymake (c, [1]) then 	c[1]:0,	
 				c[1]:c[1]+v,
-				if ee[1]=false  then ee[1]:1
+				ee[1]:1
 			) else (
-				[l,r]: oppart (v, lambda ([u], freeof(asymbol, u))),
-				if _debug=true then display(r,l),
-				if c[r]=false  then c[r]:l else
-				c[r]:c[r] +l,
-				if ee[r]=false  then ee[r]:r
+				[l,r]: oppart (v, lambda ([u], freeof(asymbol, u))),		
+				ee[r]:r,	
+				if c[r] =arraymake (c, [r]) then 	c[r]:0,			
+					c[r]:c[r] +l,				
+				if _debug=true then display(r,l, ee[r], c[r] )	
 			)
 		)
 	)else ( "simple expression, separate",
@@ -549,10 +535,13 @@ clicoeff(expr, smat):=block([c, ee, sop,  r, l,  lst ],
 		 )
 	),
 	lst:listarray(c),
+	lst:subst(false=0, lst),
+	elst:listarray(ee),
+	elst:unique (elst),
 	if smat='list then 
-		[listarray(ee), lst]	
+		[elst, lst]	
 	else if smat='mat then  
-		[listarray(ee), transpose(matrix(lst))]
+		[elst, transpose(matrix(lst))]
 );
 
 /*
@@ -561,6 +550,9 @@ computes the blade decomposition
 bdecompose(expr):=block([gr:expr],
 	if not freeof(".", expr) then 
 		gr: expand(expr),
+if emptyp(%elements) then 
+		%elements:elements(), 
+	gr:map( lambda([v], factorby(v, %elements) ), gr ),
 	gr:grade(gr),
 	map(lambda([z], clicoeff(z, 'mat)),gr)
 );
@@ -690,9 +682,7 @@ cliabs(x):=block([u:expand(x)],
 */
 scprod(x, y):=block([u:expand(x), v:expand(y)],
 	u:expand(cconjugate(u).v),
-	u:scalarpart(u),
-	u:sqrt(u),
-	radcan(u)
+	u:scalarpart(u)
 );
 
 /**
@@ -708,20 +698,25 @@ multtrace():=block([s:[1], lst],
 cnorm(x):=block([u:expand(x), z, v],
 	u:expand(u. cconjugate(u)),
 	u:cliffsimpall(u),
-	if not freeof (".", u) then 
-		error ("not free of non-scalars "),
+	u:expand(u),
+	/*if not freeof (".", u) then 
+		error ("not free of non-scalars "), */
 	u:scalarpart(u),
 	u:ratsimp(u)
 );
-	
-/**
-norm^2, experimental
- */
-cnorm1(x):=block([u:expand(x), sgn:sign(%ivnorm) ],
-	 psnorm (u, sgn)
+
+cnorm2(x):=block([u:expand(x), z, v],
+	u:expand(u. creverse(u)),
+	u:cliffsimpall(u),
+	/*if not freeof (".", u) then 
+		error ("not free of non-scalars "), */
+	u:expand(u),
+	u:scalarpart(u),
+	u:ratsimp(u)
 );
 
-psdet():=product(aform[k,k], k, 1, ndim);
+	
+
 
 /*
 symmetric bilinear form of the algebra; 
@@ -782,11 +777,12 @@ scalarpart(v):=block([ r, l, sop ],
  scalar part
 */
 nscalarpart(v):=block([ r, l, sop ],
-	if freeof(asymbol, v) then return (v),
+	if freeof(asymbol, v) then return (0),
 	if not freeof(".", v) then v:expand(v),
 	sop: inop(v),
 	if sop="+" then (
-		[r,l]: oppart(v, lambda([u], not freeof(asymbol, u))),
+		[r,l]: oppart(v, lambda([u],  not freeof(asymbol, u))),
+		/*display(r,l),*/
 		r:subst('nil=0, r)
 	) else 
 		if not freeof(asymbol, v) then  r:v 
@@ -860,13 +856,15 @@ celem(x, [cc]):=block([ee, ss:0, n, qq],
 	 ee:elements(all),
 	n:length(ee),
 	if emptyp(cc) then
-		sum (x[i]*ee[i], i, 1, n)
+		ss:sum (x[i]*ee[i], i, 1, n)
 	else (
 		cc:cc[1],
 		for i:1 thru length(cc) do 
 			if not emptyp(cc[i]) then (
-				qq:subst(x=cc[i], buildq([x], declare(x, scalar))),
-				ev(qq, nouns),
+				if symbolp(cc[i]) then (
+					qq:subst(x=cc[i], buildq([x], declare(x, scalar))),
+					ev(qq, nouns)
+				),
 				ss: ss+ x[ cc[i] ]*ee[i]
 			)
 		),
