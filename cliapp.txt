@@ -38,9 +38,3 @@ idempotent(k):=block(
 	else [1]
 );
 
-
-scdiff( f, x, k, n):= asymbol[k] ~ diff(f,x,n);
-scdiff1( f, x, k):= asymbol[k] ~ diff(f,x);
-vdiff( f, x, k, n):= asymbol[k] & diff(f,x,n);
-vdiff1( f, x, k):= asymbol[k] & diff(f,x);
-
