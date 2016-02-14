@@ -1,0 +1,82 @@
+/* Copyright (C) 2015 Dimiter Prodanov
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU General Public License for more details.
+ *
+ * Clfford 1.0 demo based on atensor demo by Viktor T. Toth  
+ */
+
+if get('clifford,'version)=false then load("clifford");
+
+("\Cliford implements Clifford algebra for Maxima.")$
+
+("Let us begin with the complex algebra")$
+clifford(e,0,1,0);
+
+("complex multiplication table")$
+mtable2();
+
+("split-complex algebra")$
+clifford(e,1,0,0);
+
+("split-complex multiplication table")$
+mtable2();
+
+("dual number algebra")$
+clifford(e,0,0,1);
+
+("dual number full  multiplication table")$
+mtable2();
+
+("Quaternion algebra")$
+clifford(e,0,2,0);
+
+("here are all elements of the algebra")$
+elements();
+
+("quaternion multiplication table")$
+mtable2();
+
+("anticommutativity")$
+e[2].e[1];
+
+e[1].e[2].e[1].e[2];
+("simplification of products")$
+e[1].e[2].e[1].e[2], dotsimpc;
+e[2].e[1].e[1].e[2];
+e[2].e[1].e[1].e[2], dotsimpc;
+
+("simplification of inversions")$
+1/e[2] ;
+1/e[2], dotinvsimp;
+1/(e[1].e[2]);
+1/(e[1].e[2]), dotinvsimp;
+
+("full simplification")$
+1/(1+e[1]);
+1/(1+e[1]), cliffsimpall;
+
+("scalar product")$
+e[1]*e[2];
+(1+e[1])*(1+e[1]),expand;
+
+("outer product")$
+e[1] & e[2];
+(1+e[1])&(1+e[1]),expand;
+("computation of Quaternion inverses")$
+block(
+	declare([a,b,c,d],scalar),
+	cc:cc:a+b*e[1]+c*e[2]+d*e[1].e[2],
+	dd:cinv(cc)
+);
+("checking the result")$
+dd.cc, expand, ratsimp;
+%,cliffsimpall;
+/* End of demo -- comment line needed by MAXIMA to resume demo menu */
