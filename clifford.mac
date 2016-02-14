@@ -157,7 +157,7 @@ dotsimpc(ab):=block([ba, c:1, v, w:1, q, r, l, sop],
   mode_declare(w, fixnum),
   mode_declare([r,l], any),
   sop:inop(ab),
-   if mapatom(ab) or freeof(".", ab) or sop='nil then return(ab),
+   if mapatom(ab) or freeof(".", ab) or sop='nil or sop="^"  or sop="^^" then return(ab),
   if sop="+" then 
 	map(dotsimpc, ab)
   else if sop="*" then (
@@ -193,20 +193,21 @@ permsign(arr):=block([k:0, len] ,
 /*
 simplification rules
 */
-matchdeclare(dd, lambda([u],  freeof(asymbol, u)), rr, realp);
+matchdeclare(dd, lambda([u],  freeof(asymbol, u)), rr, realp, 
+	ds, lambda([u],  not freeof(asymbol, u) and not (freeof("^",u) or freeof("^^",u) ) ) );
 defrule (clifsimp1, dd*aa, dd.dotsimpc(aa));
 defrule (clifsimp11, bb.aa, bb.dotsimpc(aa));
 defrule (clifsimp10, aa, dotsimpc(aa));
 defrule (clifsimp2, dd/aa, dd * dotinvsimp(1/aa));
 defrule (clifsimp21, bb/aa, bb . dotinvsimp(1/aa));
-
+defrule (clifsimp3, ds,  powsimp(ds));
 
 
 /*
 full simplification of expressions
 */
 declare (cliffsimpall, evfun);
-cliffsimpall(expr):=block([res, aa, bb, sop],
+cliffsimpall(expr):=block([res, aa, bb, sop, simp:true],
 	sop:inop(expr),
 	if equal(sop, "=") then (
 		aa:cliffsimpall(lhs(expr)),
@@ -214,7 +215,7 @@ cliffsimpall(expr):=block([res, aa, bb, sop],
 		return( aa= bb)
 	) else (
 		res:expand(expr),
-		res:apply1(res, clifsimp21, clifsimp2),
+		res:apply1(res, clifsimp3, clifsimp21, clifsimp2),
 		res:apply1(res,  clifsimp10, clifsimp1),
 		ratsimp(res)
 	)
@@ -273,17 +274,15 @@ cinv(ab):=block( [s, b, u:1],
 /*
 simplification of exponents
 */
-powsimp(aa):=block( [a,k,p],
+powsimp(aa):=block( [a,k,p:1],
   if atom(aa) then return(aa),
   if op(aa)="^^" or op(aa)="^" then (
 	  a:inpart(aa,1),
 	  k:inpart(aa,2),
-	  p:inpart(a,1),
-	  if _debug=true then print(a,k,p),
-	  if not integerp(k) then return(aa),
-	  if evenp(k) then 
-	  signature[p]^fix(k/2) 
-  else  signature[p]^fix(k/2)*a )
+	  for j:1 thru k do
+		p:p.a,
+		dotsimpc(p)
+	   )
   else aa
  );
 
@@ -332,7 +331,7 @@ clifford(var, [lsig]):=block([m, a, p:0, n:0, r:0, s:1],
 	makebasis(var),
 	signature:makelist(a[i,i], i, m),
 	%iv:pscalar(),
-	aform:genmatrix (a, m, m),
+	/*aform:genmatrix (a, m, m),*/
 	%ivnorm:dotsimpc(%iv.%iv),
 	%elements:elements(),
 	signature
@@ -345,11 +344,11 @@ sets the signature of the algebra
 set_signature(arr):=block(
 	if not listp(arr) or length(arr)#ndim then return(false),
 	signature:arr,
-	for i:1 thru ndim do
-		aform[i,i]:arr[i],
+	/*for i:1 thru ndim do
+		aform[i,i]:arr[i],*/
 	%iv:pscalar(),
 	%ivnorm:dotsimpc(%iv.%iv),
-	aform
+	"aform"
 );
 
 /*
@@ -357,7 +356,7 @@ toggles the signature of the algebra
 */
 toggle_signature():=block(
 	signature:-signature,
-	aform:-aform,
+	/*aform:-aform,*/
 	%iv:pscalar(),
 	%ivnorm:dotsimpc(%iv.%iv)
 );
@@ -454,14 +453,23 @@ grade(expr, [gradexpand]):=block([c, sop, k ],
 /*
 maximal grade of an expression
 */
-maxgrade(expr):=countsym(expr, asymbol);
+maxgrade(expr):=block([lst],
+	if inop(expr)="+" then (
+		lst:maplist(maxgrade, expr),
+		lmax(lst)
+	) else 
+		countsym(expr, asymbol)
+);
 
 /*
  Partial factoring by subexpression
 */
 factorby(expr, z):=block([quot, res, ret, ee, n, sop ],
-	if atom(expr) then 
-		ret:expr
+	if atom(expr) then return (expr),
+	if matrixp(expr) then 
+		return(matrixmap(lambda([u], factorby(u, z)), expr)),
+	if listp(expr) then 
+		ret: maplist(lambda([u], factorby(u, z)), expr)
 	else (
 		if listp(z) then z:flatten(z)
 		else z:[z],	
@@ -497,12 +505,11 @@ simpfact(expr, z):=block([ret:expr],
 	scanmap(lambda([u], factorby(u, z)), ret)
 );
  
-/* if _debug=true then 
+/* 
 computes the element decomposition
 */
 clicoeff(expr, smat):=block([c, ee, sop,  r, l, u, elst, lst, use_fast_arrays:false ],
 	local(c, ee),
-	
 	if not mapatom(expr) then 
 		expr:expand(expr),
 	sop: inop(expr),
@@ -511,7 +518,7 @@ clicoeff(expr, smat):=block([c, ee, sop,  r, l, u, elst, lst, use_fast_arrays:fa
 		for v in lst do (	
 			if _debug=true then display( v),
 			if freeof (asymbol, v ) then (
-				if c[1] =arraymake (c, [1]) then 	c[1]:0,	
+				if c[1] =arraymake (c, [1]) then c[1]:0,	
 				c[1]:c[1]+v,
 				ee[1]:1
 			) else (
@@ -550,8 +557,8 @@ computes the blade decomposition
 bdecompose(expr):=block([gr:expr],
 	if not freeof(".", expr) then 
 		gr: expand(expr),
-if emptyp(%elements) then 
-		%elements:elements(), 
+	if emptyp(%elements) then 
+			%elements:elements(), 
 	gr:map( lambda([v], factorby(v, %elements) ), gr ),
 	gr:grade(gr),
 	map(lambda([z], clicoeff(z, 'mat)),gr)
@@ -560,6 +567,7 @@ if emptyp(%elements) then
 /*
 Clifford reverse of expressions
 */
+/* canonical implementation*/
 creverse(x):=block ([l, v:0, len, k],
 	if not freeof(".",x) then 
 		l:grade(expand(x))
@@ -574,6 +582,26 @@ creverse(x):=block ([l, v:0, len, k],
 	v
 );
 
+/* functional implementation*/
+declare (dotreverse, evfun);
+dotreverse(expr):=block ( [ret, l, r],
+	if not freeof(".", expr) then 
+		ret: expand(expr) 
+	else ret:expr,
+	if matrixp(expr) then
+		return(matrixmap(dotreverse, expr )),
+	if inop(ret)="+" or listp(ret) then 
+		map(dotreverse, ret )
+	else (
+		[l, r]: oppart(ret, lambda([u], freeof(asymbol, u))),
+		if l='nil then l:1,
+		if r#'nil then (
+			r:reverse(r), 
+			r:dotsimpc(r) 
+		) else r:1,
+		l*r
+	) 
+);
 
 /*
 Clifford involution of expressions
@@ -582,12 +610,14 @@ cinvolve(x):=block ( [ret],
 	if not freeof(".",x) then 
 		ret: expand(x) 
 	else ret:x,
+	/* odd productts negate, even products are the same*/
 	subst(asymbol=lambda([k], - subvar (asymbol, k) ), ret)
 );
 
 /*
 Clifford conjugate of expressions
 */
+/* canonical implementation*/
 cconjugate(x):=block ([l, v:0, len, k],
 	if not freeof(".",x) then 
 		l: grade(expand(x))
@@ -602,6 +632,12 @@ cconjugate(x):=block ([l, v:0, len, k],
 	v
 );
 
+/* functional implementation*/
+declare (dotconjugate, evfun);
+dotconjugate(expr):=block([ret],
+	ret: cinvolve(expr),
+	dotreverse(ret)
+);
 
 /*
 constructs all  irreducible elements of the algebra,
@@ -679,10 +715,26 @@ cliabs(x):=block([u:expand(x)],
 
 /**
  scalar product
-*/
+
 scprod(x, y):=block([u:expand(x), v:expand(y)],
 	u:expand(cconjugate(u).v),
 	u:scalarpart(u)
+);
+*/
+
+prodecomp(x, y):=block( [n:maxgrade(x), m:maxgrade(y), ret, qq , p, l, r  ],
+	ret: (expand(x.y)),
+	if not freeof(".", ret) then (
+		ret:dotsimpc(ret),
+	 [l, r]:oppart (ret, lambda ([u],  maxgrade(u)<=abs(n-m) )),
+	 [p, r]:oppart (r, lambda ([u],  maxgrade(u)>= (n+m) )),
+	 p:subst(nil=0, p),
+	 [l, p]
+	)
+	else (
+		qq: expand(y.x),
+		[ ratsimp ((ret+qq)/2), ratsimp((ret-qq)/2) ]  
+	)
 );
 
 /**
@@ -716,8 +768,6 @@ cnorm2(x):=block([u:expand(x), z, v],
 );
 
 	
-
-
 /*
 symmetric bilinear form of the algebra; 
 */
@@ -923,10 +973,10 @@ rotate(a, v):=block ([ m:cnorm(v)],
 
 put('clifford, 'v19,'version);
 put('clifford, "Dimiter Prodanov", 'author);
-put('clifford, "(C) - Dimiter Prodanov, 2015", 'copyright);
+put('clifford, "(C) - Dimiter Prodanov, 2015 - 2016", 'copyright);
 
 disp("package name: clifford.mac");
 disp("author: ", get('clifford,'author));
 disp("version:", get('clifford,'version));
 disp("Recommended location: share/contrib");
-disp("last update: 19 Dec 2015");
+disp("last update: 16 Jan 2016");
