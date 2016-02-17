@@ -3,7 +3,7 @@ Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
 tests for version
- v 1.9
+ v 1.5
  
 usage:
 file_search_maxima: append (file_search_maxima,["/path/to/clifford.mac"]);
@@ -39,12 +39,17 @@ batch("rtest_clifford", test);
 'done$
 get('clifford,'version);
 v19$
-/* init clifford" 
-(clifford(e,1,1,1),
-aform);
-matrix([1,0,0],[0,-1,0],[0,0,0])$*/
-(clifford(e,1,1,1),
-elements());
+permsign([a,c,b]);
+-1$
+permsign([a,b,c]);
+1$
+permsign([a,b,c*d]);
+0$
+/* init clifford" */
+clifford(e,1,1,1);
+[1,-1,0]$
+/*matrix([1,0,0],[0,-1,0],[0,0,0])$*/
+elements();
 [e[1],e[2],e[3],e[1] . e[2],e[1] . e[3],e[2] . e[3],e[1] . e[2] . e[3]]$
 /* clifford product tests" */
 e[1].e[1];
@@ -55,47 +60,6 @@ e[3].e[3];
 0$
 e[2].e[1];
 -e[1] . e[2]$
-/* inner product tests 
-e[1] ~ e[1] ~ e[1];
-e[1]$
-e[1] ~ e[1] ~ e[1] ~ e[1];
-1$
-e[1] ~ e[2];
-0$
-e[1] ~ e[1];
-1$
-e[1] ~ e[2];
-0$
-e[1] ~ e[1];
-1$
-e[3] ~ e[3];
-0$
-*/ 
-e[1] | e[1] | e[1];
-e[1]$
-e[1] | e[1] | e[1] | e[1];
-1$
-e[1] | e[2];
-0$
-e[1] | e[1];
-1$
-e[1] | e[2];
-0$
-e[1] | e[1];
-1$
-e[3] | e[3];
-0$
-/* outer product tests 
-*/
-e[3] & e[3];
-0$
-e[1] & e[1];
-0$ 
-/* mixed product tests 
-*/
-(e[1] & e[2]) | e[3];
-e[1] . e[2] . e[3]$
-/* explicit simplificaton tests*/
 dotsimpc(e[2] . e[1] . e[2]);
 e[1]$
 e[1].e[2].e[1];
@@ -108,25 +72,16 @@ e[1].e[1].e[2].e[1].e[2];
 e[1]$
 e[1].e[1].e[1].e[2].e[1];
 -e[2]$
-/* Jacobi identity*/
-aa & bb  & cc+ cc & aa & bb +bb & cc& aa;
-0$
-e[1] & e[2]  & e[3]+  e[3]& e[1] & e[2] +e[2] & e[3] & e[1];
-0$
-/* complex tests*/
-block(
-declare([a,b,c,d],scalar),
-cc:a+b*e[1]+c*e[2]+d*e[1].e[2],
-dd:cinv(cc),
-expand(dd)
-);
-a/(a^2-b^2+c^2-d^2)-(e[1]*b)/(a^2-b^2+c^2-d^2)-(e[2]*c)/(a^2-b^2+c^2-d^2)-((e[1] . e[2])*d)/(a^2-b^2+c^2-d^2)$
-dd.cc, expand, ratsimp, cliffsimpall;
-1$
-grade(cc);
-[a,e[1]*b+e[2]*c,(e[1] . e[2])*d, 0]$
-(grade(dd)-
-[a/(a^2-b^2+c^2-d^2),- (e[1]*b/(a^2-b^2+c^2-d^2))- e[2]*c/(a^2-b^2+c^2-d^2),- (e[1] . e[2]*d)/(a^2-b^2+c^2-d^2),0]),ratsimp;
-[0,0,0,0]$
-grade(e[1] . e[2]/5);
-[0,0,e[1] . e[2]/5,0]$
+clifford(e,3,1);
+[1,1,1,-1]$
+dotsimpc(e[2] . e[1] . e[2]. e[3]);
+-e[1] . e[3]$
+oppart(e[2] . e[1] *x. e[2]. e[3], lambda([u], freeof(".", u)));
+[-1,(e[1] . e[2])*(e[2] . e[3] . x)]$
+dotsimpc(e[2] . e[1] . e[2]. e[3]*x);
+-(e[1] . e[3])*x$
+dotsimpc(e[2] . e[1] *x. e[2]. e[3]);
+-e[1] . e[3] . x$
+(declare(y, scalar),
+dotsimpc(e[2] . e[1] .y. e[2]. e[3]));
+-(e[1] . e[3])*y$

@@ -2,7 +2,11 @@
 Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
- v 	1.8 Date 06 Dec 2015
+ v 	1.9 Date 16 Feb 2016
+	- bug fix in simplification
+	- change in factorby, reflect
+	
+	1.8 Date 06 Dec 2015
 	- change of notation to exclude conflicts with itensor-based packages
 	
 	1.7 Date 18 nov 2015
@@ -36,7 +40,7 @@ a lightweight package for performing Geometric Algebra calculations
  *      License along with this library; if not, write to the Free Software
  *      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- matchdeclare([aa, ee], lambda([u], not freeof(asymbol,u) and freeof ("+", u)), [bb,cc], true, [kk, mm, nn], integerp);
+ matchdeclare([aa, ee], lambda([u], not freeof(asymbol,u) and freeof ("+", u) and not scalarp(u) ), [bb,cc], true, [kk, mm, nn], integerp);
  
 "vector symbol";
 asymbol:e;
@@ -153,6 +157,7 @@ toggle_debug():= _debug: not _debug;
 simplification of dot-products
 */
 declare (dotsimpc, evfun);
+/*
 dotsimpc(ab):=block([ba, c:1, v, w:1, q, r, l, sop],
   mode_declare(w, fixnum),
   mode_declare([r,l], any),
@@ -162,6 +167,7 @@ dotsimpc(ab):=block([ba, c:1, v, w:1, q, r, l, sop],
 	map(dotsimpc, ab)
   else if sop="*" then (
     [r,l]: oppart(ab, lambda([u], freeof(".", u))),
+	 if _debug=true then display(sop, r, l),
 	r*dotsimpc(l)
   ) else (
 	 ba:copy(ab),
@@ -171,21 +177,51 @@ dotsimpc(ab):=block([ba, c:1, v, w:1, q, r, l, sop],
 	 v:sort(v),
 	 for q in v do c:c.q,
 	 if _debug=true then  display(w, v),
-	 w*c
+	 return(w*c)
+  )
+);
+*/
+dotsimpc(ab):=block([ba, c:1, v, w:1, q, r, l, sop],
+  mode_declare(w, fixnum),
+  mode_declare([r,l], any),
+  sop:inop(ab),
+   if mapatom(ab) or freeof(".", ab) or sop='nil or sop="^"  or sop="^^" then return(ab),
+  if sop="+" then 
+	map(dotsimpc, ab)
+  else if sop="*" then (
+    [r,l]: oppart(ab, lambda([u], freeof(".", u))),
+	 if _debug=true then display(sop, r, l),
+	 l:subst(".","*",l),
+	r*dotsimpc(l)
+  ) else (
+	ba:copy(ab),
+	v:inargs(ba), 
+	if _debug=true then display(sop, v),
+	w:permsign(v),
+	if w#0 then (
+	 v:sort(v),
+	 for q in v do c:c.q,
+	 if _debug=true then  display(w, v),
+	 (w*c)
+	) else (ab)
   )
 );
 
 /*
 internal function: parity of permutation calculation
 */
-permsign(arr):=block([k:0, len] ,
+permsign(arr):=block([k:0, len, ret:0 ] ,
 	mode_declare([k, len], fixnum),
 	if not listp(arr) then return (false),
 	len:length(arr),
-	for i:1 thru len do
-		for j:i+1 thru len do
-			if ordergreatp(arr[i], arr[j]) then k:k+1,
-	if evenp(k) then 1 else -1
+	for i:1 thru len do (
+		if not mapatom(arr[i]) then ret:nil,
+		for j:i+1 thru len do 
+			if ordergreatp(arr[i], arr[j]) then k:k+1
+	),
+	if ret#nil then 
+		if evenp(k)  then 1 else -1
+	else 0
 );
 
 
@@ -216,7 +252,7 @@ cliffsimpall(expr):=block([res, aa, bb, sop, simp:true],
 	) else (
 		res:expand(expr),
 		res:apply1(res, clifsimp3, clifsimp21, clifsimp2),
-		res:apply1(res,  clifsimp10, clifsimp1),
+		res:apply1(res,  clifsimp1, clifsimp10),
 		ratsimp(res)
 	)
 );
