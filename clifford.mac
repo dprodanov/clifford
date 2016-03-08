@@ -62,22 +62,53 @@ powerdisp:true;
 dotconstrules:false;
 prederror :false;
 stringdisp:true;
-
+ratprint:false;
 /*
  custom operators
 */
 (
 	"inner product",
 	infix ("|", 130, 129),	
+	/*
+	"|"(a, b):=block([ab:a.b],
+		if scalarp(ab) then ab else 
+			if freeof( asymbol, a) or freeof( asymbol, b) then expand((a.b + b.a)/2) else (
+			[r,l]:prodecomp(a,b),
+			display(r,l),
+			r)
+	),**/
 	"|"(a, b):= if scalarp(a) and scalarp(b) then a*b else expand((a.b + b.a)/2),
 	texput ("|", " \\circ ", infix),
  
 	"outer product",
 	infix("&", 130, 129),
-	"&"(a, b):=if scalarp(a) and scalarp(b) then 0 else expand((a.b - b.a)/2),
+	/*
+	"&"(a, b):=block([ab:a.b,  r,l],
+		if scalarp(ab) then 0 else 
+			if freeof( asymbol, a) or freeof( asymbol, b) then expand((a.b - b.a)/2) else (
+			[r,l]:prodecomp(a,b),
+			display(r,l),
+			l)
+	),*/
+	"&"(a, b):= if scalarp(a) and scalarp(b) then a*b else expand((a.b - b.a)/2),
 	texput ("&", " \\wedge ", infix)
 
 );
+
+/*
+prodecomp(a,b):=block([r,l, n, m, mz, ab, w:1],
+	ab:expand(a.b),
+	ab:dotsimpc(ab),
+	if op(ab)="-" then ( ab:-ab, w:-1),
+	if inop(ab)="."  then  [0, w*ab]
+	else (
+		n:maxgrade(a),
+		m:maxgrade(b),
+		[l,r]:subst(nil=0, oppart(ab, lambda([z], mz:maxgrade(z), mz>=m+n ) )),
+		[w*l, w*r]
+	)	
+);
+*/
 
 inprod(a,b)::=buildq([a,b],"|"(a, b));
 wedgeprod(a,b)::=buildq([a,b],"&"(a, b));	  
@@ -202,8 +233,8 @@ dotsimpc(ab):=block([ba, c:1, v, w:1, q, r, l, sop],
 	 v:sort(v),
 	 for q in v do c:c.q,
 	 if _debug=true then  display(w, v),
-	 (w*c)
-	) else (ab)
+	 w*c
+	) else ab
   )
 );
 
@@ -899,7 +930,7 @@ vectorpart(v):=block([gr],
 /*
  multivector part
 */
-mvectorpart(v):=block([ r, l ],
+mvectorpart(v):=block([ r, l, gr ],
 	if freeof(asymbol, v) then return (0),
 	gr:grade(v),
 	gr:sublist(gr, lambda([u], not freeof(".", u))),
@@ -1023,8 +1054,8 @@ put('clifford, 'v19,'version);
 put('clifford, "Dimiter Prodanov", 'author);
 put('clifford, "(C) - Dimiter Prodanov, 2015 - 2016", 'copyright);
 
-disp("package name: clifford.mac");
-disp("author: ", get('clifford,'author));
-disp("version:", get('clifford,'version));
-disp("Recommended location: share/contrib");
-disp("last update: 16 Jan 2016");
+print("package name: clifford.mac");
+print("author: ", get('clifford,'author));
+print("version:", get('clifford,'version));
+print("Recommended location: share/contrib");
+print("last update: 20 Feb 2016");

@@ -4,7 +4,8 @@ a lightweight package for performing Geometric Algebra calculations
 
 Clifford analysis
 
-version 	1.2 Date 22 Jan 2016
+version 	1.5 Date 20 Feb 2016
+		1.2 Date 22 Jan 2016
 		1.1 Date 16 Dec 2015
 
 @depends 'clifford
@@ -46,6 +47,9 @@ if get('clifford,'version)=false then (
 	texput ("&", " \\wedge ", infix)
 	)
 );
+
+%clverbose:false;
+%divsimp:true;
 
 
 dependsv(F, var):= block([ ee], 
@@ -89,19 +93,16 @@ totdiff(f,x, [lv]):=block( [ret:0],
 /* 
 Clifford-valued
 total differentiation; */
-ctotdiff(f,x):=block( [ret:0, lv],
+ctotdiff(f, x):=block( [ret:0, lv],
 	if mapatom(x) then 
 		ret: diff( f, x )
 	else (
 		lv: sublist( listofvars(x), lambda ([z], freeof(asymbol,z))),
-		"display(lv)",
 		for u in lv do 
 			ret: ret + cinv(diff(x, u)). subst(".", "*", diff( f, u ))
 	),
 	ret
 );
-
-
 
 /*
  vector derivative
@@ -127,7 +128,6 @@ vectdiff(f, x, [k] ):=block ([s, n:1, m, i ],
 /*
  multi vector derivative
 */
-%divsimp:false;
 
 mvectdiff(f, x, [k] ):=block ([s:0, n:1, m, es],
 	if emptyp(k) then k:1 else k: k[1],
@@ -163,7 +163,8 @@ pardiff(f, x, [k] ):=block( [ret:0 ],
 */
 parmvectdiff(f, x, [k] ):=block ([s, n:1, m, i, ee, xx, df, qq, es ],
 	[ee, xx]:clicoeff(x, 'list),
-	display(xx),
+	if %clverbose=true then
+		display(xx),
 	if emptyp(k) then k:1 else k: k[1],
 	es: sublist( listofvars(x), lambda ([z], not freeof(asymbol, z))),
 	"display(es)",
@@ -176,7 +177,7 @@ parmvectdiff(f, x, [k] ):=block ([s, n:1, m, i, ee, xx, df, qq, es ],
 			i:i+1
 		),
 		if %divsimp=true then (
-			s:cliffsimpall(s),
+			/*s:cliffsimpall(s),*/
 			if not emptyp(es) then
 				s:simpfact(s, es)
 		),
@@ -259,12 +260,12 @@ vvectdiff(f, x, [k] ):=block ([ df],
 
 /*
 EL  field Lagrangians
-
 */
 
-EuLagEq2(_F, tt, pvars):=block ([eq:0, p, pv, ee, xx, len, qq, yy:[], ss:[], zz:[], es:[], ez:[], vv  ],
+EuLagEq2(_F, tt, pvars):=block ([eq:0, p, pv, ee, xx, len, qq, yy:[], ss:[], zz:[], es:[], ez:[], vv, lv  ],
 	[p, pv]:pvars,
-	display(p, pv),	 
+	if %clverbose=true then
+		display(p, pv),	 
 	[ee, vv]:clicoeff(pv, 'list),
 	lv: sublist( listofvars(tt), lambda ([z],  freeof(asymbol, z) )),	
 	if not mapatom(vv) then
@@ -280,7 +281,8 @@ EuLagEq2(_F, tt, pvars):=block ([eq:0, p, pv, ee, xx, len, qq, yy:[], ss:[], zz:
 	),
 	/*display(ss, zz),*/
 	qq:parmvectdiff(_F, pv),
-	display(qq),
+	if %clverbose=true then
+		display(qq),
 	qq:psubst(ss, qq),
 	eq:parmvectdiff(_F, p)-psubst(zz, mvectdiff(qq , tt)),
 	es: sublist( listofvars(eq), lambda ([z], not freeof(asymbol, z))),
@@ -295,12 +297,13 @@ EuLagEq2(_F, tt, pvars):=block ([eq:0, p, pv, ee, xx, len, qq, yy:[], ss:[], zz:
 /*
 convective derivative
 */
-convderiv(f, t, xx, [vs]):=block( [ lv, n:1, u, nabla:[], lv, ss:0, m, es:[], s:0, ez:[], aa:[], bb:[], cc:[] ,dd:[], gg:[],rr ],
+convderiv(f, t, xx, [vs]):=block( 
+	[ lv, n:1, u, nabla:[], lv, ss:0, m, es:[], s:0, ez:[], aa:[], bb:[], cc:[], dd:[], gg:[], rr ],
 	if not symbolp(t) then error(t, " must be a symbol"),	
 	lv:listofvars(xx),
  	xx:expand(xx),
 	es: sublist( lv, lambda ([z], not freeof(asymbol, z))),
-	ez: sublist( lv, lambda ([z],   freeof(asymbol, z))),
+	ez: sublist( lv, lambda ([z],     freeof(asymbol, z))),
 	if not emptyp(vs) then vs:vs[1],
 	for j:1 thru length(ez) do (
 			push(ez[j]=ez[j](t), aa),
@@ -356,7 +359,8 @@ ciEL1(_F, tt, pvars, smat):=block([eq, p, pv, qq, ee, aa:[], bb:[], es:[], ez:[]
  	es: sublist( listofvars(p), lambda ([z],  freeof(asymbol, z))),	 
 	ez: sublist( listofvars(pv), lambda ([z],  freeof(asymbol, z))),	
 	/*display(es, ez), */
-	 display(pv, eq),
+	if %clverbose=true then
+		display(pv, eq),
 	 for j:1 thru length(ez) do (
 		push(ez[j]='diff(es[j], tt, 1), aa),
 		push('diff(es[j], tt, 1)=ez[j], bb),
@@ -396,6 +400,7 @@ ciEL(_F, tt, pvars, smat):=block([eq, p, pv, qq, ee, aa:[], bb:[], es:[], ez:[] 
  	es: sublist( listofvars(p), lambda ([z],  freeof(asymbol, z))),	 
 	ez: sublist( listofvars(pv), lambda ([z],  freeof(asymbol, z))),	
 	/*display(es, ez), */
+	if %clverbose=true then
 	 display(pv, eq),
 	 for j:1 thru length(ez) do (
 		push(ez[j]='diff(es[j], tt, 1), aa),
@@ -409,7 +414,8 @@ ciEL(_F, tt, pvars, smat):=block([eq, p, pv, qq, ee, aa:[], bb:[], es:[], ez:[] 
 	qq: parmvectdiff(_F, pv),
 	qq: diff(qq, tt),
 	eq:eq - qq,
-	display(qq),
+	if %clverbose=true then
+		display(qq),
 	eq: psubst(bb, eq),
 	/*
 	ee:buildq([es], remove(es, dependency)), 
@@ -455,8 +461,7 @@ coordinate substitution
 coordsubst(rr, eqs):=block( [lv, ret:rr, qq],
 	lv: sublist( listofvars(rr), lambda ([z], freeof(asymbol,z))),
 	if not listp(eqs) then eqs:[eqs],
-	if length(eqs)#length(lv) then error("length mismatch"),
-	for i:1 thru length(lv) do (
+	for i:1 thru length(eqs) do (
 		if op(eqs[i])="=" then qq:rhs(eqs[i]) else qq:eqs[i],
 		ret:ratsubst(qq, lv[i], ret)
 	),
@@ -475,7 +480,7 @@ volel(eqs):=block( [lv:[], ret, qq:[] ],
 	if not listp(eqs) then eqs:[eqs],
 	 for i:1 thru length(eqs) do (
 		 lv: append ( sublist( listofvars(rhs(eqs[i])), lambda ([z], freeof(asymbol,z))), lv),
-		  push(  rhs(eqs[i]), qq)  
+		  push(rhs(eqs[i]), qq)  
 		  ), 
 	  qq:reverse(qq),
 	  lv:(unique (lv)),
@@ -493,8 +498,8 @@ put('cliffordan, 'v15,'version);
 put('cliffordan, "Dimiter Prodanov", 'author);
 put('cliffordan, "(C) - Dimiter Prodanov, 2015", 'copyright);
 
-disp("package name: cliffordan.mac");
-disp("author: ", get('cliffordan,'author));
-disp("version:", get('cliffordan,'version));
-disp("Recommended location: share/contrib");
-disp("last update: 23 Jan 2016");
+print("package name: cliffordan.mac");
+print("author: ", get('cliffordan,'author));
+print("version:", get('cliffordan,'version));
+print("Recommended location: share/contrib");
+print("last update: 08 March 2016");
