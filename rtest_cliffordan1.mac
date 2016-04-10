@@ -1,0 +1,87 @@
+/*******************************
+Clifford algebra
+a lightweight package for performing Geometric Algebra calculations
+
+tests for version
+ v 1.5
+ 
+usage:
+file_search_maxima: append (file_search_maxima,["/path/to/clifford.mac"]);
+batch("rtest_clifford", test);
+
+@depends clifford.mac
+
+**********************************
+ * @license This library is free software; you can redistribute it and/or
+ *      modify it under the terms of the GNU Lesser General Public
+ *      License as published by the Free Software Foundation; either
+ *      version 2.1 of the License, or (at your option) any later version.
+ *
+ *      This library is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *       Lesser General Public License for more details.
+ *
+ *      You should have received a copy of the GNU Lesser General Public
+ *      License along with this library; if not, write to the Free Software
+ *      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+ (kill(all),
+ /*
+  %path:read("Path to package"),
+  %path:append ([%path,"$$$.{mac,mc}"]),
+  */
+  %path:"C:/Dropbox/maxima/$$$.{mac,mc}",
+  file_search_maxima:append (file_search_maxima , [%path]),
+  %start : absolute_real_time(),
+  load("cliffordan"),
+  'done);
+'done$
+get('cliffordan,'version);
+v15$
+/* init clifford" */
+clifford(e,3);
+[1,1,1]$
+(dependsv(F,[t,x,y,z]),
+member(F(t,x,y,z), dependencies));
+true$
+ r:cvect([x,y,z]);
+e[1]*x+e[2]*y+e[3]*z$
+mvectdiff(F,r);
+e[1]*('diff(F,x,1))+e[2]*('diff(F,y,1))+e[3]*('diff(F,z,1))$
+mvectdiff(F,r,2);
+'diff(F,x,2)+'diff(F,y,2)+'diff(F,z,2)$
+ctotdiff(log(r),r);
+3/(e[1]*x+e[2]*y+e[3]*z)$
+mvectdiff(r,r);
+3$
+mvectdiff(r,r,2);
+0$
+mvectdiff(r/sqrt(-cnorm(r)),r);
+2/sqrt(x^2+y^2+z^2)$
+mvectdiff(r/(-cnorm(r)),r);
+1/(x^2+y^2+z^2)$
+mvectdiff(-(2*e[1]*x)/(x^2+y^2+z^2)^(3/2)-(2*e[2]*y)/(x^2+y^2+z^2)^(3/2)-(2*e[3]*z)/(x^2+y^2+z^2)^(3/2),r);
+0$
+mvectdiff(exp(r),r);
+3*%e^(e[1]*x+e[2]*y+e[3]*z)$
+mvectdiff(log(r),r),factor;
+(3*(e[1]*x+e[2]*y+e[3]*z))/(x^2+y^2+z^2)$
+mvectdiff((-cnorm(r)),r),factor;
+2*(e[1]*x+e[2]*y+e[3]*z)$
+(declare(k, scalar),
+ev(mvectdiff((-cnorm(r))^k/2,r),factor)
+);
+k*(e[1]*x+e[2]*y+e[3]*z)*(x^2+y^2+z^2)^(-1+k)$
+mvectdiff(k*sin(r),r);
+3*k*cos(e[1]*x+e[2]*y+e[3]*z)$
+mvectdiff(k*sinh(r+1),r);
+3*k*cosh(1+e[1]*x+e[2]*y+e[3]*z)$
+(depends(A, [x,y,z]),
+declare(A,scalar),
+P:celem(A,[[],x,y,z])
+);
+e[1]*A[x]+e[2]*A[y]+e[3]*A[z]$
+mvectdiff(log(cnorm2(P))/2,r);
+(e[1]*(A[x]*('diff(A[x],x,1))+A[y]*('diff(A[y],x,1))+A[z]*('diff(A[z],x,1)))+e[2]*(A[x]*('diff(A[x],y,1))+A[y]*('diff(A[y],y,1))+A[z]*('diff(A[z],y,1)))+e[3]*
+(A[x]*('diff(A[x],z,1))+A[y]*('diff(A[y],z,1))+A[z]*('diff(A[z],z,1))))/(A[x]^2+A[y]^2+A[z]^2)$

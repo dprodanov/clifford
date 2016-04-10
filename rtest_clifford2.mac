@@ -72,4 +72,19 @@ e[2] . e[1] . e[1] . e[2], dotsimpc;
 1/e[1] . e[2], dotinvsimp;
 -e[1] . e[2]$
 1/(1+e[1]),cliffsimpall;
-1/(1+e[1])$
+-(-1+e[1])/2$
+block(
+	"init clifford geom/pauli",
+	clifford(e,3),
+	mtable1()
+);
+matrix([1,e[1],e[2],e[3]],
+[e[1],1,e[1] . e[2],e[1] . e[3]],
+[e[2],-e[1] . e[2],1,e[2] . e[3]],
+[e[3],-e[1] . e[3],-e[2] . e[3],1])$
+1/(e[1] . e[2]. e[3]), dotinvsimp;
+-e[1] . e[2] . e[3]$
+5/(e[1] .   e[3]), dotinvsimp;
+-5*(e[1] . e[3])$
+1/e[1]-e[1],cliffsimpall;
+0$
