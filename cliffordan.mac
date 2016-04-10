@@ -4,7 +4,8 @@ a lightweight package for performing Geometric Algebra calculations
 
 Clifford analysis
 
-version 	1.5 Date 20 Feb 2016
+version 	1.6 Date 10 Apr 2016
+		1.5 Date 20 Feb 2016
 		1.2 Date 22 Jan 2016
 		1.1 Date 16 Dec 2015
 
@@ -38,12 +39,12 @@ if get('clifford,'version)=false then (
 
 	"inner product",
 	infix ("|", 130, 129),	
-	"|"(a, b):= if scalarp(a) and scalarp(b) then a*b else expand((a.b + b.a)/2),
+	"|"(a, b):=  expand((a.b + cinvolve(b).cinvolve(a))/2),
 	texput ("|", " \\circ ", infix),
  
 	"outer product",
 	infix("&", 130, 129),
-	"&"(a, b):=if scalarp(a) and scalarp(b) then 0 else expand((a.b - b.a)/2),
+	"&"(a, b):= expand((a.b - cinvolve(b).cinvolve(a))/2),
 	texput ("&", " \\wedge ", infix)
 	)
 );
@@ -147,6 +148,24 @@ mvectdiff(f, x, [k] ):=block ([s:0, n:1, m, es],
 	s
 );
 
+/*
+diffmap(f, x, eps):= block([es, ex, df, q, v, aa, listarith:true, ss:0 ], 
+	[es, ex]: oppart( listofvars(x), lambda ([z], freeof(asymbol, z))),
+	ex: push(1, ex),
+	q: makelist(es[i]=es[i]+eps, i, 1, length(es)),
+	df:expand(subst(q, f) -  f),
+	display(df, ex),
+	for i:1 thru length(ex) do (
+		aa:expand( (df | ex[i]) ),  
+		disp(aa),
+		aa:expand( aa/eps),
+		ss:ss+aa
+		),
+	ss
+);
+ */
+ 
+ 
 pardiff(f, x, [k] ):=block( [ret:0 ],
 	if emptyp(k) then k:1 else k: k[1],
 	if mapatom(x) then 
@@ -188,7 +207,7 @@ parmvectdiff(f, x, [k] ):=block ([s, n:1, m, i, ee, xx, df, qq, es ],
 
 /*
  directional, inner, derivative
-
+*/
 invectdiff(f, x, [k] ):=block ([s, n:1, m, i, ee, xx, df, qq, es ],
 	[ee, xx]:clicoeff(x,'list),
 	if emptyp(k) then k:1 else k: k[1],
@@ -207,11 +226,15 @@ invectdiff(f, x, [k] ):=block ([s, n:1, m, i, ee, xx, df, qq, es ],
 		s:cliffsimpall(s),
 		f:s
 	),
-	if not emptyp(es) then
-				s:simpfact(s, es),
+	if %divsimp=true then (
+		es: sublist( listofvars(x), lambda ([z], not freeof(asymbol, z))),
+		s:trigsimp(s),
+		if not emptyp(es) then
+			s:simpfact(s, es)
+	),
 	s
 );
-*/
+
 
 svectdiff(f, x, [k] ):=block ([ df],
 	if emptyp(k) then k:1 else k: k[1],
@@ -223,7 +246,7 @@ svectdiff(f, x, [k] ):=block ([ df],
 );
 /*
  exterior, dual, vector derivative
-
+*/
 extvectdiff(f, x, [k] ):=block ([s, n:1, m, i, ee, xx, df, qq ],
 	[ee, xx]:clicoeff(x, 'list),
 	if emptyp(k) then k:1 else k: k[1],
@@ -240,9 +263,15 @@ extvectdiff(f, x, [k] ):=block ([s, n:1, m, i, ee, xx, df, qq ],
 		s:cliffsimpall(s),
 		f:s
 	),
+	if %divsimp=true then (
+		es: sublist( listofvars(x), lambda ([z], not freeof(asymbol, z))),
+		s:trigsimp(s),
+		if not emptyp(es) then
+			s:simpfact(s, es)
+	),
 	s
 );
-*/
+
 vvectdiff(f, x, [k] ):=block ([ df],
 	if emptyp(k) then k:1 else k: k[1],
 	for p:1 thru k do (
@@ -262,7 +291,7 @@ vvectdiff(f, x, [k] ):=block ([ df],
 EL  field Lagrangians
 */
 
-EuLagEq2(_F, tt, pvars):=block ([eq:0, p, pv, ee, xx, len, qq, yy:[], ss:[], zz:[], es:[], ez:[], vv, lv  ],
+ciELfdiff(_F, tt, pvars):=block ([eq:0, p, pv, ee, xx, len, qq, yy:[], ss:[], zz:[], es:[], ez:[], vv, lv  ],
 	[p, pv]:pvars,
 	if %clverbose=true then
 		display(p, pv),	 
@@ -291,6 +320,7 @@ EuLagEq2(_F, tt, pvars):=block ([eq:0, p, pv, ee, xx, len, qq, yy:[], ss:[], zz:
 	eq
 );
 
+alias (EuLagEq2, ciELfdiff); 
 /*
  EL particle lagrangians
 */
@@ -302,8 +332,9 @@ convderiv(f, t, xx, [vs]):=block(
 	if not symbolp(t) then error(t, " must be a symbol"),	
 	lv:listofvars(xx),
  	xx:expand(xx),
-	es: sublist( lv, lambda ([z], not freeof(asymbol, z))),
-	ez: sublist( lv, lambda ([z],     freeof(asymbol, z))),
+	/*es: sublist( lv, lambda ([z], not freeof(asymbol, z))),
+	ez: sublist( lv, lambda ([z],     freeof(asymbol, z))),*/
+	[ez, es]: oppart( lv, lambda ([z], freeof(asymbol, z))),
 	if not emptyp(vs) then vs:vs[1],
 	for j:1 thru length(ez) do (
 			push(ez[j]=ez[j](t), aa),
@@ -325,7 +356,6 @@ convderiv(f, t, xx, [vs]):=block(
 		f: psubst(dd, f), 
 		display( f)
 		),
-	
 	ss:diff(f, t), 
 	n:1, s:0,
 	if mapatom(xx) then 
@@ -344,8 +374,6 @@ convderiv(f, t, xx, [vs]):=block(
 		ss:psubst(gg, ss),
 	ss:psubst(bb, ss)
 );
-
-
 
 
 /*

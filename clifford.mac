@@ -2,7 +2,11 @@
 Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
- v 	1.9 Date 16 Feb 2016
+ v 	2.0 Date 10 Apr 2016
+	- bug fixes in inner product and  outer product
+	-bug fiix in clicoeff
+	
+	1.9 Date 16 Feb 2016
 	- bug fix in simplification
 	- change in factorby, reflect
 	
@@ -70,49 +74,24 @@ ratprint:false;
 	"inner product",
 	infix ("|", 130, 129),	
 	/*
-	"|"(a, b):=block([ab:a.b],
-		if scalarp(ab) then ab else 
-			if freeof( asymbol, a) or freeof( asymbol, b) then expand((a.b + b.a)/2) else (
-			[r,l]:prodecomp(a,b),
-			display(r,l),
-			r)
-	),**/
 	"|"(a, b):= if scalarp(a) and scalarp(b) then a*b else expand((a.b + b.a)/2),
+	*/
+	"|"(a, b):=  expand((a.b + cinvolve(b).cinvolve(a))/2),
 	texput ("|", " \\circ ", infix),
  
 	"outer product",
 	infix("&", 130, 129),
 	/*
-	"&"(a, b):=block([ab:a.b,  r,l],
-		if scalarp(ab) then 0 else 
-			if freeof( asymbol, a) or freeof( asymbol, b) then expand((a.b - b.a)/2) else (
-			[r,l]:prodecomp(a,b),
-			display(r,l),
-			l)
-	),*/
-	"&"(a, b):= if scalarp(a) and scalarp(b) then a*b else expand((a.b - b.a)/2),
+	"&"(a, b):= if scalarp(a) and scalarp(b) then 0 else expand((a.b - b.a)/2),
+	*/
+	"&"(a, b):= expand((a.b - cinvolve(b).cinvolve(a))/2),
 	texput ("&", " \\wedge ", infix)
 
 );
 
-/*
-prodecomp(a,b):=block([r,l, n, m, mz, ab, w:1],
-	ab:expand(a.b),
-	ab:dotsimpc(ab),
-	if op(ab)="-" then ( ab:-ab, w:-1),
-	if inop(ab)="."  then  [0, w*ab]
-	else (
-		n:maxgrade(a),
-		m:maxgrade(b),
-		[l,r]:subst(nil=0, oppart(ab, lambda([z], mz:maxgrade(z), mz>=m+n ) )),
-		[w*l, w*r]
-	)	
-);
-*/
 
 inprod(a,b)::=buildq([a,b],"|"(a, b));
 wedgeprod(a,b)::=buildq([a,b],"&"(a, b));	  
-
 
 inop(expr):= if not mapatom (expr)  then inpart(expr, 0) else 'nil;
 
@@ -188,30 +167,7 @@ toggle_debug():= _debug: not _debug;
 simplification of dot-products
 */
 declare (dotsimpc, evfun);
-/*
-dotsimpc(ab):=block([ba, c:1, v, w:1, q, r, l, sop],
-  mode_declare(w, fixnum),
-  mode_declare([r,l], any),
-  sop:inop(ab),
-   if mapatom(ab) or freeof(".", ab) or sop='nil or sop="^"  or sop="^^" then return(ab),
-  if sop="+" then 
-	map(dotsimpc, ab)
-  else if sop="*" then (
-    [r,l]: oppart(ab, lambda([u], freeof(".", u))),
-	 if _debug=true then display(sop, r, l),
-	r*dotsimpc(l)
-  ) else (
-	 ba:copy(ab),
-	 v:inargs(ba),
-	 if _debug=true then display(sop, v),
-	 w:permsign(v),
-	 v:sort(v),
-	 for q in v do c:c.q,
-	 if _debug=true then  display(w, v),
-	 return(w*c)
-  )
-);
-*/
+ 
 dotsimpc(ab):=block([ba, c:1, v, w:1, q, r, l, sop],
   mode_declare(w, fixnum),
   mode_declare([r,l], any),
@@ -337,7 +293,6 @@ cinv(ab):=block( [s, b, u:1],
 );
 
 
-
 /*
 simplification of exponents
 */
@@ -443,6 +398,15 @@ makebasis(var):= block([ ee],
 	ev(ee,nouns)
 );
 
+/*
+constructs the vectors of the algebra
+*/
+vectors():=makelist(asymbol[i], i, 1, ndim);
+
+/*
+constructs the  bi-vectors of the algebra
+*/
+bivectors():=makelist(asymbol[i].asymbol[mod(i,ndim)+1],i,1,ndim);
 
 /*
 constructs the pseudoscalar of the algebra
@@ -451,6 +415,7 @@ pscalar():=block([s:1],
 	for i:1 thru ndim do s:s.asymbol[i],
 	s
 );
+
 
 /*
 releases all rules 
@@ -531,7 +496,7 @@ maxgrade(expr):=block([lst],
 /*
  Partial factoring by subexpression
 */
-factorby(expr, z):=block([quot, res, ret, ee, n, sop, radsubstflag:true ],
+factorby(expr, z):=block([quot, res, ret, ee, n, sop, %qq, radsubstflag:true ],
 	if atom(expr) then return (expr),
 	if matrixp(expr) then 
 		return(matrixmap(lambda([u], factorby(u, z)), expr)),
@@ -543,7 +508,7 @@ factorby(expr, z):=block([quot, res, ret, ee, n, sop, radsubstflag:true ],
 		sop:op(expr),
 		if _debug=true then display(expr, sop ),
 		if sop="*" then 
-			ret:(map( lambda([u], factorby(u, z) ), expr))
+			ret:map( lambda([u], factorby(u, z) ), expr)
 		else if sop="/" then 
 			ret:factorby(num(expr), z)/factorby(denom(expr), z)
 		else	if sop="^" then (
@@ -560,12 +525,15 @@ factorby(expr, z):=block([quot, res, ret, ee, n, sop, radsubstflag:true ],
 				[quot, res]:divide(expr, %qq),
 				/*display(quot, res, expr),*/
 				res:subst(z[1], %qq, res),
-				quot:subst(z[1], %qq, quot)
+				quot:subst(z[1], %qq, quot),
+				quot:radcan(quot)
 			) else
 				[quot, res]:divide(expr, z[1]),
 			if length(z)>1 then
 				res:factorby(res, rest(z)),
-			ret:factor(quot)*z[1]+res
+				if res#0 then
+					ret:factor(quot)*z[1]+res
+				else ret:quot*z[1]+res
 		)
 	),
 	ret
@@ -602,6 +570,7 @@ clicoeff(expr, smat):=block([c, ee, sop,  r, l, u, elst, lst, use_fast_arrays:fa
 			) else (
 				[l,r]: oppart (v, lambda ([u], freeof(asymbol, u))),		
 				ee[r]:r,	
+				l:subst('nil=1, l),
 				if c[r] =arraymake (c, [r]) then 	c[r]:0,			
 					c[r]:c[r] +l,				
 				if _debug=true then display(r,l, ee[r], c[r] )	
@@ -791,15 +760,6 @@ cliabs(x):=block([u:expand(x)],
 );
 
 
-/**
- scalar product
-
-scprod(x, y):=block([u:expand(x), v:expand(y)],
-	u:expand(cconjugate(u).v),
-	u:scalarpart(u)
-);
-*/
-
 prodecomp(x, y):=block( [n:maxgrade(x), m:maxgrade(y), ret, qq , p, l, r  ],
 	ret: (expand(x.y)),
 	if not freeof(".", ret) then (
@@ -941,7 +901,7 @@ mvectorpart(v):=block([ r, l, gr ],
 /**
  grade of order k
 */
-grpart(v,k):=block([gr],
+grpart(v,k):=block([gr, k:k+1],
 	if k>ndim+1 then k:ndim+1,
 	gr:grade(v),
 	gr[k]
@@ -952,7 +912,8 @@ grpart(v,k):=block([gr],
 */
 idemp(u):=block([v, ret],
 	v:expand(u.u),
-	v:ratsimp(v-u),
+	v:dotsimpc(v),
+	v:ratsimp(v-u),	
 	ret: is(equal (v, 0)),
 	if ret#true then false else true
 );
@@ -1010,7 +971,6 @@ celem(x, [cc]):=block([ee, ss:0, n, qq],
  */
 dual(x):=%iv. x;
 
-
 conjel(x, k):= (asymbol[k]. x)/asymbol[k]	;
 
 /**
@@ -1050,7 +1010,32 @@ rotate(a, v):=block ([ m:cnorm(v)],
 	cliffsimpall(v.a.creverse(v)/m)
 );
 
-put('clifford, 'v19,'version);
+/*
+determinant
+*/
+clidetmat(M):=block([ velem:vectors(), Mt, v, dd, listarith:true, n],
+	if not matrixp(M) then error("matrix required"),
+	Mt:transpose(M),
+	n:length(Mt),
+	dd:M2[1].velem,
+	for i:2 thru n do (
+		v:M2[i].velem,
+		dd:dotsimpc(dd & v)
+	),
+	dd/%iv
+);
+
+clidet(vlist):=block([dd, n ],
+	n:length(vlist),
+	dd:vlist[1], 
+	for i:2 thru n do (
+		dd:dotsimpc(dd & vlist[i]),
+		if dd=0 then return(dd)
+	),
+	dd
+);
+
+put('clifford, 'v20,'version);
 put('clifford, "Dimiter Prodanov", 'author);
 put('clifford, "(C) - Dimiter Prodanov, 2015 - 2016", 'copyright);
 
@@ -1058,4 +1043,4 @@ print("package name: clifford.mac");
 print("author: ", get('clifford,'author));
 print("version:", get('clifford,'version));
 print("Recommended location: share/contrib");
-print("last update: 20 Feb 2016");
+print("last update: 10 Apr 2016");

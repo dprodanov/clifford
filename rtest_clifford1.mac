@@ -3,7 +3,7 @@ Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
 tests for version
- v 1.9
+ v 2.0
  
 usage:
 file_search_maxima: append (file_search_maxima,["/path/to/clifford.mac"]);
@@ -38,7 +38,7 @@ batch("rtest_clifford", test);
   'done);
 'done$
 get('clifford,'version);
-v19$
+v20$
 /* init clifford" 
 (clifford(e,1,1,1),
 aform);
@@ -72,9 +72,9 @@ e[3] ~ e[3];
 0$
 */ 
 e[1] | e[1] | e[1];
-e[1]$
+0$
 e[1] | e[1] | e[1] | e[1];
-1$
+0$
 e[1] | e[2];
 0$
 e[1] | e[1];
@@ -91,10 +91,12 @@ e[3] & e[3];
 0$
 e[1] & e[1];
 0$ 
+(e[1] & e[2]) & e[3];
+e[1] . e[2] . e[3]$
 /* mixed product tests 
 */
 (e[1] & e[2]) | e[3];
-e[1] . e[2] . e[3]$
+0$
 /* explicit simplificaton tests*/
 dotsimpc(e[2] . e[1] . e[2]);
 e[1]$
@@ -108,10 +110,12 @@ e[1].e[1].e[2].e[1].e[2];
 e[1]$
 e[1].e[1].e[1].e[2].e[1];
 -e[2]$
-/* Jacobi identity*/
+/* Jacobi identity */
 aa & bb  & cc+ cc & aa & bb +bb & cc& aa;
 0$
-e[1] & e[2]  & e[3]+  e[3]& e[1] & e[2] +e[2] & e[3] & e[1];
+e[1] & e[2]  & e[3]+  e[3]& e[2] & e[1] +e[2] & e[3] & e[1];
+e[1] . e[2] . e[3]$
+(e[1].e[2])& (e[2].e[3])& (e[1].e[3])+(e[1].e[3])& (e[2].e[3])& (e[1].e[2])+(e[2].e[3])& (e[1].e[3])& (e[1].e[2]), dotsimpc;
 0$
 /* complex tests*/
 block(
