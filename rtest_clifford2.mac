@@ -71,8 +71,8 @@ e[2] . e[1] . e[1] . e[2], dotsimpc;
 -e[2]$
 1/e[1] . e[2], dotinvsimp;
 -e[1] . e[2]$
-1/(1+e[1]),cliffsimpall;
--(-1+e[1])/2$
+1/(1+e[1]),cliffsimpall,expand;
+1/2-e[1]/2$
 block(
 	"init clifford geom/pauli",
 	clifford(e,3),

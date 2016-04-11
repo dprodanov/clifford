@@ -216,8 +216,8 @@ permsign(arr):=block([k:0, len, ret:0 ] ,
 /*
 simplification rules
 */
-/*matchdeclare([aa, ee], lambda([u], not freeof(asymbol,u) and freeof ("+", u) and not scalarp(u) ), [bb,cc], true, [kk, mm, nn], integerp); */
-matchdeclare([aa, ee], lambda([u], not freeof(asymbol,u)  and not scalarp(u) ), [bb,cc], true, [kk, mm, nn], integerp);
+matchdeclare([aa, ee], lambda([u], not freeof(asymbol,u) and freeof ("+", u) and not scalarp(u) ), [bb,cc], true, [kk, mm, nn], integerp); 
+/*matchdeclare([aa, ee], lambda([u], not freeof(asymbol,u)  and not scalarp(u) ), [bb,cc], true, [kk, mm, nn], integerp);*/
 matchdeclare(dd, lambda([u],  freeof(asymbol, u)), gg, lambda([u],  not freeof(asymbol, u))); 
 matchdeclare(ds, lambda([u],  not freeof(asymbol, u) and not (freeof("^",u) or freeof("^^",u) ) ), rr, realp );
 	
@@ -808,7 +808,6 @@ cnorm2(x):=block([u:expand(x), z, v],
 	u:scalarpart(u),
 	u:ratsimp(u)
 );
-
 	
 /*
 symmetric bilinear form of the algebra; 
@@ -843,7 +842,6 @@ vectorp(v):= (
 	if not freeof(".", v) then v:expand(v),
 	freeof(".", v) and not freeof(asymbol, v)
 );
-
 
 /*
  grading functions
@@ -911,16 +909,6 @@ grpart(v,k):=block([gr, k:k+1],
 	gr[k]
 );
 
-/**
- checks if an element is an idempotent
-*/
-idemp(u):=block([v, ret],
-	v:expand(u.u),
-	v:dotsimpc(v),
-	v:ratsimp(v-u),	
-	ret: is(equal (v, 0)),
-	if ret#true then false else true
-);
 
 /* 
  constructs a vector
@@ -1038,6 +1026,7 @@ clidet(vlist):=block([dd, n ],
 	),
 	dd
 );
+
 
 put('clifford, 'v20,'version);
 put('clifford, "Dimiter Prodanov", 'author);
