@@ -71,7 +71,7 @@ ratprint:false;
 */
 (
 	"inner product",
-	infix ("|", 130, 129),	
+	infix ("|", 135, 134),	
 	/*
 	"|"(a, b):= if scalarp(a) and scalarp(b) then a*b else expand((a.b + b.a)/2),
 	*/
@@ -79,13 +79,18 @@ ratprint:false;
 	texput ("|", " \\circ ", infix),
  
 	"outer product",
-	infix("&", 130, 129),
+	infix("&", 135, 134),
 	/*
 	"&"(a, b):= if scalarp(a) and scalarp(b) then 0 else expand((a.b - b.a)/2),
 	*/
 	"&"(a, b):= expand((a.b - cinvolve(b).cinvolve(a))/2),
 	texput ("&", " \\wedge ", infix)
-
+	
+	/*
+	infix("~", 130, 129),
+	"~"(a, b):=   expand(b. dotreverse(a)/2-dotreverse(b). a/2) ,
+	texput ("~", " \\star ", infix)
+	*/
 );
 
 
@@ -137,6 +142,15 @@ oppart(expr, predf):=block(
  
 realp (x):= featurep(x, real);
 
+scalarsym():=sublist(props, lambda( [z], if symbolp(z) then scalarp(z) else false));
+
+clivars():=  block ([ uu], 
+	sublist(values, lambda([z], uu:ev(z), not freeof(asymbol, uu )))
+);
+
+clisym():=sublist(props, lambda( [z], if symbolp(z) then not freeof(asymbol, z) else false));
+
+
 /*
 simplification of dot-products, ordergreat
 */
@@ -177,6 +191,7 @@ dotsimpc(ab):=block([ba, c:1, v, w:1, q, r, l, sop],
   else if sop="*" then (
     [r,l]: oppart(ab, lambda([u], freeof(".", u))),
 	 if _debug=true then display(sop, r, l),
+	 r:subst(nil=1, r),
 	 l:subst(".","*",l),
 	r*dotsimpc(l)
   ) else (
@@ -210,8 +225,6 @@ permsign(arr):=block([k:0, len, ret:0 ] ,
 		if evenp(k)  then 1 else -1
 	else 0
 );
-
-
 
 /*
 simplification rules
@@ -720,6 +733,26 @@ mtable2():=block([n, a, lst],
 	genmatrix(a,n)
 );
 
+mtable2i():=block([n, a, lst],
+	local (a),
+	lst: elements(all),
+	n:length(lst),
+	if _debug then 
+	a[i,j]:= (lst[i].lst[j]) else
+		a[i,j]:= dotsimpc(lst[i] | lst[j]),
+	genmatrix(a,n)
+);
+
+mtable2o():=block([n, a, lst],
+	local (a),
+	lst: elements(all),
+	n:length(lst),
+	if _debug then 
+	a[i,j]:= (lst[i].lst[j]) else
+		a[i,j]:= dotsimpc(lst[i] & lst[j]),
+	genmatrix(a,n)
+);
+
 /**
  multiplication table, reduced
 
@@ -733,6 +766,30 @@ mtable1([lst]):=block([n, a],
 	lst:push(1,lst),
 	n:length(lst),
 	a[i,j]:= dotsimpc(lst[i].lst[j]),
+	genmatrix(a,n)
+);
+
+mtable1i([lst]):=block([n, a],
+	local (a),
+	if emptyp(lst) then 
+		lst:makelist(asymbol[i], i, ndim) 
+	else 
+		lst:lst[1],
+	lst:push(1,lst),
+	n:length(lst),
+	a[i,j]:= dotsimpc(lst[i] | lst[j]),
+	genmatrix(a,n)
+);
+
+mtable1o([lst]):=block([n, a],
+	local (a),
+	if emptyp(lst) then 
+		lst:makelist(asymbol[i], i, ndim) 
+	else 
+		lst:lst[1],
+	lst:push(1,lst),
+	n:length(lst),
+	a[i,j]:= dotsimpc(lst[i] & lst[j]),
 	genmatrix(a,n)
 );
 
@@ -790,7 +847,7 @@ multtrace():=block([s:[1], lst],
 );
 
 cnorm(x):=block([u:expand(x), z, v],
-	u:expand(u. cconjugate(u)),
+	u:expand(u | cconjugate(u)),
 	u:cliffsimpall(u),
 	u:expand(u),
 	/*if not freeof (".", u) then 
@@ -800,7 +857,7 @@ cnorm(x):=block([u:expand(x), z, v],
 );
 
 cnorm2(x):=block([u:expand(x), z, v],
-	u:expand(u. creverse(u)),
+	u:expand(u | creverse(u)),
 	u:cliffsimpall(u),
 	/*if not freeof (".", u) then 
 		error ("not free of non-scalars "), */
@@ -847,6 +904,7 @@ vectorp(v):= (
  grading functions
 */
 
+
 /*
  scalar part
 */
@@ -864,7 +922,7 @@ scalarpart(v):=block([ r, l, sop ],
 );
 
 /*
- scalar part
+ non scalar part
 */
 nscalarpart(v):=block([ r, l, sop ],
 	if freeof(asymbol, v) then return (0),
@@ -961,7 +1019,7 @@ celem(x, [cc]):=block([ee, ss:0, n, qq],
 /**
  dual element
  */
-dual(x):=%iv. x;
+dual(x):=%ivnorm *( %iv. x);
 
 conjel(x, k):= (asymbol[k]. x)/asymbol[k]	;
 
@@ -1027,6 +1085,14 @@ clidet(vlist):=block([dd, n ],
 	dd
 );
 
+cvol(aa,bb,cc):= cliffsimpall (aa | (-%iv. (bb & cc )) );
+
+jacobprod(a,b,c):= dotsimpc( a & b & c + b & c & a + c & a & b);
+
+tetraprod(a,b,c):=block( [u],
+	u:  expand( a & (b & c +  c & b) + (b & c + c & b ) & a ),
+	dotsimpc(u)
+);
 
 put('clifford, 'v20,'version);
 put('clifford, "Dimiter Prodanov", 'author);

@@ -205,6 +205,31 @@ parmvectdiff(f, x, [k] ):=block ([s, n:1, m, i, ee, xx, df, qq, es ],
 	s
 );
 
+parmvectintdiff(f, x, [k] ):=block ([s, n:1, m, i, ee, xx, df, qq, es ],
+	[ee, xx]:clicoeff(x, 'list),
+	if %clverbose=true then
+		display(xx),
+	if emptyp(k) then k:1 else k: k[1],
+	es: sublist( listofvars(x), lambda ([z], not freeof(asymbol, z))),
+	"display(es)",
+	for p:1 thru k do (
+		i:1, s:0,
+		for m in xx do (			
+			df: expand(pardiff( f, m )),
+			qq: cinv(ee[i]),
+			s: s +  cliffsimpall(qq | subst(".", "*", df )),
+			i:i+1
+		),
+		if %divsimp=true then (
+			/*s:cliffsimpall(s),*/
+			if not emptyp(es) then
+				s:simpfact(s, es)
+		),
+		f:s
+	),
+	s
+);
+
 /*
  directional, inner, derivative
 */
@@ -321,6 +346,38 @@ ciELfdiff(_F, tt, pvars):=block ([eq:0, p, pv, ee, xx, len, qq, yy:[], ss:[], zz
 );
 
 alias (EuLagEq2, ciELfdiff); 
+
+/*
+noether(_F, tt, pvars, aa):=block ([eq:0, p, pv, ee, xx, len, qq, yy:[], ss:[], zz:[], es:[], ez:[], vv, lv  ],
+	[p, pv]:pvars,
+	if %clverbose=true then
+		display(p, pv),	 
+	[ee, vv]:clicoeff(pv, 'list),
+	lv: sublist( listofvars(tt), lambda ([z],  freeof(asymbol, z) )),	
+	if not mapatom(vv) then
+		vv: substinpart("[",vv, 0)
+	else vv:[vv],
+	for j:1 thru length(vv) do (
+		for i:1 thru length(lv) do ( 
+			if inop(vv[j])#"+" then (
+				push(vv[j]=vv[j](lv[i]), ss),
+				push(vv[j](lv[i])=vv[j], zz)
+			)
+		)
+	),
+ 
+	qq:parmvectdiff(_F, pv),
+	if %clverbose=true then
+		display(qq),
+	qq:psubst(ss, qq),
+	eq: psubst(zz,  aa. (p | qq )  ) ,
+	eq:vectorpart(eq),
+	es: sublist( listofvars(eq), lambda ([z], not freeof(asymbol, z))),
+	if not emptyp(es) then
+		eq:simpfact(eq, es),
+	eq
+);
+*/
 /*
  EL particle lagrangians
 */
@@ -484,14 +541,31 @@ EL(_F, q, pvars):=block ([eq:0, p, pv, qq, rr, len, ret:[]],
 );
 
 /*
+ computes a unit  element
+*/
+uvect(vv):=block( [qq],
+	qq:cnorm2(vv),
+	if %divsimp=true then (
+		qq:trigsimp(qq),
+		qq:ratsimp(qq)
+	),
+	vv/sqrt(qq)
+);
+
+/*
 coordinate substitution
 */
 coordsubst(rr, eqs):=block( [lv, ret:rr, qq],
 	lv: sublist( listofvars(rr), lambda ([z], freeof(asymbol,z))),
 	if not listp(eqs) then eqs:[eqs],
 	for i:1 thru length(eqs) do (
-		if op(eqs[i])="=" then qq:rhs(eqs[i]) else qq:eqs[i],
-		ret:ratsubst(qq, lv[i], ret)
+		if op(eqs[i])="=" then ( 
+			qq:rhs(eqs[i]),
+			ret:ratsubst(qq,  lhs(eqs[i]), ret)
+		) else ( 
+			qq:eqs[i],
+			ret:ratsubst(qq, lv[i], ret)
+			)
 	),
 	if %divsimp=true then (
 		ret:trigsimp(ret),
