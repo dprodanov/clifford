@@ -43,9 +43,54 @@ if get('clifford,'version)=false then (
 	texput ("&", " \\wedge ", infix)
 );
 
+/*
 mvect(ord) :=block([c:1 ],
-	for i:1 thru ord do c:c.(1+ asymbol[i] ),
+	for i:1 thru min(ord, ndim) do c:c.(1+ asymbol[i] ),
 	expand(c)
+);
+*/
+
+/**
+ projection
+*/
+project(a, v):=block ([ m: cnorm(v) ] ,
+	if m=0 then m:1,
+	dotsimpc( (a | v ). v /m)
+);
+
+/*
+dual to the projection
+*/
+reject(a, v):=block ([ m: cnorm(v)] ,
+	if m=0 then m:1,
+	dotsimpc( expand( (a & v). v ) )/m
+);
+
+/**
+ reflection
+*/
+reflect(a, v):=block ([ m:cnorm(v)],
+	if m=0 then m:1,
+	if m<0 then m:-m,
+	dotsimpc(v.a.cconjugate(v)/m)
+);
+
+/**
+ rotation
+*/
+rotate(a, v):=block ([ m:cnorm(v)],
+	if m=0 then m:1,
+	if m<0 then m:-m,
+	dotsimpc(v.a.creverse(v)/m)
+);
+
+cvol(aa,bb,cc):= cliffsimpall (aa | (-%iv. (bb & cc )) );
+
+jacobprod(a,b,c):= dotsimpc( a & b & c + b & c & a + c & a & b);
+
+tetraprod(a,b,c):=block( [u],
+	u:  expand( a & (b & c +  c & b) + (b & c + c & b ) & a ),
+	dotsimpc(u)
 );
 
 
@@ -61,7 +106,7 @@ velem(expr):=block([cc:[], u : expand((expr))],
 
 gpoly(expr):=block([cc:[], r, l:1, len],
 	if atom(expr) then error("argument must be non atom"),
-	if op(expr)#"." then   
+	if inop(expr)#"." then   
 		[l, r]:oppart(expr, lambda([z], freeof(".", z))) 
 	else  r:expr,
 	cc:inargs(r),

@@ -542,7 +542,7 @@ EL(_F, q, pvars):=block ([eq:0, p, pv, qq, rr, len, ret:[]],
 
 /*
  computes a unit  element
-*/
+
 uvect(vv):=block( [qq],
 	qq:cnorm2(vv),
 	if %divsimp=true then (
@@ -551,6 +551,7 @@ uvect(vv):=block( [qq],
 	),
 	vv/sqrt(qq)
 );
+*/
 
 /*
 coordinate substitution
@@ -577,7 +578,7 @@ coordsubst(rr, eqs):=block( [lv, ret:rr, qq],
 /*
 volume element
 coordinate substitution
-*/
+
 volel(eqs):=block( [lv:[], ret, qq:[] ],
 	if not listp(eqs) then eqs:[eqs],
 	 for i:1 thru length(eqs) do (
@@ -587,7 +588,7 @@ volel(eqs):=block( [lv:[], ret, qq:[] ],
 	  qq:reverse(qq),
 	  lv:(unique (lv)),
 	ret:jacobian (qq, lv),
-	if _debug=true then display(lv, qq, ret),
+	 display(lv, qq, ret),
 	ret:determinant(ret),
 	if %divsimp=true then (
 		ret:trigsimp(ret),
@@ -595,6 +596,47 @@ volel(eqs):=block( [lv:[], ret, qq:[] ],
 	),
 	%iv.ret
 );
+*/
+
+volel(eqs):=block( [lv:[], ret, qq:[] ],
+	if not listp(eqs) then eqs:[eqs],
+	 for i:1 thru length(eqs) do (
+		 lv: append ( sublist( listofvars(rhs(eqs[i])), lambda ([z], freeof(asymbol,z))), lv),
+		  push(rhs(eqs[i]), qq)  
+		  ), 
+	  lv:(unique (lv)),
+	   qq:reverse(qq),
+	   /*  jacobian computation*/
+	ret:(outermap (lambda([u,z], diff(qq[z], u)),  lv, makelist(i,i, length(lv)))),
+	ret: substinpart('matrix, ret,0),
+	if %clverbose=true then display(lv, qq, ret),
+	ret:determinant(ret),
+	if %divsimp=true then (
+		ret:trigsimp(ret),
+		ret:ratsimp(ret)
+	),
+	%iv.ret
+);
+
+volelr(rr, eqs):=block( [lv:[], ret, qq:[], rq ],
+	if not listp(eqs) then eqs:[eqs],
+	 for i:1 thru length(eqs) do (
+		 lv: append ( sublist( listofvars(rhs(eqs[i])), lambda ([z], freeof(asymbol,z))), lv),
+		  push(rhs(eqs[i]), qq)  
+		  ), 
+	  lv:(unique (lv)),
+	  rq:subst(eqs,rr),
+	ret:map (lambda([z], diff(rq, z)),  lv ),
+	if %clverbose=true then display(lv, qq, ret),
+	ret:clidet(ret),
+	if %divsimp=true then (
+		ret:trigsimp(ret),
+		ret:ratsimp(ret)
+	),
+	ret
+);
+
+  
 
 put('cliffordan, 'v15,'version);
 put('cliffordan, "Dimiter Prodanov", 'author);

@@ -13,7 +13,7 @@ a lightweight package for performing Geometric Algebra calculations
 	1.8 Date 06 Dec 2015
 	- change of notation to exclude conflicts with itensor-based packages
 	
-	1.7 Date 18 nov 2015
+	1.7 Date 18 Nov 2015
         - refactoring
 	- change in grade
 	- chage in simp rules
@@ -24,11 +24,14 @@ a lightweight package for performing Geometric Algebra calculations
 
 	1.5.1 Date 30 Oct 2015
 	- bugfixes oppart
+	- unit tests
 
 	1.4 Date 22 Aug 2015
 	- oppart simplified
+	- unit tests
 
 	1.3 Date 11 Jun 2015
+	- unit tests
 **********************************
  * @license This library is free software; you can redistribute it and/or
  *      modify it under the terms of the GNU Lesser General Public
@@ -44,6 +47,7 @@ a lightweight package for performing Geometric Algebra calculations
  *      License along with this library; if not, write to the Free Software
  *      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+ttyoff:true;
  
 "vector symbol";
 asymbol:e;
@@ -93,10 +97,12 @@ ratprint:false;
 	*/
 );
 
-
 inprod(a,b)::=buildq([a,b],"|"(a, b));
 wedgeprod(a,b)::=buildq([a,b],"&"(a, b));	  
 
+/*
+ This part implements a generic partition split operation 
+*/
 inop(expr):= if not mapatom (expr)  then inpart(expr, 0) else 'nil;
 
 inargs(expr):= if not mapatom (expr)  then  substinpart( "[", expr, 0) else 'nil;
@@ -244,6 +250,7 @@ defrule (clifsimp3, ds,  powsimp(ds));
 
 /*
 full simplification of expressions
+inncludes dot-products and inverses
 */
 declare (cliffsimpall, evfun);
 cliffsimpall(expr):=block([res, aa, bb, sop, simp:true],
@@ -279,7 +286,8 @@ dotinvsimp(ab):=block( [a,b,c,s],
  if mapatom(ab) or freeof(asymbol, ab) or op(ab)#"/" then return(ab),
   a:part(ab,1),
   b:part(ab,2),
-  c:cconjugate(b),
+  "c:cconjugate(b)",
+  c:dotconjugate(b),
   s: expand(c.b),
   if _debug=true then display(a,b,s),
   if not freeof(asymbol, s) then  s:cliffsimp1(s),
@@ -294,7 +302,8 @@ cinv(ab):=block( [s, b, u:1],
 	if atom(ab) or freeof(asymbol, ab) then 
 	if ab#0 then return(1/ab) else return('nan),
 	"first attempt - conjugattion",
-	b:cconjugate(ab),
+	"b:cconjugate(ab)",
+	b:dotconjugate(ab),
 	s:expand(b.ab),
 	if not freeof(asymbol, s) then s: apply1(s, clifsimp10, clifsimp2),
 	"second attempt - reversal",
@@ -428,8 +437,9 @@ bivectors():=makelist(asymbol[i].asymbol[mod(i,ndim)+1],i,1,ndim);
 /*
 constructs the pseudoscalar of the algebra
 */
-pscalar():=block([s:1],
-	for i:1 thru ndim do s:s.asymbol[i],
+pscalar([k]):=block([s:1],
+	if not emptyp(k) then k:min(k[1], ndim) else k: ndim, 
+	for i:1 thru k do s:s.asymbol[i],
 	s
 );
 
@@ -765,7 +775,7 @@ mtable1([lst]):=block([n, a],
 		lst:lst[1],
 	lst:push(1,lst),
 	n:length(lst),
-	a[i,j]:= dotsimpc(lst[i].lst[j]),
+	a[i,j]:= dotsimpc(expand(lst[i].lst[j])),
 	genmatrix(a,n)
 );
 
@@ -793,15 +803,34 @@ mtable1o([lst]):=block([n, a],
 	genmatrix(a,n)
 );
 
+mtable1vi(v, [lst]):=block([n, a],
+	local (a),
+	if emptyp(lst) then 
+		lst:makelist(asymbol[i], i, ndim) 
+	else 
+		lst:lst[1],
+	n:length(lst),
+	a[i,j]:= dotsimpc( v| lst[j]),
+	transpose(genmatrix(a,1, n))
+);
+
+mtable1vo(v, [lst]):=block([n, a],
+	local (a),
+	if emptyp(lst) then 
+		lst:makelist(asymbol[i], i, ndim) 
+	else 
+		lst:lst[1],
+	n:length(lst),
+	a[i,j]:= dotsimpc( v & lst[j]),
+	transpose(genmatrix(a, 1, n))
+);
+
 mtable3(vlst, v):=block([lst],
 	lst:maplist(lambda([u], dotsimpc(dotinvsimp (v).u)), vlst ),
 	disp(lst),
 	mtable1(lst)
 );
-
-colvect(x):=transpose(matrix(x));
-
-
+ 
 /*
  computes the commutation table with all basis vectors
 */
@@ -820,21 +849,6 @@ cliabs(x):=block([u:expand(x)],
 	radcan(u)
 );
 
-
-prodecomp(x, y):=block( [n:maxgrade(x), m:maxgrade(y), ret, qq , p, l, r  ],
-	ret: (expand(x.y)),
-	if not freeof(".", ret) then (
-		ret:dotsimpc(ret),
-	 [l, r]:oppart (ret, lambda ([u],  maxgrade(u)<=abs(n-m) )),
-	 [p, r]:oppart (r, lambda ([u],  maxgrade(u)>= (n+m) )),
-	 p:subst(nil=0, p),
-	 [l, p]
-	)
-	else (
-		qq: expand(y.x),
-		[ ratsimp ((ret+qq)/2), ratsimp((ret-qq)/2) ]  
-	)
-);
 
 /**
  multiplication table, trace
@@ -1023,57 +1037,73 @@ dual(x):=%ivnorm *( %iv. x);
 
 conjel(x, k):= (asymbol[k]. x)/asymbol[k]	;
 
-/**
- projection
+
+/*
+ computes a unit  element
 */
-project(a, v):=block ([ m:cnorm(v)] ,
-	if m=0 then m:1,
-	if m<0 then m:-m,
-	cliffsimpall(v. inprod(a , v )/m)
+uelem(vv):=block( [qq],
+	qq:cnorm2(vv),
+	if qq=0 then return(vv),
+	if %divsimp=true then (
+		qq:trigsimp(qq),
+		qq:ratsimp(qq)
+	),
+	vv/sqrt(qq)
 );
 
 /*
-dual to the projection
+Linear algebra functions
 */
-reject(a, v):=block ([ m:cnorm(v)] ,
-	if m=0 then m:1,
-	if m<0 then m:-m,
-	cliffsimpall(v. wedgeprod(v , a)/m)
+
+colvect(x):=transpose(matrix(x));
+
+vect2mat(vlist):=block([a, n],
+	local(a),
+	n:min(length(vlist), ndim),
+	a[i,j]:= dotsimpc(expand( vlist[i] | asymbol[j])),
+	genmatrix(a,n)
 );
 
-/**
- reflection
-*/
-reflect(a, v):=block ([ m:cnorm(v)],
-	if m=0 then m:1,
-	if m<0 then m:-m,
-	/*display(m, cconjugate(v)),*/
-	cliffsimpall(v.a.cconjugate(v)/m)
-);
-
-/**
- rotation
-*/
-rotate(a, v):=block ([ m:cnorm(v)],
-	if m=0 then m:1,
-	if m<0 then m:-m,
-	cliffsimpall(v.a.creverse(v)/m)
-);
-
-/*
-determinant
-*/
-clidetmat(M):=block([ velem:vectors(), Mt, v, dd, listarith:true, n],
+mat2vect(M):=block([ velem:vectors(), Mt, qq:[], dd, listarith:true, n],
 	if not matrixp(M) then error("matrix required"),
 	Mt:transpose(M),
 	n:length(Mt),
-	dd:M2[1].velem,
-	for i:2 thru n do (
-		v:M2[i].velem,
-		dd:dotsimpc(dd & v)
-	),
-	dd/%iv
+	for i:1 thru min(n, ndim) do 
+		push( Mt[i].velem, qq),
+	reverse(qq)
 );
+
+prepsyst(eqs, lvs):=block([ M, qq:[], L, R, mm ],
+	M:coefmatrix( eqs, lvs),
+	for vv in eqs do (
+		mm:0,
+		if op(vv) # "="  then (
+			[l, r]: oppart(vv, lambda([z], lfreeof (lvs, z))),
+			if %verbose=true then display(l),
+			mm:-l
+		) else (
+			L:lhs(vv),
+			R:rhs(vv),
+			if L#0 then (
+				[l, r]: oppart(L, lambda([z], lfreeof (lvs, z))),
+				if %verbose=true then display(L, l),
+				if l#nil then mm:mm-l
+			),
+			if R#0 then (
+				[l, r]: oppart(R, lambda([z], lfreeof (lvs, z))),
+				if %verbose=true then display(R, l),
+				if l#nil then mm:mm+l
+			)
+			),
+		push( mm, qq)
+	),
+	qq:reverse(qq),
+	[M, qq]
+);
+
+/*
+determinants
+*/
 
 clidet(vlist):=block([dd, n ],
 	n:length(vlist),
@@ -1082,21 +1112,128 @@ clidet(vlist):=block([dd, n ],
 		dd:dotsimpc(dd & vlist[i]),
 		if dd=0 then return(dd)
 	),
-	dd
+	factorby(dd, %iv)
 );
 
-cvol(aa,bb,cc):= cliffsimpall (aa | (-%iv. (bb & cc )) );
-
-jacobprod(a,b,c):= dotsimpc( a & b & c + b & c & a + c & a & b);
-
-tetraprod(a,b,c):=block( [u],
-	u:  expand( a & (b & c +  c & b) + (b & c + c & b ) & a ),
-	dotsimpc(u)
+clidetmat(M):=block([   Mt, v, dd,   n, ivr],
+	if not matrixp(M) then error("matrix required"),
+	Mt:transpose(M),
+	n:length(Mt),
+	ivr:reverse(pscalar(n)),
+	dd:sum(Mt[1, i]. asymbol[i], i, 1, length(Mt[1])),
+	for i:2 thru n do (
+		v:sum(Mt[i, j]. asymbol[j], j, 1, length(Mt[i])),
+		dd:dotsimpc(dd & v)
+	),
+	cliffsimp1(ivr.dd)
 );
+
+clisyst(M, B):=block([   Mt, MP, qq:[], dd, ss, n,v ],
+	if not matrixp(M) then error("matrix required"),	
+	ss: clidetmat(M),
+	if ss=0 then return (false),
+	Mt:transpose(M),
+	n:length(Mt),
+	for i:1 thru n do (
+		MP:copymatrix(Mt),
+		MP[i]:B,
+		MP:transpose(MP),
+		if %verbose=true then disp(MP), 
+		dd:clidetmat(MP),
+		push(dd/ss, qq)
+		),
+	reverse(qq)
+);
+
+
+
+/* computes the absolute projection */
+proj(v, u):=block([w:buildq([v,u], (('(v | u)/ '(u | u) ). u ) ) ],
+	if freeof(asymbol, u) or freeof(asymbol, u) then
+		return( w ),
+	w: expand(( (v | u) / (u | u) ). u ),
+	dotsimpc(w)
+);
+
+/* computes the absolute rejection */
+rej(v, u):=block([w:buildq([v,u], (('(v  & u)/ '(u | u) ). u ) ) ],
+	if freeof(asymbol, u) or freeof(asymbol, u) then
+		return( w ),
+	w:((v & u)/ (u | u) ). u,
+	w:expand(w),
+	dotsimpc(w)
+);
+
+/*  Gram-Smidt  orthogonalization
+projection-based
+*/
+gramsmidt(vlist):=block([dd:[], n, v, u ],
+	n:length(vlist),
+	push( vlist[1],  dd),
+	for k:2 thru n do (
+		u: vlist[k] - proj( vlist[k], dd[1]),
+		for j:1 thru k-1 do 
+			u: u - proj( u, dd[j]),
+		push(u, dd)
+		),
+	reverse(dd)
+);
+ 
+/*  Gram-Smidt  orthogonalization
+rejection-based
+*/
+gramsmidt2(vlist):=block([dd:[], n, u ],
+	n:length(vlist),
+	push( vlist[1],  dd),
+	for k:2 thru n do (
+		u: rej( vlist[k], dd[1]),
+		for j:1 thru k-1 do 
+			u: rej( u, dd[j]),
+		push(u, dd)
+		),
+	reverse(dd)
+);
+ 
+/*
+characteristic polynomial of  a vector set
+*/
+clipoly(vlist, xx):=block([n, dd:1, quot, res], 
+	n:min(length(vlist), ndim),
+	for i:1 thru n do 
+		dd:dotsimpc(dd & (vlist[i] - xx * asymbol[i] )),
+	[quot, res]:divide(dd, %iv),
+	quot
+);
+
+/* 
+symmetric tensor specified by eigenvector 
+*/
+Ts(a, mm):=block([v, l, b, s, m],
+	if not listp(mm) then error("list required", mm),
+	if inop(a)="+" then 
+		map(lambda([z], Ts(z, mm)), a)
+	else (	
+		[l, b]:mm,
+		m: (b | b),
+		s: l*(a | b)/m,
+		/*display(a, m,  s),*/
+		expand( s . b)
+	)
+);
+
+Tsl(a, mm):=block([ q, ss:0],
+	if not listp(mm) then error("list required", mm),
+ 	for q in mm do
+		ss: ss+ Ts(a, q),
+	ss
+);
+
 
 put('clifford, 'v20,'version);
 put('clifford, "Dimiter Prodanov", 'author);
 put('clifford, "(C) - Dimiter Prodanov, 2015 - 2016", 'copyright);
+
+ttyoff:false;
 
 print("package name: clifford.mac");
 print("author: ", get('clifford,'author));
