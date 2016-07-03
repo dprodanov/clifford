@@ -1,7 +1,52 @@
 Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
+version 2.3 Date 02 July
+	  - bugfix release
+	  - bugfixes in  clicoeff
+	 
+	2.2 Date 20 June 2016	  
+ - new definitions of inner and outer products 
+	- changes in cinvolve
+	
+	2.1 Date 12 May 2016
+	- refactoring
+	- linear algebra functionality separated
+	- matrix representations
+ 
+	2.0 Date 10 Apr 2016
+	- new definitions of  inner product and  outer product (wrong)
+	- bug fiix in clicoeff
+	
+	1.9 Date 16 Feb 2016
+	- bug fix in simplification
+	- change in factorby, reflect
+	
+	1.8 Date 06 Dec 2015
+	- change of notation to exclude conflicts with itensor-based packages
+	
+	1.7 Date 18 Nov 2015
+        - refactoring
+	- change in grade
+	- chage in simp rules
 
- v 1.3 
+	1.6 Date 04 Nov 2015
+	- bugixes oppart
+	- unit tests
+
+	1.5.1 Date 30 Oct 2015
+	- bugfixes oppart
+	- unit tests
+
+	1.4 Date 22 Aug 2015
+	- oppart simplified
+	- unit tests
+
+	1.3 Date 11 Jun 2015
+	- unit tests
+	
+	1.0 Date 26 Jan 2015
+	- initial implementation
+	- GitHub repo
 **********************************
  * @license This library is free software; you can redistribute it and/or
  *      modify it under the terms of the GNU Lesser General Public
