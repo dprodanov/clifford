@@ -5,7 +5,7 @@ version 2.3 Date 02 July
 	  - bugfixes in  clicoeff
 	 
 	2.2 Date 20 June 2016	  
- - new definitions of inner and outer products 
+        - new definitions of inner and outer products 
 	- changes in cinvolve
 	
 	2.1 Date 12 May 2016
@@ -47,6 +47,7 @@ version 2.3 Date 02 July
 	1.0 Date 26 Jan 2015
 	- initial implementation
 	- GitHub repo
+	
 **********************************
  * @license This library is free software; you can redistribute it and/or
  *      modify it under the terms of the GNU Lesser General Public
