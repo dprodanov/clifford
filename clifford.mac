@@ -457,7 +457,7 @@ if get('clifford,'version)=false then (
 	tellsimpafter(bb.ee.cc, dotsimpc(bb.ee.cc)),
 	tellsimpafter(bb*ee, subst("*"=".", bb*ee)),
 	/* simplification of  powers*/
-	tellsimpafter(aa[kk]^nn, powsimp(aa[kk]^nn)),
+	tellsimp(bb^nn, (bb^^nn)),
 	tellsimpafter(aa[kk]^^nn, powsimp(aa[kk]^^nn)),
 	/* simplification of  involution*/
     tellsimpafter('cinvolve('cinvolve(bb)), bb)
