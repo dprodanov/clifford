@@ -67,12 +67,17 @@ e[1] . e[2] . e[1] . e[2], dotsimpc;
 -1$
 e[2] . e[1] . e[1] . e[2], dotsimpc;
 1$
+/*inverses*/
 1/e[2],dotinvsimp;
 -e[2]$
 1/e[1] . e[2], dotinvsimp;
 -e[1] . e[2]$
 1/(1+e[1]),cliffsimpall,expand;
 1/2-e[1]/2$
+(e[1]- e[2])^^2,expand;
+-2$
+(e[1]- e[2])^2,expand;
+-2$
 block(
 	"init clifford geom/pauli",
 	clifford(e,3),
@@ -116,11 +121,3 @@ block(
 	ev(jacobprod(e[1] ,e[2], e[3]), dotsimpc)
 );
 3*(e[1] . e[2] . e[3])$
-/*
-clidet([e[1] ,e[2],e[3] ,e[1]]);
-0$
-clidet([e[1] ,e[2],e[3] ,e[2]]);
-0$
-clidet([e[1] ,e[2],e[3] ,e[3]]);
-0$
-*/

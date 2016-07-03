@@ -104,6 +104,7 @@ ratprint:false;
 		else expand((a.b + cinvolve(b).cinvolve(a))/2);
 	*/
 	
+	wedgesimp:true;
 	inprotype:sym;
 	
 	declare("|", additive);
@@ -115,10 +116,12 @@ ratprint:false;
 		if not mapatom(b) then b:expand(b),
 		if inop(a)="+" then return (map( lambda ([u],  u | b), a)),
 		if inop(b)="+" then return (map( lambda ([u],  a | u), b)),	
-		if not freeof(".", a) then
-			a:cliffsimp1(a),
-		if not freeof(".", b) then
-			b:cliffsimp1(b),
+		if wedgesimp then (
+			if not freeof(".", a) then
+				a:cliffsimp1(a),
+			if not freeof(".", b) then
+				b:cliffsimp1(b)
+		),
 		l:maxgrade(a),
 		r:maxgrade(b),
 		qq: l-r,
@@ -162,7 +165,13 @@ ratprint:false;
 		if mapatom(a) and mapatom(b) then 
 			if a#b then return(a.b) 
 			else return (0),
-		
+			
+		if wedgesimp then (
+			if not freeof(".", a) then
+				a:cliffsimp1(a),
+			if not freeof(".", b) then
+				b:cliffsimp1(b)
+		),
 		[ra, la]: oppart(a, lambda([u],  freeof ("~", u) and scalarp(u) )),
 		ra:subst(nil=1, ra),
 		la:subst(nil=1, la),		
@@ -206,10 +215,12 @@ ratprint:false;
 		if not mapatom(b) then b:expand(b),
 		if inop(a)="+" then return (map( lambda ([u],  u & b), a)),
 		if inop(b)="+" then return (map( lambda ([u],  a & u), b)),	
-		if not freeof(".", a) then
-			a:cliffsimp1(a),
-		if not freeof(".", b) then
-			b:cliffsimp1(b),
+		if wedgesimp then (
+			if not freeof(".", a) then
+				a:cliffsimp1(a),
+			if not freeof(".", b) then
+				b:cliffsimp1(b)
+		),
 		l:maxgrade(a),
 		r:maxgrade(b),
 		/*display(l,r),*/
@@ -351,9 +362,30 @@ permsign(arr):=block([k:0, len, ret:0 ] ,
 );
 
 /*
-simplification rules
+Abstract Cliford algebra construction
 */
-matchdeclare([aa, ee], lambda([u], not freeof(asymbol,u) and freeof ("+", u) and not scalarp(u) ), [bb,cc], true, [kk, mm, nn], integerp); 
+matchdeclare([aa, ee], lambda([u], not freeof(asymbol,u) and freeof ("+", u) and not scalarp(u) ), [bb,cc], true, 
+			[kk, mm, nn], lambda( [z],  integerp(z) and z>0)); 	
+			
+if get('clifford,'version)=false then (
+	tellsimp(aa[kk].aa[kk], signature[kk] ),
+	tellsimpafter(aa[kk].aa[mm], dotsimp2(aa[kk].aa[mm])),
+	tellsimpafter(bb.ee.cc, dotsimpc(bb.ee.cc)),
+	tellsimp(bb^nn, bb^^nn)
+);
+
+/*  experimental code*/
+if get('clifford,'version)=false then (
+	/* simplification of  powers
+	tellsimpafter(aa[kk]^nn, powsimp(aa[kk]^nn)),*/
+	tellsimpafter(aa[kk]^^nn, powsimp(aa[kk]^^nn)),
+	/* simplification of  involution*/
+    tellsimpafter('cinvolve('cinvolve(bb)), bb)
+);			
+			
+/*
+simplification rules
+*/			
 matchdeclare(dd, lambda([u],  freeof(asymbol, u)), gg, lambda([u],  not freeof(asymbol, u))); 
 matchdeclare(ds, lambda([u],  not freeof(asymbol, u) and not (freeof("^", u) or freeof("^^", u) ) ), rn, numberp);
 	
@@ -436,9 +468,9 @@ cinv(ab):=block( [s, b, u:1],
 /*
 simplification of exponents
 */
-powsimp(aa):=block( [a,k,p:1],
+powsimp(aa):=block( [a, k, p:1],
   if atom(aa) then return(aa),
-  if op(aa)="^^" or op(aa)="^" then (
+  if inop(aa)="^^" then (
 	  a:inpart(aa,1),
 	  k:inpart(aa,2),
 	  for j:1 thru k do
@@ -448,20 +480,6 @@ powsimp(aa):=block( [a,k,p:1],
   else aa
  );
 
-	/*
-	Abstract Cliford algebra construction
-	*/
-if get('clifford,'version)=false then (
-	tellsimp(aa[kk].aa[kk], signature[kk] ),
-	tellsimpafter(aa[kk].aa[mm], dotsimp2(aa[kk].aa[mm])),
-	tellsimpafter(bb.ee.cc, dotsimpc(bb.ee.cc)),
-	tellsimpafter(bb*ee, subst("*"=".", bb*ee)),
-	/* simplification of  powers*/
-	tellsimp(bb^nn, (bb^^nn)),
-	tellsimpafter(aa[kk]^^nn, powsimp(aa[kk]^^nn)),
-	/* simplification of  involution*/
-    tellsimpafter('cinvolve('cinvolve(bb)), bb)
-);
 
 
 /*

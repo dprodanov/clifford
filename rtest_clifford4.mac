@@ -35,8 +35,8 @@ batch("rtest_clifford", test);
 'done$
 get('clifford,'version);
 v20$
-a | b + a & b;
-a.b$
+/*a | b + a & b;
+a.b$*/
 (A1: a & b &c + b & c & a + c& a &b, 
 ratsimp(A1+(- a . b . c - a . c . 'cinvolve(b)+a . 'cinvolve(c) . 'cinvolve(b)+
 'cinvolve(a) . 'cinvolve(b) . 'cinvolve(c)- b . a . 'cinvolve(c)+b . 'cinvolve(a)
@@ -74,3 +74,11 @@ rot:R1.rr.R2,cliffsimpall;
 (g[3]*cos(phi/2)^2-2*g[2]*cos(phi/2)*sin(phi/2)-g[3]*sin(phi/2)^2)*y+(g[4]*cos(phi/2)^2+g[4]*sin(phi/2)^2)*z$
 trigreduce(rot);
 g[1]*t+g[2]*cos(phi)*x+g[3]*sin(phi)*x+g[3]*cos(phi)*y-g[2]*sin(phi)*y+g[4]*z$
+/*
+clidet([e[1] ,e[2],e[3] ,e[1]]);
+0$
+clidet([e[1] ,e[2],e[3] ,e[2]]);
+0$
+clidet([e[1] ,e[2],e[3] ,e[3]]);
+0$
+*/
