@@ -95,7 +95,7 @@ e[2]| (-%iv. (e[3]&e[1]));
 1$
 e[3]| (-%iv. (e[1]&e[2])),dotsimpc;
 1$
-e[1]| (  (e[2]&e[3]));
+e[1]| ( (e[2]&e[3]));
 0$
 -%iv.(e[1]& (-%iv. (e[2]&e[3]))),dotsimpc;
 0$
@@ -103,17 +103,24 @@ e[2]. (e[1]|e[3])+e[3]. (e[1]|e[2]);
 0$
 -(%iv.e[1]) & (-%iv. e[2]&e[3]),dotsimpc;
 -e[1] . e[2] . e[3]$
+-dotsimpc(%iv.e[1]) ~ (-%iv. e[2]~e[3]),dotsimpc;
+-e[1] . e[2] . e[3]$
 dual(e[1] &e[2]),dotsimpc;
 e[3]$
 dual(e[3] &e[1]),dotsimpc;
 e[2]$
 dual(e[2] &e[3]),dotsimpc;
 e[1]$
-jacobprod(e[1] ,e[2], e[3]);
+block(
+	jacobprod(a,b,c):= ( a & b & c + b & c & a + c & a & b),
+	ev(jacobprod(e[1] ,e[2], e[3]), dotsimpc)
+);
 3*(e[1] . e[2] . e[3])$
+/*
 clidet([e[1] ,e[2],e[3] ,e[1]]);
 0$
 clidet([e[1] ,e[2],e[3] ,e[2]]);
 0$
 clidet([e[1] ,e[2],e[3] ,e[3]]);
 0$
+*/

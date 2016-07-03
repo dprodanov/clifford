@@ -37,8 +37,13 @@ get('clifford,'version);
 v20$
 a | b + a & b;
 a.b$
-a & b &c + b & c & a + c& a &b;
-0$
+(A1: a & b &c + b & c & a + c& a &b, 
+ratsimp(A1+(- a . b . c - a . c . 'cinvolve(b)+a . 'cinvolve(c) . 'cinvolve(b)+
+'cinvolve(a) . 'cinvolve(b) . 'cinvolve(c)- b . a . 'cinvolve(c)+b . 'cinvolve(a)
+ . 'cinvolve(c)- b . c . a+'cinvolve(b) . 'cinvolve(c) . 'cinvolve(a)- c . a . b - 
+c . b . 'cinvolve(a)+c . 'cinvolve(b) . 'cinvolve(a)+'cinvolve(c) . 'cinvolve(a)
+ . 'cinvolve(b))/4));
+ 0$
 clifford(e,3);
 [1,1,1]$
 celem(A,[t,x,y,z]);

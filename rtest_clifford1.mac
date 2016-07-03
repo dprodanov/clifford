@@ -56,9 +56,9 @@ e[3].e[3];
 e[2].e[1];
 -e[1] . e[2]$
 e[1] | e[1] | e[1];
-0$
+e[1]$
 e[1] | e[1] | e[1] | e[1];
-0$
+1$
 e[1] | e[2];
 0$
 e[1] | e[1];
@@ -66,7 +66,7 @@ e[1] | e[1];
 e[1] | e[2];
 0$
 e[2] | e[2];
-1$
+-1$
 e[3] | e[3];
 0$
 /* outer product tests 
@@ -94,19 +94,19 @@ e[1].e[1].e[2].e[1].e[2];
 e[1]$
 e[1].e[1].e[1].e[2].e[1];
 -e[2]$
-/* Jacobi identity */
+/* Jacobi identity 
 aa & bb  & cc+ cc & aa & bb +bb & cc& aa;
-0$
+0$*/
 e[1] & e[2]  & e[3]+  e[3]& e[2] & e[1] +e[2] & e[3] & e[1];
 e[1] . e[2] . e[3]$
 (e[1].e[2])& (e[2].e[3])& (e[1].e[3])+(e[1].e[3])& (e[2].e[3])& (e[1].e[2])+(e[2].e[3])& (e[1].e[3])& (e[1].e[2]), dotsimpc;
 0$
 /* complex tests*/
 block(
-declare([a,b,c,d],scalar),
-cc:a+b*e[1]+c*e[2]+d*e[1].e[2],
-dd:cinv(cc),
-expand(dd)
+	declare([a,b,c,d],scalar),
+	cc:a+b*e[1]+c*e[2]+d*e[1].e[2],
+	dd:cinv(cc),
+	expand(dd)
 );
 a/(a^2-b^2+c^2-d^2)-(e[1]*b)/(a^2-b^2+c^2-d^2)-(e[2]*c)/(a^2-b^2+c^2-d^2)-((e[1] . e[2])*d)/(a^2-b^2+c^2-d^2)$
 dd.cc, expand, ratsimp, cliffsimpall;
@@ -116,5 +116,13 @@ grade(cc);
 (grade(dd)-
 [a/(a^2-b^2+c^2-d^2),- (e[1]*b/(a^2-b^2+c^2-d^2))- e[2]*c/(a^2-b^2+c^2-d^2),- (e[1] . e[2]*d)/(a^2-b^2+c^2-d^2),0]),ratsimp;
 [0,0,0,0]$
+block(
+	a1:cvect(a),
+	b1:cvect(b),
+	c1:cvect(c),
+	dd:(a1 & b1 )& c1 - a1 & (b1 & c1),
+	factor(expand(dd))
+);
+0$
 grade(e[1] . e[2]/5);
 [0,0,e[1] . e[2]/5,0]$
