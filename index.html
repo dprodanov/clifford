@@ -8,11 +8,27 @@
     <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
     <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+	<link rel="stylesheet" type="text/css" href="stylesheets/wxmaxima.css"/>
+	<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    displayAlign: "left",
+    context: "MathJax"
+  })
+</script>
+<script type="text/javascript"
+  src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML">
+</script>
+
   </head>
   <body>
+  <!-- ***************************************************** -->
+<!--          Created with wxMaxima version 15.08.2         -->
+<!-- ***************************************************** -->
+<noscript><div class="error message">    Please enable JavaScript in order to get a 2d display of the equations embedded in this web page.</div></noscript>\(      \DeclareMathOperator{\abs}{abs}
+\)
     <section class="page-header">
       <h1 class="project-name">Clifford</h1>
-      <h2 class="project-tagline">Clifford algebra for CAS Maxima</h2>
+      <h2 class="project-tagline">Clifford algebra for Maxima</h2>
       <a href="https://github.com/dprodanov/clifford" class="btn">View on GitHub</a>
       <a href="https://github.com/dprodanov/clifford/zipball/master" class="btn">Download .zip</a>
       <a href="https://github.com/dprodanov/clifford/tarball/master" class="btn">Download .tar.gz</a>
@@ -20,9 +36,9 @@
 
     <section class="main-content">
       <h3>
-<a id="clifford-algebra-for-cas-maxima" class="anchor" href="#clifford-algebra-for-cas-maxima" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Clifford algebra for CAS Maxima</h3>
-
-<p>Clifford algebra a lightweight package for performing Geometric Algebra calculations.
+<a id="clifford-algebra-for-cas-maxima" class="anchor" href="#clifford-algebra-for-cas-maxima" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Clifford algebra for Maxima</h3>
+<img src="clifford.png" width=133 height=153">
+<p>Clifford is  a lightweight package for performing Geometric Algebra calculations.
 William Clifford invented his algebras in 1876 as an attempt to generalize the quaternions to higher dimensions.
 It unifies all branches of physics, and has found rich applications in robotics, signal processing, ray tracing, virtual reality, computer vision, vector field processing, tracking, geographic information systems and neural computing. </p>
 
@@ -43,9 +59,65 @@ Maxima yields high precision numerical results by using exact fractions, arbitra
 
 <p>Then  you can run a demo by typing
 demo("clifford.dem");</p>
+<p>A simple demo</p>
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i2) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">load</span>(<span class="code_string">&quot;</span><span class="code_string">clifford</span><span class="code_string">&quot;</span>)<span class="code_endofline">$</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\mbox{}\\package\,name:\,clifford.mac\mbox{}\\author:\,Dimiter\,Prodanov\mbox{}\\version:\mathit{v20}\mbox{}\\Recommended\,location:\,share/contrib\mbox{}\\last\,update:\,2\,Jul\,2016\]
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i3) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">clifford</span>(<span class="code_variable">e</span>,<span class="code_number">0</span>,<span class="code_number">2</span>)<span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\mathrm{\tt (\%o3) }\quad [-1,-1]\]
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i4) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_variable">e</span>[<span class="code_number">2</span>].<span class="code_variable">e</span>[<span class="code_number">1</span>]<span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\mathrm{\tt (\%o4) }\quad -{{e}_{1}}\mathit{ . }{{e}_{2}}\]
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i7) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">mtable2</span>()<span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\mathrm{\tt (\%o7) }\quad \begin{pmatrix}1 & {{e}_{1}} & {{e}_{2}} & {{e}_{1}}\mathit{ . }{{e}_{2}}\cr {{e}_{1}} & -1 & {{e}_{1}}\mathit{ . }{{e}_{2}} & -{{e}_{2}}\cr {{e}_{2}} & -{{e}_{1}}\mathit{ . }{{e}_{2}} & -1 & {{e}_{1}}\cr {{e}_{1}}\mathit{ . }{{e}_{2}} & {{e}_{2}} & -{{e}_{1}} & -1\end{pmatrix}\]
+
+
+<!-- Code cell -->
+
 
 <p>A more extensive demo about outer products can be seen <a href="outerproduct.html">here</a>. 
 The demo script for wxMaxima can be downloaded  <a href="outerproduct.wxmx">here</a>.
+
+<p>A more extensive demo about potential problems can be seen <a href="potential.html">here</a>. 
+The demo script for wxMaxima can be downloaded  <a href="potential.wxmx">here</a>.
  
 
       <footer class="site-footer">

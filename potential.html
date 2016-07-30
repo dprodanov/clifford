@@ -1,0 +1,375 @@
+<!DOCTYPE HTML">
+<HTML>
+ <HEAD>
+  <TITLE>potential</TITLE>
+  <META NAME="generator" CONTENT="wxMaxima">
+  <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    displayAlign: "left",
+    context: "MathJax"
+  })
+</script>
+<script type="text/javascript"
+  src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML">
+</script>
+  <link rel="stylesheet" type="text/css" href="potential_htmlimg/potential.css"/>
+ </HEAD>
+ <BODY>
+
+<!-- ***************************************************** -->
+<!--          Created with wxMaxima version 15.08.2         -->
+<!-- ***************************************************** -->
+<noscript><div class="error message">    Please enable JavaScript in order to get a 2d display of the equations embedded in this web page.</div></noscript>\(      \DeclareMathOperator{\abs}{abs}
+\)
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i1) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">load</span>(<span class="code_string">&quot;</span><span class="code_string">cliffordan</span><span class="code_string">&quot;</span>)<span class="code_endofline">$</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\mbox{}\\package\,name:\,clifford.mac\mbox{}\\author:\,Dimiter\,Prodanov\mbox{}\\version:\mathit{v20}\mbox{}\\Recommended\,location:\,share/contrib\mbox{}\\last\,update:\,20\,June\,2016\mbox{}\\package\,name:\,cliffordan.mac\mbox{}\\author:\,Dimiter\,Prodanov\mbox{}\\version:\mathit{v16}\mbox{}\\Recommended\,location:\,share/contrib\mbox{}\\last\,update:\,08\,March\,2016\]
+
+
+<!-- Text cell -->
+
+
+<P CLASS="comment">
+Euclidean 3D space
+
+</P>
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i2) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">clifford</span>(<span class="code_variable">e</span>,<span class="code_number">3</span>)<span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\mathrm{\tt (\%o2) }\quad [1,1,1]\]
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i5) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+ <span class="code_variable">r</span><span class="code_operator">:</span><span class="code_function">cvect</span>([<span class="code_variable">x</span>,<span class="code_variable">y</span>,<span class="code_variable">z</span>])<span class="code_endofline">;</span><BR>
+ &nbsp;&nbsp;  </SPAN></TD>
+</TR></TABLE>
+\[\mathrm{\tt (\%o5) }\quad {{e}_{1}}\cdot x+{{e}_{2}}\cdot y+{{e}_{3}}\cdot z\]
+
+
+<!-- Text cell -->
+
+
+<P CLASS="comment">
+Green function
+
+</P>
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i11) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+ <span class="code_variable">G</span><span class="code_operator">:</span><span class="code_variable">r</span><span class="code_operator">/</span><span class="code_function">sqrt</span>(<span class="code_operator">-</span><span class="code_function">cnorm</span>(<span class="code_variable">r</span>))<span class="code_operator">^</span><span class="code_number">3</span><span class="code_operator">/</span>(<span class="code_number">4</span><span class="code_operator">*</span><span class="code_variable">%pi</span>)<span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\mathrm{\tt (\%o11) }\quad \frac{{{e}_{1}}\cdot x+{{e}_{2}}\cdot y+{{e}_{3}}\cdot z}{4\cdot \pi \cdot {{\left( {{x}^{2}}+{{y}^{2}}+{{z}^{2}}\right) }^{\frac{3}{2}}}}\]
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i19) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+ &nbsp;&nbsp;&nbsp;<span class="code_function">mvectdiff</span>(<span class="code_variable">G</span>,<span class="code_variable">r</span>)<span class="code_operator">=</span><span class="code_number">0</span><span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\mathrm{\tt (\%o19) }\quad 0=0\]
+
+
+<!-- Text cell -->
+
+
+<P CLASS="comment">
+Potential
+
+</P>
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i10) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_variable">P</span><span class="code_operator">:</span><span class="code_number">-</span><span class="code_number">1</span><span class="code_operator">/</span><span class="code_function">sqrt</span>(<span class="code_operator">-</span><span class="code_function">cnorm</span>(<span class="code_variable">r</span>))<span class="code_operator">/</span>(<span class="code_number">4</span><span class="code_operator">*</span><span class="code_variable">%pi</span>)<span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\mathrm{\tt (\%o10) }\quad -\frac{1}{4\cdot \pi \cdot \sqrt{{{x}^{2}}+{{y}^{2}}+{{z}^{2}}}}\]
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i13) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">mvectdiff</span>(<span class="code_variable">P</span>,<span class="code_variable">r</span>)<span class="code_operator">=</span><span class="code_variable">G</span><span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\mathrm{\tt (\%o13) }\quad \frac{{{e}_{1}}\cdot x+{{e}_{2}}\cdot y+{{e}_{3}}\cdot z}{4\cdot \pi \cdot {{\left( {{x}^{2}}+{{y}^{2}}+{{z}^{2}}\right) }^{\frac{3}{2}}}}=\frac{{{e}_{1}}\cdot x+{{e}_{2}}\cdot y+{{e}_{3}}\cdot z}{4\cdot \pi \cdot {{\left( {{x}^{2}}+{{y}^{2}}+{{z}^{2}}\right) }^{\frac{3}{2}}}}\]
+
+
+<!-- Text cell -->
+
+
+<P CLASS="comment">
+Homogeneous Poisson equation
+
+</P>
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i20) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">dependsv</span>(<span class="code_variable">F</span>,[<span class="code_variable">x</span>,<span class="code_variable">y</span>,<span class="code_variable">z</span>])<span class="code_endofline">$</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i17) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">mvectdiff</span>(<span class="code_variable">F</span>,<span class="code_variable">r</span>,<span class="code_number">2</span>)<span class="code_operator">=</span><span class="code_number">0</span><span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\mathrm{\tt (\%o17) }\quad \frac{{{d}^{2}}}{d\,{{x}^{2}}}\cdot F+\frac{{{d}^{2}}}{d\,{{y}^{2}}}\cdot F+\frac{{{d}^{2}}}{d\,{{z}^{2}}}\cdot F=0\]
+
+
+<!-- Text cell -->
+
+
+<P CLASS="comment">
+P solves the equation
+
+</P>
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i18) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">mvectdiff</span>(<span class="code_variable">P</span>,<span class="code_variable">r</span>,<span class="code_number">2</span>)<span class="code_operator">=</span><span class="code_number">0</span><span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\mathrm{\tt (\%o18) }\quad 0=0\]
+
+
+<!-- Text cell -->
+
+
+<P CLASS="comment">
+Define cyclindrical coordinates
+
+</P>
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i21) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">declare</span>( [<span class="code_variable">rho</span>, <span class="code_variable">phi</span>], <span class="code_variable">scalar</span>)<span class="code_endofline">$</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i24) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_variable">cyl_eq</span><span class="code_operator">:</span>[<span class="code_variable">x</span><span class="code_operator">=</span><span class="code_variable">rho</span><span class="code_operator">*</span><span class="code_function">cos</span>(<span class="code_variable">phi</span>), <span class="code_variable">y</span><span class="code_operator">=</span><span class="code_variable">rho</span><span class="code_operator">*</span><span class="code_function">sin</span>(<span class="code_variable">phi</span>)]<span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\mathrm{\tt (\%o24) }\quad [x=\mathrm{cos}\left( \phi\right) \cdot \rho,y=\mathrm{sin}\left( \phi\right) \cdot \rho]\]
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i25) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_variable">r_c</span><span class="code_operator">:</span><span class="code_function">coordsubst</span>(<span class="code_variable">r</span>, <span class="code_variable">cyl_eq</span>)<span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\mathrm{\tt (\%o25) }\quad \left( {{e}_{1}}\cdot \mathrm{cos}\left( \phi\right) +{{e}_{2}}\cdot \mathrm{sin}\left( \phi\right) \right) \cdot \rho+{{e}_{3}}\cdot z\]
+
+
+<!-- Text cell -->
+
+
+<P CLASS="comment">
+Green function in cylindrical coordinates
+
+</P>
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i26) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_variable">GG_c</span><span class="code_operator">:</span><span class="code_function">coordsubst</span>(<span class="code_variable">G</span>, <span class="code_variable">cyl_eq</span>),<span class="code_variable">factor</span><span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\mathrm{\tt (\%o26) }\quad \frac{{{e}_{1}}\cdot \mathrm{cos}\left( \phi\right) \cdot \rho+{{e}_{2}}\cdot \mathrm{sin}\left( \phi\right) \cdot \rho+{{e}_{3}}\cdot z}{4\cdot \pi \cdot {{\left( {{\rho}^{2}}+{{z}^{2}}\right) }^{\frac{3}{2}}}}\]
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i28) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">mvectdiff</span>(<span class="code_variable">GG_c</span>,<span class="code_variable">r_c</span>)<span class="code_operator">=</span><span class="code_number">0</span><span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\mathrm{\tt (\%o28) }\quad 0=0\]
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i30) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">dependsv</span>(<span class="code_variable">F</span>,[<span class="code_variable">x</span>,<span class="code_variable">y</span>,<span class="code_variable">z</span>,<span class="code_variable">rho</span>, <span class="code_variable">phi</span>])<span class="code_endofline">$</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+
+
+
+<!-- Text cell -->
+
+
+<P CLASS="comment">
+Homogeneous Poisson equation
+
+</P>
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i31) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+ <span class="code_function">mvectdiff</span>(<span class="code_variable">F</span>,<span class="code_variable">r_c</span>,<span class="code_number">2</span>)<span class="code_operator">=</span><span class="code_number">0</span><span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\mathrm{\tt (\%o31) }\quad \frac{\frac{{{d}^{2}}}{d\,{{\phi}^{2}}}\cdot F+\rho\cdot \left( \frac{d}{d\,\rho}\cdot F\right) +{{\rho}^{2}}\cdot \left( \frac{{{d}^{2}}}{d\,{{\rho}^{2}}}\cdot F\right) +{{\rho}^{2}}\cdot \left( \frac{{{d}^{2}}}{d\,{{z}^{2}}}\cdot F\right) }{{{\rho}^{2}}}=0\]
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i32) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_variable">V</span><span class="code_operator">:</span><span class="code_function">coordsubst</span>(<span class="code_variable">P</span>,<span class="code_variable">cyl_eq</span>)<span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\mathrm{\tt (\%o32) }\quad -\frac{1}{4\cdot \pi \cdot \sqrt{{{\rho}^{2}}+{{z}^{2}}}}\]
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i33) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">mvectdiff</span>(<span class="code_variable">V</span>,<span class="code_variable">r_c</span>)<span class="code_operator">=</span><span class="code_variable">GG_c</span><span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\mathrm{\tt (\%o33) }\quad \frac{{{e}_{1}}\cdot \mathrm{cos}\left( \phi\right) \cdot \rho+{{e}_{2}}\cdot \mathrm{sin}\left( \phi\right) \cdot \rho+{{e}_{3}}\cdot z}{4\cdot \pi \cdot {{\left( {{\rho}^{2}}+{{z}^{2}}\right) }^{\frac{3}{2}}}}=\frac{{{e}_{1}}\cdot \mathrm{cos}\left( \phi\right) \cdot \rho+{{e}_{2}}\cdot \mathrm{sin}\left( \phi\right) \cdot \rho+{{e}_{3}}\cdot z}{4\cdot \pi \cdot {{\left( {{\rho}^{2}}+{{z}^{2}}\right) }^{\frac{3}{2}}}}\]
+
+
+<!-- Text cell -->
+
+
+<P CLASS="comment">
+V solves the equation
+
+</P>
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i34) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">mvectdiff</span>(<span class="code_variable">V</span>,<span class="code_variable">r_c</span>,<span class="code_number">2</span>)<span class="code_operator">=</span><span class="code_number">0</span><span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\mathrm{\tt (\%o34) }\quad 0=0\]
+
+
+<!-- Code cell -->
+
+
+
+ <HR>
+ <SMALL> Created with <A HREF="http://wxmaxima.sourceforge.net/">wxMaxima</A>.</SMALL>
+ </BODY>
+</HTML>
