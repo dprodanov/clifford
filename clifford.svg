@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Maxima logo - Jaime E. Villate, 2014 -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   height="135"
+   width="135"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="clifford.svg">
+  <metadata
+     id="metadata49">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1310"
+     inkscape:window-height="848"
+     id="namedview47"
+     showgrid="false"
+     inkscape:snap-grids="false"
+     inkscape:snap-to-guides="false"
+     showguides="true"
+     inkscape:guide-bbox="true"
+     inkscape:zoom="2.93"
+     inkscape:cx="35.187713"
+     inkscape:cy="96.485865"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg2">
+    <sodipodi:guide
+       position="64.316038,92.971698"
+       orientation="1,0"
+       id="guide4237" />
+    <sodipodi:guide
+       position="-38.566553,69.96587"
+       orientation="0,1"
+       id="guide4239" />
+    <sodipodi:guide
+       position="56.992925,101.0908"
+       orientation="0,1"
+       id="guide4241" />
+    <sodipodi:guide
+       position="-28.327645,37.201365"
+       orientation="0,1"
+       id="guide4243" />
+  </sodipodi:namedview>
+  <defs
+     id="defs4">
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect5732"
+       is_visible="true" />
+    <inkscape:perspective
+       sodipodi:type="inkscape:persp3d"
+       inkscape:vp_x="-2.8601695 : 92.097458 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_z="135 : 67.5 : 1"
+       inkscape:persp3d-origin="67.5 : 45 : 1"
+       id="perspective3401" />
+    <filter
+       id="shadow"
+       filterUnits="objectBoundingBox"
+       width="1.4"
+       height="1.4">
+      <feGaussianBlur
+         in="SourceAlpha"
+         stdDeviation="4"
+         id="feGaussianBlur7" />
+      <feOffset
+         dx="4"
+         dy="4"
+         id="feOffset9" />
+      <feComponentTransfer
+         result="shadow"
+         id="feComponentTransfer11">
+        <feFuncA
+           type="linear"
+           slope=".5"
+           intercept="0"
+           id="feFuncA13" />
+      </feComponentTransfer>
+    </filter>
+    <filter
+       id="emboss">
+      <feGaussianBlur
+         in="SourceAlpha"
+         stdDeviation="2"
+         result="blur"
+         id="feGaussianBlur16" />
+      <feSpecularLighting
+         in="blur"
+         surfaceScale="-3"
+         style="lighting-color:white"
+         specularConstant="1"
+         specularExponent="16"
+         result="spec"
+         kernelUnitLength="1"
+         id="feSpecularLighting18">
+        <feDistantLight
+           azimuth="45"
+           elevation="45"
+           id="feDistantLight20" />
+      </feSpecularLighting>
+      <feComposite
+         in="spec"
+         in2="SourceGraphic"
+         operator="in"
+         result="specOut"
+         id="feComposite22" />
+    </filter>
+    <path
+       d="M20.04,-75.84 H40.32 C54.24,-75.84 57.96,-73.08 60,-61.2 H63.12 L61.92,-80.76 H2.64 L28.8,-38.4 0.6,0 H64.2 L70.68,-21.6 H67.56 C63.72,-12 60.12,-9.96 46.2,-9.96 H14.16 L39.48,-44.28 20.04,-75.84 Z"
+       id="Sigma" />
+    <path
+       d="M64.704,-55.008 V-11.52 C64.704,-3.552 63.552,-2.304 55.968,-1.824 H82.848 V-1.824 C75.84,-2.304 74.496,-3.648 74.496,-10.464 V-53.088 C74.496,-59.904 75.744,-61.152 82.848,-61.728 V-63.552 H63.744 L42.528,-15.072 20.352,-63.552 H1.344 V-61.728 C9.216,-61.248 10.464,-60.096 10.464,-53.088 V-14.112 C10.464,-4.224 9.12,-2.4 1.152,-1.824 H23.712 V-1.824 C16.32,-2.208 14.688,-4.416 14.688,-14.112 V-52.8 L38.784,0 H40.128 L64.704,-55.008 Z"
+       id="M" />
+    <path
+       d="M36.12,-91.68 C35.04,-91.8 34.08,-91.92 33.48,-91.92 28.08,-91.92 22.68,-87.6 21.84,-82.68 21.12,-78.24 23.16,-75.6 28.68,-73.92 25.32,-71.04 23.16,-67.44 22.44,-63.48 21.72,-58.92 23.04,-55.08 26.88,-50.76 22.2,-47.64 19.92,-45.84 17.4,-43.44 12.24,-38.4 8.4,-31.08 7.32,-24.12 5.64,-14.64 9.12,-5.88 15.72,-2.28 19.32,-0.36 23.76,0.36 31.08,0.36 33.24,0.36 35.88,0.24 41.64,0 46.32,-0.24 49.44,3.24 48.72,7.92 48.0,12.48 44.16,15.84 39.72,15.84 39.12,15.84 36.84,15.6 34.56,15.12 31.8,14.76 30.84,14.64 29.76,14.64 26.76,14.64 24.36,16.68 23.88,19.68 23.16,23.76 26.76,26.64 32.64,26.64 38.28,26.64 42.96,24.24 47.76,19.08 51.96,14.52 54.72,9 55.68,3.48 56.64,-1.92 55.32,-6.12 51.96,-9 49.56,-11.16 46.92,-11.76 41.52,-11.76 H31.08 C25.92,-11.76 21.96,-12.24 19.92,-13.2 15.24,-15.48 12.6,-21.12 13.68,-27.36 15.12,-35.88 21.48,-43.08 32.52,-48.84 35.64,-47.64 38.04,-47.28 41.76,-47.28 51.24,-47.28 57.36,-49.8 58.08,-54 58.56,-56.76 55.68,-58.32 50.4,-58.32 45.72,-58.32 41.16,-57 32.16,-53.28 27.6,-57 26.4,-59.4 27,-63.24 27.6,-66.96 30.48,-70.56 35.52,-73.92 41.52,-74.16 45.72,-74.88 49.32,-76.56 53.64,-78.6 56.88,-81.6 57.24,-84.36 57.72,-86.64 55.92,-87.96 52.56,-87.96 48.12,-87.96 42.72,-85.2 33.96,-78.36 30.12,-78.48 27.96,-80.76 28.56,-83.88 28.92,-86.52 31.32,-88.32 35.76,-89.52 L36.12,-91.68Z"
+       id="xi" />
+  </defs>
+  <g
+     id="g27"
+     transform="matrix(0.76027221,0,0,0.72116308,-4.7667006,42.842445)">
+    <use
+       xlink:href="#xi"
+       x="1"
+       y="99"
+       style="filter:url(#shadow)"
+       id="use29"
+       width="100%"
+       height="100%" />
+    <use
+       xlink:href="#xi"
+       x="1"
+       y="99"
+       style="fill:#000080"
+       id="use31"
+       width="100%"
+       height="100%" />
+    <use
+       xlink:href="#xi"
+       x="1"
+       y="99"
+       style="filter:url(#emboss)"
+       id="use33"
+       width="100%"
+       height="100%" />
+    <use
+       xlink:href="#Sigma"
+       x="56"
+       y="99"
+       style="filter:url(#shadow)"
+       id="use35"
+       width="100%"
+       height="100%" />
+    <use
+       xlink:href="#Sigma"
+       x="56"
+       y="99"
+       style="fill:#000080"
+       id="use37"
+       width="100%"
+       height="100%" />
+    <use
+       xlink:href="#Sigma"
+       x="56"
+       y="99"
+       style="filter:url(#emboss)"
+       id="use39"
+       width="100%"
+       height="100%" />
+    <use
+       xlink:href="#M"
+       x="29"
+       y="95"
+       style="filter:url(#shadow)"
+       id="use41"
+       width="100%"
+       height="100%" />
+    <use
+       xlink:href="#M"
+       x="29"
+       y="95"
+       style="fill:#b40000"
+       id="use43"
+       width="100%"
+       height="100%" />
+    <use
+       xlink:href="#M"
+       x="29"
+       y="95"
+       style="filter:url(#emboss)"
+       id="use45"
+       width="100%"
+       height="100%" />
+  </g>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     x="53.771187"
+     y="59.491524"
+     id="text3381"
+     sodipodi:linespacing="125%"><tspan
+       sodipodi:role="line"
+       id="tspan3383"
+       x="53.771187"
+       y="59.491524" /></text>
+  <g
+     id="g5734"
+     transform="matrix(1.2119353,0,0,1.2752923,21.710264,-39.537852)">
+    <text
+       sodipodi:linespacing="125%"
+       id="text3397"
+       y="73.048752"
+       x="45.762516"
+       style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#00007e;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:'Script MT Bold';-inkscape-font-specification:'Script MT Bold, Bold';fill:#00007e;fill-opacity:1"
+         y="73.048752"
+         x="45.762516"
+         id="tspan3399"
+         sodipodi:role="line">Cl</tspan></text>
+    <circle
+       r="26.417944"
+       cy="60.422256"
+       cx="64.099747"
+       id="path3433"
+       style="fill:none;fill-opacity:1;fill-rule:evenodd;stroke:#ffc100;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <ellipse
+       ry="3.4037685"
+       rx="3.6039901"
+       cy="34.380341"
+       cx="64.630569"
+       id="path4235"
+       style="fill:#008000;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <ellipse
+       ry="3.4037685"
+       rx="3.6039901"
+       cy="87.081367"
+       cx="64.316032"
+       id="path4235-9"
+       style="fill:#008000;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <ellipse
+       ry="3.4037685"
+       rx="3.6039901"
+       cy="60.495281"
+       cx="90.42453"
+       id="path4235-8"
+       style="fill:#0080ff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <ellipse
+       ry="3.4037685"
+       rx="3.6039901"
+       cy="59.858494"
+       cx="38.048347"
+       id="path4235-8-0"
+       style="fill:#0080ff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+  </g>
+</svg>

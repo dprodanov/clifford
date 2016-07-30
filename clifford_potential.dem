@@ -1,0 +1,66 @@
+/* Copyright (C) 2016 Dimiter Prodanov
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU General Public License for more details.
+ *
+ * Potential problems demo
+ */
+
+if get('clifford,'version)=false then load("clifford")$
+if get('cliffordan,'version)=false then load("cliffordan")$
+
+"Ciford implements Clifford algebra for Maxima."$
+
+"Potential problems in G(3)"$
+ clifford(e,3);
+
+"initialize variables"$
+	
+    r:cvect([x,y,z]);
+	
+	"Green's function"$
+	
+	G:r/sqrt(-cnorm(r))^3;
+	
+	"differentiation of Green's function"$
+	mvectdiff(G,r);
+	
+	"Potential function"$
+	P:-1/sqrt(-cnorm(r));
+	
+	"differentiation of potential function"$
+	D1:mvectdiff(P,r);
+	
+	"checking for  equality"$
+	equal(GG_c, D2),pred;
+	
+	mvectdiff(P,r,2);
+
+	"define cyclindrical coordinates"$
+	declare( [rho, phi], scalar);
+	cyl_eq:[x=rho*cos(phi), y=rho*sin(phi)];
+	
+	
+	"coordinate substitution"$
+	rc:coordsubst(r, cyl_eq);
+	
+	GG_c:coordsubst(G, cyl_eq),factor;
+	V:coordsubst(P,cyl_eq);
+	
+	"differentiation of Green's function"$
+	mvectdiff(GG_c,rc);	
+
+	"differentiation of potential function"$
+	D2:mvectdiff(V,rc);
+	
+	"checking for  equality"$
+	equal(GG_c, D2),pred;
+	
+	/* End of demo -- comment line needed by MAXIMA to resume demo menu */

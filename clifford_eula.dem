@@ -1,0 +1,53 @@
+/* Copyright (C) 2016 Dimiter Prodanov
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU General Public License for more details.
+ *
+ * clffordan demo
+ */
+
+if get('clifford,'version)=false then load("clifford")$
+if get('cliffordan,'version)=false then load("cliffordan")$
+
+"Ciford implements Clifford algebra for Maxima."$
+"Euler-Lagrange problmems in G(3)"$
+ clifford(e,3);
+
+ derivabbrev:true$
+ ("initialize variables")$
+	AA: celem(A,[t,x,y,z]);
+	dependsv(A,[t,x,y,z]);
+	r:cvect([x,y,z]);
+	
+	"F-multivector"$
+	F:mvectdiff(AA,t-r);
+	
+	"Lagrangian density"$
+	L:lambda([x],1/2*scalarpart(cliffsimpall(x.x)))(F);
+	
+	"scalar, vector and bivector parts"$
+	S:scalarpart(F);
+	V:vectorpart(F);
+	Q:grpart(F,2);
+	
+	"identity"$
+	L-1/2*(S.S+V.V+Q.Q),cliffsimpall;
+	
+	"Euler- Lagrange equations"$
+	dA:mvectdiff(AA,r);
+	
+	ELeq:EuLagEq2(L, t+r,[AA,dA]);
+	
+	"matrix form"$
+	bdecompose(ELeq);
+	
+	 derivabbrev:false$
+ 
+/* End of demo -- comment line needed by MAXIMA to resume demo menu */

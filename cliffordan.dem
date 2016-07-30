@@ -1,0 +1,67 @@
+/* Copyright (C) 2016 Dimiter Prodanov
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU General Public License for more details.
+ *
+ * clffordan demo
+ */
+
+if get('clifford,'version)=false then load("clifford")$
+if get('cliffordan,'version)=false then load("cliffordan")$
+
+"Ciford implements Clifford algebra for Maxima."$
+"Geometric calculus in G(3)"$
+ clifford(e,3);
+
+("initialize variables")$
+ 
+ dependsv(F,[t,x,y,z]);
+ r:cvect([x,y,z]);
+ 
+ ("the vector derivative is")$
+ mvectdiff(F,r);
+ 
+ ("the Laplacian is")$
+ mvectdiff(F,r,2);
+ 
+ ("the simplest vector derivative")$ 
+ mvectdiff(r,r);
+ 
+("exponent")$ 
+ mvectdiff(exp(r),r);
+
+("logarithm")$  
+ mvectdiff(log(r),r),factor;
+
+ ("square")$  
+ mvectdiff((-cnorm(r)),r),factor;
+ 
+ ("inverse vector")$
+ mvectdiff(r/(-cnorm(r)),r);
+ 
+ ("unit vector")$
+ mvectdiff(r/sqrt(-cnorm(r)),r);
+ 
+ declare(k, scalar);
+
+("k-power")$  
+ mvectdiff((-cnorm(r))^k/2,r),factor;
+ 
+("more complicated examples",
+derivabbrev:true)$ 
+ 
+dependsv(A, [x,y,z]);
+P:celem(A,[[],x,y,z]);
+mvectdiff(log(cnorm2(P))/2,r);
+mvectdiff(log(cnorm2(F))/2,r);
+ 
+ derivabbrev:false$
+ 
+/* End of demo -- comment line needed by MAXIMA to resume demo menu */

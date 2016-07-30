@@ -1,0 +1,72 @@
+/* Copyright (C) 2016 Dimiter Prodanov
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU General Public License for more details.
+ *
+ * clffordan demo
+ */
+
+if get('clifford,'version)=false then load("clifford")$
+
+"Ciford implements Clifford algebra for Maxima."$
+
+"Inner and outer products in G(3)"$
+ 	clifford(e, 3);
+	
+	"initialize variables"$
+ 	a1:cvect(a),b1:cvect(b), c1:cvect(c);
+ 	b1:cvect(b);
+ 	c1:cvect(c);
+	
+	"assocativity of outer product"$
+ 	L1:(a1 & b1 )& c1, factor;
+ 	L2:a1 & (b1 & c1) ,factor;	
+	L1-L2;
+	
+ 	L1:a1 | (b1 & c1);
+ 	L2:(a1| b1).c1 - (a1 | c1) .b1,expand;
+ 	L1-L2;
+	
+	"cross prduct"$
+ 	D1:c1| (-%iv. (a1 & b1)),dotsimpc;
+ 	
+	"matrix  representation"$
+ 	M1: matrix(
+ 	[a[1],a[2],a[3]], 
+ 	[b[1],b[2],b[3]], 
+ 	[c[1],c[2],c[3]]
+ 	);
+ 	D2:determinant(M1);
+ 	
+ 	equal(D1,D2),pred;
+	
+	e[1] &e[2] &e[3];
+	(1+e[1])&(1+e[1]);		
+	(1+e[1])&(1-e[1]);
+	"outer product multiplication table"$
+		
+	mtable2o();	
+
+	"left contraction"$
+	
+	inprotype:'lc;
+	((1+e[1])/2)|( (1+e[1])/2),factor;		
+	mtable2i();
+	
+	"right contraction"$
+	inprotype:'rc;
+	mtable2i();
+	
+	"symmetric"$
+	inprotype:'sym;
+	mtable2i();
+	
+		
+		
