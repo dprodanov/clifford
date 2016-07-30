@@ -38,3 +38,9 @@ idempotent(k):=block(
 	else [1]
 );
 
+cinvolve(x):=block ( [ret:x],
+	if not freeof(".",x) then 
+		ret: expand(x),
+	subst(asymbol=lambda([k], - subvar (asymbol, k) ), ret)
+);
+

@@ -15,7 +15,7 @@
 
 if get('clifford,'version)=false then load("clifford")$
 
-("Cliford implements Clifford algebra for Maxima.")$
+("Clifford implements Clifford algebra for Maxima.")$
 
 ("Let us begin with the complex algebra")$
 clifford(e,0,1,0);

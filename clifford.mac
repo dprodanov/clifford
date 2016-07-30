@@ -31,30 +31,8 @@ a lightweight package for performing Geometric Algebra calculations
 	1.8 Date 06 Dec 2015
 	- change of notation to exclude conflicts with itensor-based packages
 	
-	1.7 Date 18 Nov 2015
-        - refactoring
-	- change in grade
-	- chage in simp rules
-
-	1.6 Date 04 Nov 2015
-	- bugixes oppart
-	- unit tests
-
-	1.5.1 Date 30 Oct 2015
-	- bugfixes oppart
-	- unit tests
-
-	1.4 Date 22 Aug 2015
-	- oppart simplified
-	- unit tests
-
-	1.3 Date 11 Jun 2015
-	- unit tests
+	oder log: changelog.txt
 	
-	1.0 Date 26 Jan 2015
-	- initial implementation
-	- GitHub repo
-**********************************
  * @license This library is free software; you can redistribute it and/or
  *      modify it under the terms of the GNU Lesser General Public
  *      License as published by the Free Software Foundation; either
@@ -503,7 +481,7 @@ clifford(var, [lsig]):=block([m, a, p:0, n:0, r:0, s:1],
 		n:lsig[2], 
 		r:lsig[3]
 	),
-	/* optinally we can reverse the sign convention */
+	/* optionally we can reverse the sign convention */
 	if length(lsig)=4 then (
 		n:lsig[2], 
 		r:lsig[3],
@@ -831,19 +809,8 @@ dotreverse(expr):=block ( [ret, l, r],
 );
 
 
-/*
+/*  
 Clifford involution of expressions
-*/
-/*
-cinvolve(x):=block ( [ret:x],
-	if not freeof(".",x) then 
-		ret: expand(x),
-	subst(asymbol=lambda([k], - subvar (asymbol, k) ), ret)
-);
-*/
-
-/*  Clifford involution of expressions
-experimental  code
 */
 declare(cinvolve, linear);
 
@@ -994,8 +961,6 @@ diaglist(MM):=block([n, LL],
 	LL:genmatrix( lambda([i,j],  if i=j then MM[i,j] else 0 ), n),
 	list_matrix_entries(matrix(makelist(1, n)).LL)
 );
-
-
  
 /*
  computes the commutation table with all basis vectors
@@ -1083,7 +1048,6 @@ vectorp(v):= (
 /*
  grading functions
 */
-
 
 /*
  scalar part
@@ -1204,7 +1168,6 @@ dual(x):=%ivnorm *(  x. %iv);
 
 conjel(x, k):= (asymbol[k]. x)/asymbol[k]	;
 
-
 /*
  computes a unit  element
 */
@@ -1219,24 +1182,8 @@ uelem(vv):=block( [qq],
 );
 
 /*
- Clifford product decomposition: custom operators
-
-prodecomp(a,b):=block( [ret, gr, l, r, m, outer],
-	a:cliffsimp1(a),
-	b:cliffsimp1(b),
-	ret:cliffsimp1(a.b),
-	l:maxgrade(a),
-	r:maxgrade(b),
-	m:abs(l-r),
-	n:(l+r), 	
-	if _debug=true then display(l,r, m,n),
-	gr:grade(ret),
-	if n>ndim then outer:0 else 
-		outer: gr[n+1],
-	[gr[m+1], outer, ret]
-);
+ Clifford product decomposition
 */
-
 prodecomp(a,b):=block( [ret, gr, l, r, m, inner:0, outer:0],
 	a:cliffsimp1(a),
 	b:cliffsimp1(b),
@@ -1265,4 +1212,4 @@ print("package name: clifford.mac");
 print("author: ", get('clifford,'author));
 print("version:", get('clifford,'version));
 print("Recommended location: share/contrib");
-print("last update: 20 June 2016");
+print("last update: 2 Jul 2016");

@@ -16,12 +16,12 @@
 if get('clifford,'version)=false then load("clifford")$
 if get('cliffordan,'version)=false then load("cliffordan")$
 
-"Ciford implements Clifford algebra for Maxima."$
-"Euler-Lagrange problmems in G(3)"$
+"Clifford implements Clifford algebra for Maxima."$
+"Euler-Lagrange problems in G(3)"$
  clifford(e,3);
 
  derivabbrev:true$
- ("initialize variables")$
+ "initialize variables"$
 	AA: celem(A,[t,x,y,z]);
 	dependsv(A,[t,x,y,z]);
 	r:cvect([x,y,z]);

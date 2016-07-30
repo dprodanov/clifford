@@ -15,7 +15,7 @@
  
 if get('clifford,'version)=false then load("clifford")$
 
-"Ciford implements Clifford algebra for Maxima."$
+"Clifford implements Clifford algebra for Maxima."$
 
 "This demonstration computes roduct tables for n up to 3."$
 

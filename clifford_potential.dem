@@ -16,7 +16,7 @@
 if get('clifford,'version)=false then load("clifford")$
 if get('cliffordan,'version)=false then load("cliffordan")$
 
-"Ciford implements Clifford algebra for Maxima."$
+"Clifford implements Clifford algebra for Maxima."$
 
 "Potential problems in G(3)"$
  clifford(e,3);
