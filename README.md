@@ -1,12 +1,16 @@
 Clifford:
 a lightweight package for performing Geometric and Clifford Algebra calculations
 
-	version 2.3 Date 02 July
-	  - bugfix release
-	  - bugfixes in  clicoeff
-	 
+	version 2.3.2 Date 30 July 2016
+	 - bugfix release: regressions in tellsimpafter
+	 - demos extended
+	  
+	2.3 Date 02 July 2016
+	- bugfix release
+	- bugfixes in  clicoeff
+	
 	2.2 Date 20 June 2016	  
-        - new definitions of inner and outer products 
+    - new definitions of inner and outer products 
 	- changes in cinvolve
 	
 	2.1 Date 12 May 2016
@@ -26,7 +30,7 @@ a lightweight package for performing Geometric and Clifford Algebra calculations
 	- change of notation to exclude conflicts with itensor-based packages
 	
 	1.7 Date 18 Nov 2015
-        - refactoring
+    - refactoring
 	- change in grade
 	- chage in simp rules
 
@@ -47,7 +51,7 @@ a lightweight package for performing Geometric and Clifford Algebra calculations
 	
 	1.0 Date 26 Jan 2015
 	- initial implementation
-	- GitHub repo
+	- GitHub repo created
 	
 **********************************
  **License**

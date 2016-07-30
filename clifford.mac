@@ -2,9 +2,14 @@
 Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
- @version  2.3 Date 02 July
-	  - bugfix release
-	  - bugfixes in  clicoeff
+ @version  
+	2.3.2 Date 30 July 2016
+	 - bugfix release: regressions in tellsimpafter
+	 - demos extended
+	 
+	2.3 Date 02 July
+	- bugfix release
+	- bugfixes in  clicoeff
 	 
 	2.2 Date 20 June 2016	  
         - new definitions of inner and outer products 
@@ -226,7 +231,7 @@ ratprint:false;
 		/*display(l,r),*/
 		ret:cliffsimp1(a.b),
 		ret:grpart(ret, l+r),
-		(ret)
+		ret
 	);
 	
 	texput ("&", " \\wedge ", infix);

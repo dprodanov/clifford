@@ -1,0 +1,105 @@
+/* Copyright (C) 2016 Dimiter Prodanov
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU General Public License for more details.
+ *
+ * clfford demo
+ */
+ 
+if get('clifford,'version)=false then load("clifford")$
+
+"Ciford implements Clifford algebra for Maxima."$
+
+"This demonstration computes roduct tables for n up to 3."$
+
+"  init Cl(1,0,0)- double numbers"$
+  clifford(e,1);
+  EE:cons(1, %elements );
+  mtable2();
+  " outer products  "$
+  mtable1o(%elements);
+  " left contraction  "$
+  mtable1i(%elements), inprotype='lc;
+  
+  "  init Cl(0,1,0)- comlex numbers"$
+  clifford(e,0,1);
+  EE:cons(1, %elements );
+  mtable2();
+  " outer products  "$
+  mtable1o(%elements);
+  " left contraction  "$
+  mtable1i(%elements), inprotype='lc;
+  
+  "  init Cl(0,0,1)- dual numbers"$
+  clifford(e,0,0,1);
+  EE:cons(1, %elements );
+  mtable2();
+  " outer products  "$
+  mtable1o(%elements);
+  " left contraction  "$
+  mtable1i(%elements), inprotype='lc;
+  
+"  init Cl(2,0,0)- Euclidean plane"$
+  clifford(e,2);
+  EE:cons(1, %elements );
+  mtable2();
+  " outer products  "$
+  mtable1o(%elements);
+  " left contraction  "$
+  mtable1i(%elements), inprotype='lc;
+
+"  init Cl(1,1,0)"$
+  clifford(e,1,1);
+  EE:cons(1, %elements );
+  mtable2();
+  " outer products  "$
+  mtable1o(%elements);
+  " left contraction  "$
+  mtable1i(%elements), inprotype='lc;  
+  
+  "  init Cl(0,2)- quaternions "$
+  clifford(e,0,2);
+  EE:cons(1, %elements );
+  mtable2();
+  " outer products  "$
+  mtable1o(%elements);
+  " left contraction  "$
+  mtable1i(%elements), inprotype='lc;  
+
+"  init Cl(3,0,0)- G(3)"$
+  clifford(e,3);
+  EE:cons(1, %elements );
+  mtable2();
+  " outer products  "$
+  mtable1o(%elements);
+  " left contraction  "$
+  mtable1i(%elements), inprotype='lc;
+  
+  " init Cl(1,1,1)"$
+  clifford(e,1,1,1); 
+  mtable2();
+  " outer product "$
+  mtable1o(%elements);
+  " left contraction  "$
+  mtable1i(%elements), inprotype='lc;
+  
+   " init Cl(0,2,1)"$
+  clifford(e,0,2,1); 
+  mtable2();
+  " outer product"$
+  mtable1o(%elements);
+  " left contraction  "$
+  mtable1i(%elements), inprotype='lc;
+  
+  /* End of demo -- comment line needed by MAXIMA to resume demo menu */
+  
+	
+		
+		
