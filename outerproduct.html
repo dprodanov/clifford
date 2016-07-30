@@ -1,0 +1,324 @@
+<!DOCTYPE HTML">
+<HTML>
+ <HEAD>
+  <TITLE>outerproduct</TITLE>
+  <META NAME="generator" CONTENT="wxMaxima">
+  <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    displayAlign: "left",
+    context: "MathJax"
+  })
+</script>
+<script type="text/javascript"
+  src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML">
+</script>
+  <link rel="stylesheet" type="text/css" href="outerproduct_htmlimg/outerproduct.css"/>
+ </HEAD>
+ <BODY>
+
+<!-- ***************************************************** -->
+<!--          Created with wxMaxima version 16.04.2         -->
+<!-- ***************************************************** -->
+<noscript><div class="error message">    Please enable JavaScript in order to get a 2d display of the equations embedded in this web page.</div></noscript>\(      \DeclareMathOperator{\abs}{abs}
+      \newcommand{\ensuremath}[1]{\mbox{$#1$}}
+\)
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i19) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">load</span>(<span class="code_operator">'</span><span class="code_variable">clifford</span>)<span class="code_endofline">$</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\mbox{}\\package\,name:\,clifford.mac \mbox{}\\author:\, Dimiter\,Prodanov \mbox{}\\version: \mathit{v20} \mbox{}\\Recommended\,location:\,share/contrib \mbox{}\\last\,update:\,20\,June\,2016 \]
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i2) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">clifford</span>(<span class="code_variable">e</span>,<span class="code_number">3</span>)<span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\tag{\%{}o2}\label{o2} [1,1,1]\]
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i3) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_variable">EE</span><span class="code_operator">:</span><span class="code_function">cons</span>(<span class="code_number">1</span>, <span class="code_variable">%elements</span> )<span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\tag{EE}\label{EE}[1,{{e}_{1}},{{e}_{2}},{{e}_{3}},{{e}_{1}}\mathit{ . }{{e}_{2}},{{e}_{1}}\mathit{ . }{{e}_{3}},{{e}_{2}}\mathit{ . }{{e}_{3}},{{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}}]\]
+
+
+<!-- Text cell -->
+
+
+<P CLASS="comment">
+Cl(3,0,0)<BR>
+</P>
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i4) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">mtable1o</span>(<span class="code_variable">%elements</span>)<span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\tag{\%{}o4}\label{o4} \begin{pmatrix}1 & {{e}_{1}} & {{e}_{2}} & {{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}} & {{e}_{1}}\mathit{ . }{{e}_{3}} & {{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}}\\
+{{e}_{1}} & 0 & {{e}_{1}}\mathit{ . }{{e}_{2}} & {{e}_{1}}\mathit{ . }{{e}_{3}} & 0 & 0 & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0\\
+{{e}_{2}} & -{{e}_{1}}\mathit{ . }{{e}_{2}} & 0 & {{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & -{{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & 0\\
+{{e}_{3}} & -{{e}_{1}}\mathit{ . }{{e}_{3}} & -{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & 0 & 0\\
+{{e}_{1}}\mathit{ . }{{e}_{2}} & 0 & 0 & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & 0 & 0 & 0\\
+{{e}_{1}}\mathit{ . }{{e}_{3}} & 0 & -{{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & 0 & 0 & 0 & 0\\
+{{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & 0 & 0 & 0 & 0 & 0\\
+{{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & 0 & 0 & 0 & 0 & 0 & 0\end{pmatrix}\]
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i5) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">mtable1i</span>(<span class="code_variable">%elements</span>)<span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\tag{\%{}o5}\label{o5} \begin{pmatrix}1 & {{e}_{1}} & {{e}_{2}} & {{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}} & {{e}_{1}}\mathit{ . }{{e}_{3}} & {{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}}\\
+{{e}_{1}} & 1 & 0 & 0 & {{e}_{2}} & {{e}_{3}} & 0 & {{e}_{2}}\mathit{ . }{{e}_{3}}\\
+{{e}_{2}} & 0 & 1 & 0 & -{{e}_{1}} & 0 & {{e}_{3}} & -{{e}_{1}}\mathit{ . }{{e}_{3}}\\
+{{e}_{3}} & 0 & 0 & 1 & 0 & -{{e}_{1}} & -{{e}_{2}} & {{e}_{1}}\mathit{ . }{{e}_{2}}\\
+{{e}_{1}}\mathit{ . }{{e}_{2}} & -{{e}_{2}} & {{e}_{1}} & 0 & -1 & 0 & 0 & -{{e}_{3}}\\
+{{e}_{1}}\mathit{ . }{{e}_{3}} & -{{e}_{3}} & 0 & {{e}_{1}} & 0 & -1 & 0 & {{e}_{2}}\\
+{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & -{{e}_{3}} & {{e}_{2}} & 0 & 0 & -1 & -{{e}_{1}}\\
+{{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{2}}\mathit{ . }{{e}_{3}} & -{{e}_{1}}\mathit{ . }{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}} & -{{e}_{3}} & {{e}_{2}} & -{{e}_{1}} & -1\end{pmatrix}\]
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i6) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">mtable2</span>()<span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\tag{\%{}o6}\label{o6} \begin{pmatrix}1 & {{e}_{1}} & {{e}_{2}} & {{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}} & {{e}_{1}}\mathit{ . }{{e}_{3}} & {{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}}\\
+{{e}_{1}} & 1 & {{e}_{1}}\mathit{ . }{{e}_{2}} & {{e}_{1}}\mathit{ . }{{e}_{3}} & {{e}_{2}} & {{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{2}}\mathit{ . }{{e}_{3}}\\
+{{e}_{2}} & -{{e}_{1}}\mathit{ . }{{e}_{2}} & 1 & {{e}_{2}}\mathit{ . }{{e}_{3}} & -{{e}_{1}} & -{{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{3}} & -{{e}_{1}}\mathit{ . }{{e}_{3}}\\
+{{e}_{3}} & -{{e}_{1}}\mathit{ . }{{e}_{3}} & -{{e}_{2}}\mathit{ . }{{e}_{3}} & 1 & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & -{{e}_{1}} & -{{e}_{2}} & {{e}_{1}}\mathit{ . }{{e}_{2}}\\
+{{e}_{1}}\mathit{ . }{{e}_{2}} & -{{e}_{2}} & {{e}_{1}} & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & -1 & -{{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{3}} & -{{e}_{3}}\\
+{{e}_{1}}\mathit{ . }{{e}_{3}} & -{{e}_{3}} & -{{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{1}} & {{e}_{2}}\mathit{ . }{{e}_{3}} & -1 & -{{e}_{1}}\mathit{ . }{{e}_{2}} & {{e}_{2}}\\
+{{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & -{{e}_{3}} & {{e}_{2}} & -{{e}_{1}}\mathit{ . }{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}} & -1 & -{{e}_{1}}\\
+{{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{2}}\mathit{ . }{{e}_{3}} & -{{e}_{1}}\mathit{ . }{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}} & -{{e}_{3}} & {{e}_{2}} & -{{e}_{1}} & -1\end{pmatrix}\]
+
+
+<!-- Text cell -->
+
+
+<P CLASS="comment">
+Cl(1,1,1)<BR>
+</P>
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i7) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">clifford</span>(<span class="code_variable">e</span>,<span class="code_number">1</span>,<span class="code_number">1</span>,<span class="code_number">1</span>)<span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\tag{\%{}o7}\label{o7} [1,-1,0]\]
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i8) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">mtable1o</span>(<span class="code_variable">%elements</span>)<span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\tag{\%{}o8}\label{o8} \begin{pmatrix}1 & {{e}_{1}} & {{e}_{2}} & {{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}} & {{e}_{1}}\mathit{ . }{{e}_{3}} & {{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}}\\
+{{e}_{1}} & 0 & {{e}_{1}}\mathit{ . }{{e}_{2}} & {{e}_{1}}\mathit{ . }{{e}_{3}} & 0 & 0 & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0\\
+{{e}_{2}} & -{{e}_{1}}\mathit{ . }{{e}_{2}} & 0 & {{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & -{{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & 0\\
+{{e}_{3}} & -{{e}_{1}}\mathit{ . }{{e}_{3}} & -{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & 0 & 0\\
+{{e}_{1}}\mathit{ . }{{e}_{2}} & 0 & 0 & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & 0 & 0 & 0\\
+{{e}_{1}}\mathit{ . }{{e}_{3}} & 0 & -{{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & 0 & 0 & 0 & 0\\
+{{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & 0 & 0 & 0 & 0 & 0\\
+{{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & 0 & 0 & 0 & 0 & 0 & 0\end{pmatrix}\]
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i9) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">mtable1i</span>(<span class="code_variable">%elements</span>)<span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\tag{\%{}o9}\label{o9} \begin{pmatrix}1 & {{e}_{1}} & {{e}_{2}} & {{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}} & {{e}_{1}}\mathit{ . }{{e}_{3}} & {{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}}\\
+{{e}_{1}} & 1 & 0 & 0 & {{e}_{2}} & {{e}_{3}} & 0 & {{e}_{2}}\mathit{ . }{{e}_{3}}\\
+{{e}_{2}} & 0 & -1 & 0 & {{e}_{1}} & 0 & -{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{3}}\\
+{{e}_{3}} & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+{{e}_{1}}\mathit{ . }{{e}_{2}} & -{{e}_{2}} & -{{e}_{1}} & 0 & 1 & 0 & 0 & {{e}_{3}}\\
+{{e}_{1}}\mathit{ . }{{e}_{3}} & -{{e}_{3}} & 0 & 0 & 0 & 0 & 0 & 0\\
+{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & {{e}_{3}} & 0 & 0 & 0 & 0 & 0\\
+{{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{3}} & 0 & {{e}_{3}} & 0 & 0 & 0\end{pmatrix}\]
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i10) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">mtable2</span>()<span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\tag{\%{}o10}\label{o10} \begin{pmatrix}1 & {{e}_{1}} & {{e}_{2}} & {{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}} & {{e}_{1}}\mathit{ . }{{e}_{3}} & {{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}}\\
+{{e}_{1}} & 1 & {{e}_{1}}\mathit{ . }{{e}_{2}} & {{e}_{1}}\mathit{ . }{{e}_{3}} & {{e}_{2}} & {{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{2}}\mathit{ . }{{e}_{3}}\\
+{{e}_{2}} & -{{e}_{1}}\mathit{ . }{{e}_{2}} & -1 & {{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{1}} & -{{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & -{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{3}}\\
+{{e}_{3}} & -{{e}_{1}}\mathit{ . }{{e}_{3}} & -{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & 0 & 0\\
+{{e}_{1}}\mathit{ . }{{e}_{2}} & -{{e}_{2}} & -{{e}_{1}} & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 1 & -{{e}_{2}}\mathit{ . }{{e}_{3}} & -{{e}_{1}}\mathit{ . }{{e}_{3}} & {{e}_{3}}\\
+{{e}_{1}}\mathit{ . }{{e}_{3}} & -{{e}_{3}} & -{{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & {{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & 0 & 0\\
+{{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{3}} & 0 & {{e}_{1}}\mathit{ . }{{e}_{3}} & 0 & 0 & 0\\
+{{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{3}} & 0 & {{e}_{3}} & 0 & 0 & 0\end{pmatrix}\]
+
+
+<!-- Text cell -->
+
+
+<P CLASS="comment">
+Cl(0,2,1)<BR>
+</P>
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i11) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">clifford</span>(<span class="code_variable">e</span>,<span class="code_number">0</span>,<span class="code_number">2</span>,<span class="code_number">1</span>)<span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\tag{\%{}o11}\label{o11} [-1,-1,0]\]
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i12) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">mtable1o</span>(<span class="code_variable">%elements</span>)<span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\tag{\%{}o12}\label{o12} \begin{pmatrix}1 & {{e}_{1}} & {{e}_{2}} & {{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}} & {{e}_{1}}\mathit{ . }{{e}_{3}} & {{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}}\\
+{{e}_{1}} & 0 & {{e}_{1}}\mathit{ . }{{e}_{2}} & {{e}_{1}}\mathit{ . }{{e}_{3}} & 0 & 0 & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0\\
+{{e}_{2}} & -{{e}_{1}}\mathit{ . }{{e}_{2}} & 0 & {{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & -{{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & 0\\
+{{e}_{3}} & -{{e}_{1}}\mathit{ . }{{e}_{3}} & -{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & 0 & 0\\
+{{e}_{1}}\mathit{ . }{{e}_{2}} & 0 & 0 & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & 0 & 0 & 0\\
+{{e}_{1}}\mathit{ . }{{e}_{3}} & 0 & -{{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & 0 & 0 & 0 & 0\\
+{{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & 0 & 0 & 0 & 0 & 0\\
+{{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & 0 & 0 & 0 & 0 & 0 & 0\end{pmatrix}\]
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i13) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">mtable1i</span>(<span class="code_variable">%elements</span>)<span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\tag{\%{}o13}\label{o13} \begin{pmatrix}1 & {{e}_{1}} & {{e}_{2}} & {{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}} & {{e}_{1}}\mathit{ . }{{e}_{3}} & {{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}}\\
+{{e}_{1}} & -1 & 0 & 0 & -{{e}_{2}} & -{{e}_{3}} & 0 & -{{e}_{2}}\mathit{ . }{{e}_{3}}\\
+{{e}_{2}} & 0 & -1 & 0 & {{e}_{1}} & 0 & -{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{3}}\\
+{{e}_{3}} & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+{{e}_{1}}\mathit{ . }{{e}_{2}} & {{e}_{2}} & -{{e}_{1}} & 0 & -1 & 0 & 0 & -{{e}_{3}}\\
+{{e}_{1}}\mathit{ . }{{e}_{3}} & {{e}_{3}} & 0 & 0 & 0 & 0 & 0 & 0\\
+{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & {{e}_{3}} & 0 & 0 & 0 & 0 & 0\\
+{{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & -{{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{3}} & 0 & -{{e}_{3}} & 0 & 0 & 0\end{pmatrix}\]
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+(%i14) 
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_function">mtable2</span>()<span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+\[\tag{\%{}o14}\label{o14} \begin{pmatrix}1 & {{e}_{1}} & {{e}_{2}} & {{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}} & {{e}_{1}}\mathit{ . }{{e}_{3}} & {{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}}\\
+{{e}_{1}} & -1 & {{e}_{1}}\mathit{ . }{{e}_{2}} & {{e}_{1}}\mathit{ . }{{e}_{3}} & -{{e}_{2}} & -{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & -{{e}_{2}}\mathit{ . }{{e}_{3}}\\
+{{e}_{2}} & -{{e}_{1}}\mathit{ . }{{e}_{2}} & -1 & {{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{1}} & -{{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & -{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{3}}\\
+{{e}_{3}} & -{{e}_{1}}\mathit{ . }{{e}_{3}} & -{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & 0 & 0\\
+{{e}_{1}}\mathit{ . }{{e}_{2}} & {{e}_{2}} & -{{e}_{1}} & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & -1 & {{e}_{2}}\mathit{ . }{{e}_{3}} & -{{e}_{1}}\mathit{ . }{{e}_{3}} & -{{e}_{3}}\\
+{{e}_{1}}\mathit{ . }{{e}_{3}} & {{e}_{3}} & -{{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & -{{e}_{2}}\mathit{ . }{{e}_{3}} & 0 & 0 & 0\\
+{{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{3}} & 0 & {{e}_{1}}\mathit{ . }{{e}_{3}} & 0 & 0 & 0\\
+{{e}_{1}}\mathit{ . }{{e}_{2}}\mathit{ . }{{e}_{3}} & -{{e}_{2}}\mathit{ . }{{e}_{3}} & {{e}_{1}}\mathit{ . }{{e}_{3}} & 0 & -{{e}_{3}} & 0 & 0 & 0\end{pmatrix}\]
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+-->  
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+
+
+
+<!-- Code cell -->
+
+
+<TABLE><TR><TD>
+  <SPAN CLASS="prompt">
+-->  
+  </SPAN></TD>
+  <TD><SPAN CLASS="input">
+<span class="code_endofline">;</span><span class="code_operator"></span>  </SPAN></TD>
+</TR></TABLE>
+
+
+ <HR>
+ <SMALL> Created with <A HREF="http://wxmaxima.sourceforge.net/">wxMaxima</A>.</SMALL>
+ </BODY>
+</HTML>
