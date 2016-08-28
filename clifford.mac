@@ -3,6 +3,9 @@ Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
  @version  
+	2.3.3 Date  28 Aug 2016
+	 - added automorphism code 
+	 
 	2.3.2 Date 30 July 2016
 	 - bugfix release: regressions in tellsimpafter
 	 - demos extended
@@ -33,19 +36,19 @@ a lightweight package for performing Geometric Algebra calculations
 	
 	oder log: changelog.txt
 	
- * @license This library is free software; you can redistribute it and/or
- *      modify it under the terms of the GNU Lesser General Public
- *      License as published by the Free Software Foundation; either
- *      version 2.1 of the License, or (at your option) any later version.
- *
- *      This library is distributed in the hope that it will be useful,
- *      but WITHOUT ANY WARRANTY; without even the implied warranty of
- *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *       Lesser General Public License for more details.
- *
- *      You should have received a copy of the GNU Lesser General Public
- *      License along with this library; if not, write to the Free Software
- *      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  @license This library is free software; you can redistribute it and/or
+        modify it under the terms of the GNU Lesser General Public
+        License as published by the Free Software Foundation; either
+        version 2.1 of the License, or (at your option) any later version.
+  
+        This library is distributed in the hope that it will be useful,
+        but WITHOUT ANY WARRANTY; without even the implied warranty of
+        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+         Lesser General Public License for more details.
+  
+        You should have received a copy of the GNU Lesser General Public
+        License along with this library; if not, write to the Free Software
+        Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 ttyoff:true;
  
@@ -70,23 +73,16 @@ dotconstrules:false;
 prederror :false;
 stringdisp:true;
 ratprint:false;
- 
+powerdisp:true;
+pfeformat: true;
 /*
  custom operators
 */
 
-	"pseudo-inner product based on Mcdonald";
+	"contractions based on Mcdonald";
 	infix ("|", 135, 134);	
-	"\\"(a, b) :=  first(prodecomp(a,b));
 	texput ("|", " \\circ ", infix);
  	
-	"inner product, reformuulation of Hestenses, STA Ch 1";
-	infix ("\\", 135, 134);	
-	/*
-	"|"(a, b):=  if scalarp(a) or scalarp (b) then 0
-		else expand((a.b + cinvolve(b).cinvolve(a))/2);
-	*/
-	
 	wedgesimp:true;
 	inprotype:sym;
 	
@@ -186,12 +182,7 @@ ratprint:false;
 	"outer product";
 	infix("&", 135, 134);
 	declare("&", additive);
-	/*
-	"&"(a, b):= block ([l,r, ret],
-		if scalarp(a) or scalarp (b) then ret:expand(a.b)
-		else
-		expand((a.b - cinvolve(b).cinvolve(a))/2)
-	),*/
+
 	"&"(a, b):= block ([l,r, ret:0],
 		if ndim=0 then return ( buildq([a,b],"&"(a, b))),
 		if not mapatom(a) then a:expand(a),
@@ -229,7 +220,7 @@ oppart(expr, predf):=block(
 	[sop, lst, lsttrue:[], lstfalse:[], ltrue, lfalse, err ],
 	mode_declare([lsttrue, lstfalse, lst, err], list),
 	if mapatom(expr) then (
-		if apply(predf,[expr]) then (ltrue:expr, lfalse:'nil)
+		if apply(predf, [expr]) then (ltrue:expr, lfalse:'nil)
 		else (lfalse:expr, ltrue:'nil),
 		return( [ltrue, lfalse])
 	) else (
@@ -841,6 +832,7 @@ cconjugate(x):=block ([l, v:0, len, k],
 	v
 );
 
+
 /* functional implementation*/
 declare (dotconjugate, evfun);
 dotconjugate(expr):=block([ret],
@@ -1199,8 +1191,81 @@ prodecomp(a,b):=block( [ret, gr, l, r, m, inner:0, outer:0],
 	[inner, outer, ret]
 );
 
-cross(a,b):=expand(a.b-b.a)/2;
-dot(a,b):=expand(a.b+b.a)/2;
+comm(a,b):=expand(a.b - b.a)/2;
+acomm(a,b):=expand(a.b + b.a)/2;
+
+/*
+grade  automorphism by  predicate
+predf requires 2 arguments : grade part and grade index
+*/
+predautom(vv, predf):=block ([gr, v:0, k, w],
+	if not freeof(".", vv) then 
+		gr: grade(vv, true)
+	else 
+		gr: grade(vv),	
+	for i:1 thru ndim+1 do (
+		w:apply(predf, [gr[i], i]),
+		if w then k:-1 else k:1, 
+		v:v + k * gr[i] 
+	),
+	v
+);
+
+/* 
+Hitzer Sangwine automorphism
+*/
+hautom(vv, lst):=block([listarith:true ],
+	predautom(A, lambda([u,v],  member(v, lst+1)))
+);
+
+/* 
+scalr part   automorphism
+*/
+sautom(vv):=predautom(A, lambda([u,v], not scalarp(u)));
+
+/*  Shirokov quaternion  type classification */
+qclass (vv) :=block ( [ar, ai, as, br, bi, bc],
+	ar:dotreverse(vv),
+	ai:cinvolve(vv),	
+	br:(vv - ar)/2,
+	br:apply1(br, clifsimp10, clifsimp21),
+	bi:(vv-ai)/2,
+	bi:apply1(bi, clifsimp10, clifsimp21),
+	if verbose=true then display(bi, ar),
+	if br#0 then br:1,
+	if bi#0 then bi:1,
+	/*disp([br, bi]),*/
+	if br=0 and bi=0 then 0
+	elseif bi=1 and br=0 then 1 
+	elseif bi=0 and br=1 then 2
+	elseif bi=1 and br=1 then 3
+);
+
+/**
+class-grade decomposition 
+*/
+cdgrade(vv, classf):=block ([gr, w, k, cs, clist],
+	if not freeof(".", vv) then 
+		gr: grade(expand(vv))
+	else 
+		gr: grade(vv),
+	local(cs), 
+	for i:1 thru ndim+1 do (
+		k:apply(classf, [gr[i], i]),
+		if op( cs[k])='cs then cs[k]:0, 
+		cs[k]:cs[k]+gr[i]
+	),	
+	listarray(cs)
+);
+
+/**
+even-odd decomposition
+*/
+evdecomp(vv):=cdgrade(vv, lambda([u, v ],  if oddp(v) then 1 else 2));
+
+/*  Shirokov quaternion  type  grading */
+qgrade(vv):=cdgrade(vv, lambda([u,v ],  qclass(u)+1));
+
 
 put('clifford, 'v20,'version);
 put('clifford, "Dimiter Prodanov", 'author);
@@ -1212,4 +1277,4 @@ print("package name: clifford.mac");
 print("author: ", get('clifford,'author));
 print("version:", get('clifford,'version));
 print("Recommended location: share/contrib");
-print("last update: 2 Jul 2016");
+print("last update: 28 Aug 2016");
