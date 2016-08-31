@@ -71,4 +71,4 @@ License along with this library; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 Zendoo:
-https://zenodo.org/badge/latestdoi/24171/dprodanov/clifford
+http://dx.doi.org/10.5281/zenodo.61261
