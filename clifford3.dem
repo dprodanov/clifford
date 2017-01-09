@@ -15,7 +15,7 @@
 
 if get('clifford,'version)=false then load("clifford")$
 
-"Ciford implements Clifford algebra for Maxima."$
+"Clifford implements Clifford algebra for Maxima."$
 
 "Inner and outer products in G(3)"$
  	clifford(e, 3);

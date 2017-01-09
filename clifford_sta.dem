@@ -14,7 +14,7 @@
 
 if get('clifford,'version)=false then load("clifford");
 
-("Cliford implements Clifford algebra for Maxima.")$
+("Clifford implements Clifford algebra for Maxima.")$
 
 ("Space-time algebra")$
 clifford(g,1,3);
