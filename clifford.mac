@@ -5,7 +5,7 @@ a lightweight package for performing Geometric Algebra calculations
  @version 
  
 	2.3.4 Date  11 Sept 2016
-	- fixed bug in innerp roduct 
+	- fixed bug in inner product 
 	- change in declarations
 	- regressive product
 	-change in dual
@@ -226,14 +226,21 @@ pfeformat: true;
 
 /*
  This part implements a generic partition split operation 
+
+ internal.
 */
 inop(expr):= if not mapatom (expr)  then inpart(expr, 0) else 'nil;
 
+/*
+internal.
+*/
 inargs(expr):= if not mapatom (expr)  then  substinpart( "[", expr, 0) else 'nil;
 
 /*
 partition by predicate with expression reconstruction
 literal meaning
+
+internal.
 */
 oppart(expr, predf):=block(
 	[sop, lst, lsttrue:[], lstfalse:[], ltrue, lfalse, err ],
@@ -271,16 +278,31 @@ oppart(expr, predf):=block(
 
 realp (x):= featurep(x, real);
 
+/*
+returns the list of all symbols/variables, which are declared scalar, using something like:
+
+   declare(a, scalar)
+
+Numbers are scalars by default so do not have to be declared so explicitly.
+*/
 scalarsym():=sublist(props, lambda( [z], if symbolp(z) then scalarp(z) else false));
 
+/*
+internal.
+*/
 clivars():= block([ uu], 
 	sublist(values, lambda([z], uu:ev(z), not freeof(asymbol, uu )))
 );
 
+/*
+internal.
+*/
 clisym():=sublist(props, lambda( [z], if symbolp(z) then not freeof(asymbol, z) else false));
 
 /*
 simplification of dot-products, ordergreat
+
+external.
 */
 dotsimp1(ab):=block([a, b],
   if mapatom(ab) or op(ab)#"." then return(ab),
@@ -291,6 +313,8 @@ dotsimp1(ab):=block([a, b],
 
 /*
 simplification of dot-products, orderless
+
+external.
 */
 dotsimp2(ab):=block([a, b],
   if mapatom(ab) or op(ab)#"." then return(ab),
@@ -309,6 +333,9 @@ simplification of dot-products
 */
 declare (dotsimpc, evfun);
  
+/*
+external.
+*/
 dotsimpc(ab):=block([ba, c:1, v, w:1, q, r, l, sop],
   mode_declare(w, fixnum),
   mode_declare([r,l], any),
@@ -356,6 +383,8 @@ permsign(arr):=block([k:0, len, ret:0 ] ,
 
 /*
 Abstract Cliford algebra construction
+
+internal.
 */
 matchdeclare([aa, ee], lambda([u], not freeof(asymbol,u) and freeof ("+", u) and not scalarp(u) ), [bb,cc], true, 
 			[kk, mm, nn], lambda( [z],  integerp(z) and z>0)); 	
@@ -395,7 +424,9 @@ defrule (clifsimp3, ds,  powsimp(ds));
 
 /*
 full simplification of expressions
-inncludes dot-products and inverses
+includes dot-products and inverses
+
+external.
 */
 declare (cliffsimpall, evfun);
 cliffsimpall(expr):=block([res, aa, bb, sop, simp:true],
@@ -415,6 +446,8 @@ cliffsimpall(expr):=block([res, aa, bb, sop, simp:true],
 
 /*
 simplification of dot-products
+
+external.
 */
 cliffsimp1(expr):=block([res],
 	res:expand(expr),
@@ -424,6 +457,8 @@ cliffsimp1(expr):=block([res],
 
 /*
  simplification of inverses
+
+external.
 */
 declare (dotinvsimp, evfun);
 dotinvsimp(ab):=block( [a,b,c,s],
@@ -441,6 +476,8 @@ dotinvsimp(ab):=block( [a,b,c,s],
 
 /*
 Clifford inverse
+
+external.
 */
 cinv(ab):=block( [s, b, u:1],
 	if atom(ab) or freeof(asymbol, ab) then 
@@ -465,6 +502,8 @@ cinv(ab):=block( [s, b, u:1],
 
 /*
 simplification of exponents
+
+external.
 */
 powsimp(aa):=block( [a, k, p:1],
   if atom(aa) then return(aa),
@@ -486,6 +525,8 @@ lsig[1] - number of positive elements
 lsig[2] - number of negative elements
 lsig[3] - number of positive elements
 lsig[4] - sets signature
+
+external.
 */
 clifford(var, [lsig]):=block([m, a, p:0, n:0, r:0, s:1],
 	if emptyp(lsig) or length(lsig)>3 then error(" invalid signature"),
@@ -525,6 +566,8 @@ clifford(var, [lsig]):=block([m, a, p:0, n:0, r:0, s:1],
 
 /*
 sets the signature of the algebra
+
+internal?
 */
 set_signature(arr):=block(
 	if not listp(arr) or length(arr)#ndim then return(false),
@@ -536,6 +579,8 @@ set_signature(arr):=block(
 
 /*
 toggles the signature of the algebra
+
+internal?
 */
 toggle_signature():=block(
 	signature:-signature,
@@ -547,6 +592,8 @@ toggle_signature():=block(
 constructs the complete basis of the algebra
 - additional declarations added for compatibility with complex 
 operations
+
+internal?
 */
 makebasis(var):= block([ ee], 
 	asymbol: var,
@@ -560,16 +607,22 @@ makebasis(var):= block([ ee],
 
 /*
 constructs the vectors of the algebra
+
+internal?
 */
 vectors():=makelist(asymbol[i], i, 1, ndim);
 
 /*
 constructs the  bi-vectors of the algebra
+
+internal?
 */
 bivectors():=makelist(asymbol[i].asymbol[mod(i,ndim)+1],i,1,ndim);
 
 /*
 constructs the pseudoscalar of the algebra
+
+internal?
 */
 pscalar([k]):=block([s:1],
 	if not emptyp(k) then k:min(k[1], ndim) else k: ndim, 
@@ -580,6 +633,8 @@ pscalar([k]):=block([s:1],
 
 /*
 releases all rules 
+
+internal?
 */
 release():=block(
 	remrule ("^^",  all),
@@ -595,6 +650,8 @@ release():=block(
 
 /*
 counts occurences of a symbol in an expression
+
+internal?
 */
 countsym(ab, sym):=block([sop, a, b, s:0, inflag:true ],
 	if freeof(sym, ab) then return(0),
@@ -627,6 +684,8 @@ count_subexpr(ab, sym):=block([inflag:true ],
 
 /*
 grade decomposition of expressions
+
+external.
  */
 grade(expr, [gradexpand]):=block([cc, sop, k ],
 	local(cc),
@@ -655,6 +714,8 @@ grade(expr, [gradexpand]):=block([cc, sop, k ],
 
 /*
 maximal grade of an expression
+
+external.
 */
 maxgrade(expr):=block([lst],
 	if freeof (asymbol, expr) then return (0),
@@ -667,6 +728,8 @@ maxgrade(expr):=block([lst],
 
 /*
  Partial factoring by subexpression
+
+external.
 */
 factorby(expr, z):=block([quot, res, ret, ee, n, sop, %qq, radsubstflag:true ],
 	if atom(expr) then return (expr),
@@ -712,12 +775,17 @@ factorby(expr, z):=block([quot, res, ret, ee, n, sop, %qq, radsubstflag:true ],
 );
 
 declare (quotsimp, evfun);
+/*
+internal
+*/
 quotsimp(expr):=block([quot, res, dd:denom(expr) ],
 	[quot, res]:divide(expr, dd),
 	factor(quot)*factor(dd)+factor(res)
 );
 
-
+/*
+internal
+*/
 simpfact(expr, z):=block([ret:expr],
 	ret:factor(ret),
 	if not mapatom(ret) then
@@ -726,6 +794,8 @@ simpfact(expr, z):=block([ret:expr],
  
 /* 
 computes the element decomposition
+
+external
 */
 clicoeff(expr, smat):=block([cc, ee, sop,  r, l, u, elst, lst, use_fast_arrays:false ],
 	local(cc, ee),
@@ -773,6 +843,8 @@ clicoeff(expr, smat):=block([cc, ee, sop,  r, l, u, elst, lst, use_fast_arrays:f
 
 /*
 computes the blade decomposition
+
+external
 */
 bdecompose(expr):=block([gr:expr],
 	if not freeof(".", expr) then 
@@ -786,6 +858,8 @@ bdecompose(expr):=block([gr:expr],
 
 /*
 Clifford reverse of expressions
+
+external
 */
 /* canonical implementation*/
 creverse(x):=block ([l, v:0, len, k],
@@ -804,6 +878,9 @@ creverse(x):=block ([l, v:0, len, k],
 
 /* functional implementation*/
 declare (dotreverse, evfun);
+/*
+external
+*/
 dotreverse(expr):=block ( [ret, l, r],
 	if not freeof(".", expr) then 
 		ret: expand(expr) 
@@ -829,6 +906,9 @@ Clifford involution of expressions
 */
 declare(cinvolve, linear);
 
+/*
+external
+*/
 cinvolve(x):=block (  
 	if not freeof(asymbol, x) then 
 		 expand(subst(asymbol=lambda([k], - subvar (asymbol, k) ), x))  
@@ -838,10 +918,12 @@ cinvolve(x):=block (
 );
 
 
+/* canonical implementation*/
 /*
 Clifford conjugate of expressions
+
+external
 */
-/* canonical implementation*/
 cconjugate(x):=block ([l, v:0, len, k],
 	if not freeof(".",x) then 
 		l: grade(expand(x))
@@ -859,6 +941,9 @@ cconjugate(x):=block ([l, v:0, len, k],
 
 /* functional implementation*/
 declare (dotconjugate, evfun);
+/*
+external
+*/
 dotconjugate(expr):=block([ret],
 	ret: cinvolve(expr),
 	dotreverse(ret)
@@ -867,6 +952,8 @@ dotconjugate(expr):=block([ret],
 /*
 constructs all  irreducible elements of the algebra,
 optionally includes 1
+
+external
 */
 elements([cpl]):=block([c:1, lst:[] ],
 	for i:1 thru ndim do c:c.(1+ asymbol[i] ),
@@ -884,6 +971,8 @@ elements([cpl]):=block([c:1, lst:[] ],
 /**
  multiplication table, all elements,
  it also has a debugging functionality
+
+external
 */ 
 mtable2():=block([n, a, lst],
 	local (a),
@@ -897,6 +986,8 @@ mtable2():=block([n, a, lst],
 
 /**
  inner product table, all elements
+
+external
 */ 
 mtable2i():=block([n,   lst],
 	lst: elements(all),
@@ -918,6 +1009,8 @@ mtable21o():=block([n, a, lst],
 
 /**
  multiplication table, reduced
+
+external
 */
 mtable1([lst]):=block([n],
 	if emptyp(lst) then 
@@ -929,6 +1022,9 @@ mtable1([lst]):=block([n],
 	genmatrix( lambda([i,j], dotsimpc(lst[i] . lst[j] ) ), n)
 );
 
+/*
+external
+*/
 mtable1i([lst]):=block([n],
 	if emptyp(lst) then 
 		lst:makelist(asymbol[i], i, ndim) 
@@ -939,6 +1035,9 @@ mtable1i([lst]):=block([n],
 	genmatrix( lambda([i,j], dotsimpc(lst[i] | lst[j] ) ), n)
 );
 
+/*
+external
+*/
 mtable1o([lst]):=block([n],
 	if emptyp(lst) then 
 		lst:makelist(asymbol[i], i, ndim) 
@@ -949,6 +1048,9 @@ mtable1o([lst]):=block([n],
 	genmatrix( lambda([i,j], dotsimpc(lst[i] & lst[j] ) ), n)
 );
 
+/*
+external
+*/
 mtable11o([lst]):=block([n],
 	if emptyp(lst) then 
 		lst:makelist(asymbol[i], i, ndim) 
@@ -959,6 +1061,9 @@ mtable11o([lst]):=block([n],
 	genmatrix( lambda([i,j], dotsimpc(lst[i] ~ lst[j] ) ), n)
 );
 
+/*
+external
+*/
 mtable1r([lst]):=block([n],
 	if emptyp(lst) then 
 		lst:makelist(asymbol[i], i, ndim) 
@@ -969,6 +1074,9 @@ mtable1r([lst]):=block([n],
 	genmatrix( lambda([i,j], regproduct(lst[i] , lst[j] ) ), n)
 );
 
+/*
+external
+*/
 mtable1s([lst]):=block([n],
 	if emptyp(lst) then 
 		lst:makelist(asymbol[i], i, ndim) 
@@ -1009,6 +1117,8 @@ commtable(ee):=
 
 /**
  norm
+
+external
 */
 cliabs(x):=block([u:expand(x)],
 	u:expand(u.cconjugate(u)),
@@ -1020,6 +1130,8 @@ cliabs(x):=block([u:expand(x)],
 
 /**
  multiplication table, trace
+
+external
 */
 multtrace():=block([s:[1], lst],
 	lst:elements(all),
@@ -1028,6 +1140,9 @@ multtrace():=block([s:[1], lst],
 	s
 );
 
+/*
+external
+*/
 cnorm(x):=block([u:expand(x), z, v],
 	u:expand(u | cconjugate(u)),
 	u:cliffsimpall(u),
@@ -1038,6 +1153,9 @@ cnorm(x):=block([u:expand(x), z, v],
 	u:ratsimp(u)
 );
 
+/*
+external
+*/
 cnorm2(x):=block([u:expand(x), z, v],
 	u:expand(u | creverse(u)),
 	u:cliffsimpall(u),
@@ -1050,6 +1168,8 @@ cnorm2(x):=block([u:expand(x), z, v],
 	
 /*
 symmetric bilinear form of the algebra; 
+
+external
 */
 psnorm(x, sgn):=block([u, z, v, ss:0, neg:-1, l, r, ret ],
 	if not (sgn='minus or sgn='neg or  sgn='plus or sgn='pos ) then 
@@ -1076,6 +1196,8 @@ psnorm(x, sgn):=block([u, z, v, ss:0, neg:-1, l, r, ret ],
 
 /**
 vector predicate
+
+external
 */
 vectorp(v):= (
 	if not freeof(".", v) then v:expand(v),
@@ -1088,6 +1210,8 @@ vectorp(v):= (
 
 /*
  scalar part
+
+external
 */
 scalarpart(v):=block([ r, l, sop ],
 	if freeof(asymbol, v) then return (v),
@@ -1104,6 +1228,8 @@ scalarpart(v):=block([ r, l, sop ],
 
 /*
  non scalar part
+
+external
 */
 nscalarpart(v):=block([ r, l, sop ],
 	if freeof(asymbol, v) then return (0),
@@ -1121,6 +1247,8 @@ nscalarpart(v):=block([ r, l, sop ],
 
 /*
  vector part
+
+external
 */
 vectorpart(v):=block([gr],
 	if freeof(asymbol, v) then return (0),
@@ -1130,6 +1258,8 @@ vectorpart(v):=block([gr],
 
 /*
  multivector part
+
+external
 */
 mvectorpart(v):=block([ r, l, gr ],
 	if freeof(asymbol, v) then return (0),
@@ -1141,6 +1271,8 @@ mvectorpart(v):=block([ r, l, gr ],
 
 /**
  grade of order k
+
+external
 */
 grpart(v,k):=block([gr, k:k+1],
 	if k>ndim+1 then k:ndim+1,
@@ -1151,6 +1283,8 @@ grpart(v,k):=block([gr, k:k+1],
 
 /* 
  constructs a vector
+
+external
 */
 cvect(x, [cc]):=block ([ss:0, qq],
 	if emptyp(cc) then
@@ -1171,6 +1305,8 @@ cvect(x, [cc]):=block ([ss:0, qq],
 
 /* 
  constructs a multivector
+
+external
 */
 celem(x, [cc]):=block([ee, ss:0, n, qq],
 	 ee:elements(all),
@@ -1200,6 +1336,8 @@ celem(x, [cc]):=block([ee, ss:0, n, qq],
 /**
  dual element
  dual(x):= x. %iv;
+
+external
  */
 dual(x):=block ([ii ],
   if listp(x) then maplist(dual, x)
@@ -1216,6 +1354,8 @@ conjel(x, k):= (asymbol[k]. x)/asymbol[k]	;
 
 /*
  computes a unit  element
+
+external
 */
 uelem(vv):=block( [qq],
 	qq:cnorm2(vv),
@@ -1229,6 +1369,8 @@ uelem(vv):=block( [qq],
 
 /*
  Clifford product decomposition
+
+external
 */
 prodecomp(a,b):=block( [ret, gr, l, r, m, inner:0, outer:0],
 	a:cliffsimp1(a),
@@ -1252,6 +1394,8 @@ acomm(a,b):=expand(a.b + b.a)/2;
 /*
 grade  automorphism by  predicate
 predf requires 2 arguments : grade part and grade index
+
+external
 */
 predautom(vv, predf):=block ([gr, v:0, k, w],
 	if not freeof(".", vv) then 
@@ -1268,13 +1412,17 @@ predautom(vv, predf):=block ([gr, v:0, k, w],
 
 /* 
 Hitzer Sangwine automorphism
+
+external
 */
 hautom(vv, lst):=block([listarith:true ],
 	predautom(A, lambda([u,v],  member(v, lst+1)))
 );
 
 /* 
-scalr part   automorphism
+scalar part   automorphism
+
+external
 */
 sautom(vv):=predautom(A, lambda([u,v], not scalarp(u)));
 
@@ -1298,6 +1446,8 @@ qclass (vv) :=block ( [ar, ai, as, br, bi, bc],
 
 /**
 class-grade decomposition 
+
+external
 */
 cdgrade(vv, classf):=block ([gr, w, k, cs, clist],
 	if not freeof(".", vv) then 
@@ -1315,6 +1465,8 @@ cdgrade(vv, classf):=block ([gr, w, k, cs, clist],
 
 /**
 even-odd decomposition
+
+external
 */
 evdecomp(vv):=cdgrade(vv, lambda([u, v ],  if oddp(v) then 1 else 2));
 
