@@ -10,14 +10,14 @@
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  * PURPOSE.  See the GNU General Public License for more details.
  *
- * clfford demo
+ * clifford demo
  */
  
 if get('clifford,'version)=false then load("clifford")$
 
 "Clifford implements Clifford algebra for Maxima."$
 
-"This demonstration computes roduct tables for n up to 3."$
+"This demonstration computes product tables for n up to 3."$
 
 "  init Cl(1,0,0)- double numbers"$
   clifford(e,1);
