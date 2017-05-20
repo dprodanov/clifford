@@ -4,8 +4,17 @@ a lightweight package for performing Geometric Algebra calculations
 
  @version 
  
+	2.4 Date 27  Nov 2016
+	- new implementation clicoeff
+	- new implementation clidual
+	- convenience matrix functions
+	- added algebraical dual functionality
+	- fixed regressive product
+	- added Hestenes product
+	- added xor function
+ 
 	2.3.4 Date  11 Sept 2016
-	- fixed bug in innerp roduct 
+	- fixed bug in inner product 
 	- change in declarations
 	- regressive product
 	-change in dual
@@ -57,6 +66,10 @@ a lightweight package for performing Geometric Algebra calculations
         License along with this library; if not, write to the Free Software
         Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+
+max_version:build_info ()@version;
+if orderlessp(max_version,"5.37") then error("Maxima verision ", max_version, " not supported");
+ 
 ttyoff:true;
  
 "vector symbol";
@@ -86,23 +99,35 @@ pfeformat: true;
  custom operators
 */
 
-	"contractions based on Mcdonald";
+	infix ("xor", 60, 60);
+	"xor" (a, b):= block ([la:[], lb:[]],
+		if listp(a) and listp(b) then (
+			la: sublist (a,  lambda([u], not member(u, b)) ),
+			lb: sublist (b,  lambda([u], not member(u, a)) ),
+			append(la, lb)
+		) else 
+		(a or b) and not (a and b)
+	);
+
 	infix ("|", 135, 134);	
 	texput ("|", " \\circ ", infix);
  	
 	wedgesimp:true;
 	inprotype:sym;
+	"Hestenes product type";
+	ipdecomp:false;	
 	
 	declare("|", additive);
 	"|"(a, b):= block ([l,r, qq, ret:0],
-		if ndim=0 then return ( buildq([a,b],"|"(a, b))),
+		if ndim=0 then return ( buildq([a,b], "|"(a, b))),
 		if scalarp(a) or scalarp(b) then (
 			if inprotype='lc then 
 				if scalarp(a) then ret: a*b else ret:0
 			elseif inprotype='rc then 
 				if scalarp(b) then ret: a*b else ret:0
 			elseif inprotype='sym then ret:a.b,
-				return(ret)
+			if ipdecomp=true and  (scalarp(a) or  scalarp(b)) then return(0),
+			return(ret)
 		),
 		if not mapatom(a) then a:expand(a),
 		if not mapatom(b) then b:expand(b),
@@ -120,85 +145,33 @@ pfeformat: true;
 		/*display(l, r, qq),*/
 		if inprotype='rc then 
 			if qq<0 then return(0)
-			elseif qq<= l+r then ( 
+			elseif qq<= l+r then 
 				ret:cliffsimp1(a.b),
-				ret:grpart(ret, qq)
-		),
 		if inprotype='lc then 
 			if qq>0 then return(0)
 			else (
-				qq:abs(qq),
-				if qq<= l+r then ( 
-				ret:cliffsimp1(a.b),
-				ret:grpart(ret, qq)
-			)
+				qq:-qq,
+				if qq<= l+r then 
+				ret:cliffsimp1(a.b)
 		),
 		if inprotype='sym then (
 			qq:abs(qq),
-			ret:cliffsimp1(a.b),
-			ret:grpart(ret, qq)
+			ret:cliffsimp1(a.b)
 		),
-		(ret)
+		grpart(ret, qq)
+		
 	);	
 	texput ("\\", " \\circ ", infix);
-	
-	/*Grassmann product  (exprimental) 
-	should be the same as outer product*/
-	
-	infix("~", 135, 134);
-	declare("~", additive );
-		
-	"~"(a,b):=block([ ss:1, rr:[], l1, l2, w, la, ra, rb, lb, n],
-		if scalarp(a) or scalarp(b) then
-				return(a.b),
-				
-		if inop(a)="+" then return (map( lambda ([u], u ~ b), a)),
-		if inop(b)="+" then return (map( lambda ([u], a ~ u), b)),	
-		
-		if mapatom(a) and mapatom(b) then 
-			if a#b then return(a.b) 
-			else return (0),
-			
-		if wedgesimp then (
-			if not freeof(".", a) then
-				a:cliffsimp1(a),
-			if not freeof(".", b) then
-				b:cliffsimp1(b)
-		),
-		[ra, la]: oppart(a, lambda([u],  freeof ("~", u) and scalarp(u) )),
-		ra:subst(nil=1, ra),
-		la:subst(nil=1, la),		
-		if mapatom (la) then l1:[la] else	l1: inargs(la),
-		
-		[rb, lb]: oppart(b, lambda([u],  freeof ("~", u) and scalarp(u) )),
-		rb:subst(nil=1, rb),
-		lb:subst(nil=1, lb),
-		
-		if mapatom (lb) then l2:[lb] else	 l2: inargs(lb),
-		if member(la, lb) or member(lb, la) or la=lb then return (0),
-		rr:copy(append(l1, l2)),
-		w:permsign(rr),
-		rr:sort(rr),		
-		n:length(rr),
-		rr:endcons (1, rr),
-		/*display(rr),*/
-		for i:1 step 1 thru n do 
-			if rr[i] = rr[i+1] then 
-				return(ss:0) 
-			else
-				ss: ss . rr[i],					
-		ra*rb*w*ss
-	);
-	
-	texput ("~", " \\wedge ", infix);
-	
-	
+  	
+	"alt-Grassman product type";
+	ipdecompalt:false;
 	"outer product";
 	infix("&", 135, 134);
 	declare("&", additive);
-
+	
 	"&"(a, b):= block ([l,r, ret:0],
 		if ndim=0 then return ( buildq([a,b], "&"(a, b))),
+		if ipdecompalt=true and (scalarp(a) or scalarp(b)) then return(0), 
 		if not mapatom(a) then a:expand(a),
 		if not mapatom(b) then b:expand(b),
 		if inop(a)="+" then return (map( lambda ([u],  u & b), a)),
@@ -211,7 +184,6 @@ pfeformat: true;
 		),
 		l:maxgrade(a),
 		r:maxgrade(b),
-		/*display(l,r),*/
 		ret:cliffsimp1(a.b),
 		ret:grpart(ret, l+r),
 		ret
@@ -219,9 +191,70 @@ pfeformat: true;
 	
 	texput ("&", " \\wedge ", infix);
 	
-	regproduct(a, b):=block([ai, bi, inprotype:lc],
-		ai:cliffsimp1(dual(a)),
-		(ai | b) 
+	outprod(a, b):= block ([ss:0, ret:0, lva, lvb, z, lvu],
+		if ipdecompalt=true and (scalarp(a) or scalarp(b)) then return(0)
+		elseif scalarp(a) or scalarp(b) then return(a*b),
+		if not mapatom(a) then a:expand(a),
+		if not mapatom(b) then b:expand(b),
+		if inop(a)="+" then return (map( lambda ([u],  outprod(u , b)), a)),
+		if inop(b)="+" then return (map( lambda ([u],  outprod(a , u)), b)),	
+		if wedgesimp then (
+			if not freeof(".", a) then
+				a:cliffsimp1(a),
+			if not freeof(".", b) then
+				b:cliffsimp1(b)
+		),
+		lva:sublist(listofvars(a), lambda([u], not freeof(asymbol, u))),
+		lvb:sublist(listofvars(b), lambda([u], not freeof(asymbol, u))),
+		lvu:sublist (lva,  lambda([u],  member(u, lvb)) ),
+		z: length(lvu),
+		if z>0 then 0 else(
+			ret:cliffsimp1(a.b),
+			ss:scalarpart(ret),
+			ret-ss
+		)
+	);
+	
+	scprod(xx, yy):=block ([ret],
+		ret: dotsimpc(expand(xx.yy)),
+		scalarpart(ret)
+	);
+	
+	/*dualcoeff(a):=dual(dotsimpc(a.a.a.dual(a)));*/
+	dualcoeff(a):=coeff(dotsimpc(a.a.a.dual(a)), %iv);
+	
+	lcprod(a, b):=  block([bi, ss, ret ],	
+		bi:dual(b), 		
+		ret:outprod(a, bi),
+		ss:dualcoeff(a),
+		ss*dual(ret)
+	);
+	
+	rcprod(a, b):= block([ai, ss, ret ],		
+		ai:dual(a), 		
+		ret:outprod(ai, b),
+		ss:dualcoeff(b),
+		ss*dual(ret)
+	);
+	
+	dotproduct(a,b):=block([ ret, u, ss, ai, bi],	
+		ret:lcprod(a, b) + rcprod(a, b),
+		u:scprod(a, b),
+		ret -u
+	);
+	
+	regproduct(a, b):=block([ai, bi, ss],
+		ai:(dual(a)),
+		bi:(dual(b)),
+		ss:dualcoeff(a)*dualcoeff(b)*%ivnorm,
+		ss*dual(ai & bi) 
+	);
+	
+	regproduct2(a, b):=block([ai, bi, ss],
+		ai:(dual(a)),
+		bi:(dual(b)),
+		ss:dualcoeff(a)*dualcoeff(b)*%ivnorm,
+		ss*dotsimpc ( ai & bi )
 	);
 
 /*
@@ -269,6 +302,24 @@ oppart(expr, predf):=block(
 	lst
 );
 
+/* 
+splits an expression by occurencess of an operator
+*/
+explodeop(expr, sop):=block(
+	if mapatom(expr) then return ([expr]),
+	xreduce(append , maplist(lambda([w], explodeop(w, sop)), expr))
+ );
+
+/*
+combinees a list by operator
+*/
+implodeop(lsta, sop):=block(
+	if not listp(lsta) then return (lsta),
+	xreduce(sop, maplist(lambda([w], implodeop(w, sop)), lsta))
+);
+
+
+
 realp (x):= featurep(x, real);
 
 scalarsym():=sublist(props, lambda( [z], if symbolp(z) then scalarp(z) else false));
@@ -304,6 +355,10 @@ toggles debugging
 */
 toggle_debug():= _debug: not _debug;
 
+clv(expr):=(
+	sublist(listofvars(expr), lambda([u], not freeof(asymbol, u)))
+);
+
 /*
 simplification of dot-products
 */
@@ -323,8 +378,8 @@ dotsimpc(ab):=block([ba, c:1, v, w:1, q, r, l, sop],
 	 l:subst(".","*",l),
 	r*dotsimpc(l)
   ) else (
-	ba:copy(ab),
-	v:inargs(ba), 
+	/*ba:copy(ab),*/
+	v:copy(inargs(ab)),
 	if _debug=true then display(sop, v),
 	w:sublist( v, lambda ([z], not freeof(asymbol,z) and mapatom(z))),
 	w:permsign(w),
@@ -365,18 +420,12 @@ if get('clifford,'version)=false then (
 	tellsimp(aa[kk].aa[kk], signature[kk] ),
 	tellsimpafter(aa[kk].aa[mm], dotsimp2(aa[kk].aa[mm])),
 	tellsimpafter(bb.ee.cc, dotsimpc(bb.ee.cc)),
-	tellsimpafter(aa^nn, aa^^nn),
+	tellsimpafter(aa[kk]^^nn, powsimp(aa[kk]^^nn)),
 	simp:true
 );
 
 /*  experimental code*/
 if get('clifford,'version)=false then (
-	/* simplification of  powers
-	tellsimpafter(aa[kk]^nn, powsimp(aa[kk]^nn)),*/
-	/*
-	tellsimp(aa[kk] * aa[kk], signature[kk] ),
-	tellsimp(aa[kk] * aa[mm], 0),
-	tellsimpafter(aa[kk]^^nn, powsimp(aa[kk]^^nn)),*/
 	/* simplification of  involution*/
     tellsimpafter('cinvolve('cinvolve(bb)), bb)
 );			
@@ -387,9 +436,9 @@ simplification rules
 matchdeclare(dd, lambda([u],  freeof(asymbol, u)), gg, lambda([u],  not freeof(asymbol, u))); 
 matchdeclare(ds, lambda([u],  not freeof(asymbol, u) and not (freeof("^", u) or freeof("^^", u) ) ), rn, numberp);
 	
-defrule (clifsimp1, dd*aa, dd.dotsimpc(aa));
-defrule (clifsimp11, bb.aa, bb.dotsimpc(aa));
-defrule (clifsimp10, aa, dotsimpc(aa));
+defrule (clifsimp1, dd*bb, dd.dotsimpc(bb));
+defrule (clifsimp11, bb.cc, bb.dotsimpc(cc));
+defrule (clifsimp10, bb, dotsimpc(bb));
 defrule (clifsimp21, bb/gg, bb . dotinvsimp(1/gg));
 defrule (clifsimp3, ds,  powsimp(ds));
 
@@ -446,7 +495,6 @@ cinv(ab):=block( [s, b, u:1],
 	if atom(ab) or freeof(asymbol, ab) then 
 	if ab#0 then return(1/ab) else return('nan),
 	"first attempt - conjugattion",
-	"b:cconjugate(ab)",
 	b:dotconjugate(ab),
 	s:expand(b.ab),
 	if not freeof(asymbol, s) then s: apply1(s, clifsimp10, clifsimp21),
@@ -471,12 +519,12 @@ powsimp(aa):=block( [a, k, p:1],
   if inop(aa)="^^" then (
 	  a:inpart(aa,1),
 	  k:inpart(aa,2),
-	  for j:1 thru k do
-		p:p.a,
-		dotsimpc(p)
-	   )
-  else aa
- );
+	  if numberp(k) then (
+		  for j:1 thru k do p:p.a,
+		  dotsimpc(p)
+	  ) else aa
+   ) else aa
+);
 
 
 
@@ -615,13 +663,13 @@ countsym(ab, sym):=block([sop, a, b, s:0, inflag:true ],
 );
 
 /*  experimental code*/
-count_subexpr(ab, sym):=block([inflag:true ],
+countsym2(ab, sym):=block([inflag:true ],
 	if freeof(sym, ab) then return(0),
 	if atom(ab) then  
 		if sym=ab then return(1),
 	if subvarp(ab) then  
 		if sym=op(ab) then return(1),
-	xreduce("+", maplist( lambda([i], count_subexpr(i, sym)), ab))
+	xreduce("+", maplist( lambda([i], countsym2(i, sym)), ab))
  );
 
 
@@ -654,21 +702,32 @@ grade(expr, [gradexpand]):=block([cc, sop, k ],
 );
 
 /*
+grade decomposition of expressions
+factors and produces a matrix
+ */
+matrixgrade(expr):=block([ret], 
+	ret:grade(expr),
+	ret:maplist ( lambda([u], factorby( u, %elements)) , ret),
+	transpose(matrix(ret))
+);
+
+/*
 maximal grade of an expression
 */
-maxgrade(expr):=block([lst],
+maxgrade(expr):=block([lst:[] ],
 	if freeof (asymbol, expr) then return (0),
 	if inop(expr)="+" then (
 		lst:maplist(maxgrade, expr),
 		lmax(lst)
 	) else 
-		countsym(expr, asymbol)
+		countsym2(expr, asymbol)
 );
 
 /*
  Partial factoring by subexpression
 */
 factorby(expr, z):=block([quot, res, ret, ee, n, sop, %qq, radsubstflag:true ],
+	if emptyp(z) then return (expr),
 	if atom(expr) then return (expr),
 	if matrixp(expr) then 
 		return(matrixmap(lambda([u], factorby(u, z)), expr)),
@@ -723,52 +782,41 @@ simpfact(expr, z):=block([ret:expr],
 	if not mapatom(ret) then
 	map(lambda([u], factorby(u, z)), ret) else ret
 );
- 
+
+
+listofclivars(expr):=(
+	if length(%elements)=1 then %elements:elements(),
+	sublist(%elements, lambda ([u], not freeof(u, expr)))
+);
+
+clifact(expr):=block([lcv:[], ret: expr],
+	if not mapatom(expr) then (
+		lcv: listofclivars(expr),
+		if not emptyp(lcv) then
+			ret:factorby(expr, lcv) 
+	),
+	ret
+);
 /* 
 computes the element decomposition
 */
-clicoeff(expr, smat):=block([cc, ee, sop,  r, l, u, elst, lst, use_fast_arrays:false ],
-	local(cc, ee),
-	if not mapatom(expr) then 
-		expr:expand(expr),
-	sop: inop(expr),
-	if sop="+" then (
-		lst: inargs( (expr)),		
-		for v in lst do (	
-			if _debug=true then display( v),
-			if freeof (asymbol, v ) then (
-				if cc[1] =arraymake (cc, [1]) then cc[1]:0,	
-				cc[1]:cc[1]+v,
-				ee[1]:1
-			) else (
-				[l,r]: oppart (v, lambda ([u], freeof(asymbol, u))),		
-				ee[r]:r,	
-				l:subst('nil=1, l),
-				if cc[r] =arraymake (cc, [r]) then 	cc[r]:0,			
-					cc[r]:cc[r] +l,				
-				if _debug=true then display(r,l, ee[r], cc[r] )	
-			)
-		)
-	)else ( "simple expression, separate",
-		 if freeof (asymbol, expr ) then (
-			cc[1]:expr, 
-			if expr#0 then
-			ee[1]:1 else ee[1]:0
-		)else (
-			[l,r]: oppart (expr, lambda ([u], freeof(asymbol, u))),
-			if _debug=true then display(r,l),
-			cc[ r]:subst('nil=1, l),
-			ee[ r]:r
-		 )
+
+clicoeff2(expr, smat):=block([ ee:[], z:[], cc:[], qq ],
+	if length(%elements)=1 then %elements:elements(),
+	cc:map(lambda([u], coeff(expr, u)), %elements),
+	z:sublist_indices(cc, lambda([u], u#0)),
+	ee:makelist(%elements[i], i, z),
+	qq:expand(expr-substinpart("+", makelist (cc[i]*%elements[i], i, z), 0)),
+	cc:makelist(cc[i], i, z),
+	if qq#0 then  (
+		cc: cons(qq, cc),
+		ee: cons(1, ee)
 	),
-	lst:listarray(cc),
-	lst:subst(false=0, lst),
-	elst:listarray(ee),
-	elst:unique (elst),
 	if smat='list then 
-		[elst, lst]	
-	else if smat='mat then  
-		[elst, transpose(matrix(lst))]
+		[ee, cc]
+	else if smat='mat and not emptyp(cc) then  
+		[ee, transpose(matrix(cc))] else [ ]
+		
 );
 
 /*
@@ -781,7 +829,7 @@ bdecompose(expr):=block([gr:expr],
 			%elements:elements(), 
 	gr:map( lambda([v], factorby(v, %elements) ), gr ),
 	gr:grade(gr),
-	map(lambda([z], clicoeff(z, 'mat)),gr)
+	map(lambda([z], clicoeff2(z, 'mat)),gr)
 );
 
 /*
@@ -904,17 +952,33 @@ mtable2i():=block([n,   lst],
 	genmatrix( lambda([i,j], dotsimpc(lst[i] | lst[j] ) ), n)
 );
 
+/**
+ outer product table, all elements
+*/ 
 mtable2o():=block([n, a, lst],
 	lst: elements(all),
 	n:length(lst),
 	genmatrix( lambda([i,j], dotsimpc(lst[i] & lst[j] ) ), n)
 );
 
-mtable21o():=block([n, a, lst],
+/**
+ regressive product table, all elements
+*/ 
+mtable2r():=block([n, a, lst],
 	lst: elements(all),
 	n:length(lst),
-	genmatrix( lambda([i,j], (lst[i] ~ lst[j] ) ), n)
+	genmatrix( lambda([i,j],  dotsimpc(lst[i] . dual(lst[j]))), n)
 );
+
+/**
+ scalar product table, all elements
+*/ 
+mtable2s():=block([n, a, lst],
+	lst: elements(all),
+	n:length(lst),
+	genmatrix( lambda([i,j],  scalarpart ( dotsimpc(lst[i] . lst[j] ) )), n)
+);
+
 
 /**
  multiplication table, reduced
@@ -929,6 +993,9 @@ mtable1([lst]):=block([n],
 	genmatrix( lambda([i,j], dotsimpc(lst[i] . lst[j] ) ), n)
 );
 
+/**
+ inner product table, reduced
+*/
 mtable1i([lst]):=block([n],
 	if emptyp(lst) then 
 		lst:makelist(asymbol[i], i, ndim) 
@@ -939,6 +1006,9 @@ mtable1i([lst]):=block([n],
 	genmatrix( lambda([i,j], dotsimpc(lst[i] | lst[j] ) ), n)
 );
 
+/**
+ multiplication table, reduced
+*/
 mtable1o([lst]):=block([n],
 	if emptyp(lst) then 
 		lst:makelist(asymbol[i], i, ndim) 
@@ -949,16 +1019,6 @@ mtable1o([lst]):=block([n],
 	genmatrix( lambda([i,j], dotsimpc(lst[i] & lst[j] ) ), n)
 );
 
-mtable11o([lst]):=block([n],
-	if emptyp(lst) then 
-		lst:makelist(asymbol[i], i, ndim) 
-	else 
-		lst:lst[1],
-	lst:push(1, lst),
-	n:length(lst),
-	genmatrix( lambda([i,j], dotsimpc(lst[i] ~ lst[j] ) ), n)
-);
-
 mtable1r([lst]):=block([n],
 	if emptyp(lst) then 
 		lst:makelist(asymbol[i], i, ndim) 
@@ -966,7 +1026,7 @@ mtable1r([lst]):=block([n],
 		lst:lst[1],
 	lst:push(1, lst),
 	n:length(lst),
-	genmatrix( lambda([i,j], regproduct(lst[i] , lst[j] ) ), n)
+	genmatrix( lambda([i,j],  dotsimpc(lst[i] . dual(lst[j]))), n)
 );
 
 mtable1s([lst]):=block([n],
@@ -985,10 +1045,21 @@ mtable1s([lst]):=block([n],
 experimental code
 */
 
+/*
+diagnoal transposition of a matrix
+*/
+dtranspose(M):= map(reverse, M);
+
 diag(MM):=block([n],
 	if not matrixp(MM) then error("matrix required"),
 	n:length(MM),
 	genmatrix( lambda([i,j],  if i=j then MM[i,j] else 0 ), n)
+);
+
+adiag(MM):=block([n],
+	if not matrixp(MM) then error("matrix required"),
+	n:length(MM),
+	genmatrix( lambda([i,j],  if i=j then MM[n-i +1, j] else 0 ), n)
 );
 
 diaglist(MM):=block([n, LL],
@@ -997,6 +1068,12 @@ diaglist(MM):=block([n, LL],
 	local(LL),
 	LL:genmatrix( lambda([i,j],  if i=j then MM[i,j] else 0 ), n),
 	list_matrix_entries(matrix(makelist(1, n)).LL)
+);
+
+mdiag(MM):=block([n],
+	if not listp(MM) then error("list required"),
+	n:length(MM),
+	genmatrix( lambda([i,j],  if i=j then MM[i] else 0 ), n)
 );
  
 /*
@@ -1032,22 +1109,10 @@ cnorm(x):=block([u:expand(x), z, v],
 	u:expand(u | cconjugate(u)),
 	u:cliffsimpall(u),
 	u:expand(u),
-	/*if not freeof (".", u) then 
-		error ("not free of non-scalars "), */
 	u:scalarpart(u),
 	u:ratsimp(u)
 );
 
-cnorm2(x):=block([u:expand(x), z, v],
-	u:expand(u | creverse(u)),
-	u:cliffsimpall(u),
-	/*if not freeof (".", u) then 
-		error ("not free of non-scalars "), */
-	u:expand(u),
-	u:scalarpart(u),
-	u:ratsimp(u)
-);
-	
 /*
 symmetric bilinear form of the algebra; 
 */
@@ -1116,7 +1181,7 @@ nscalarpart(v):=block([ r, l, sop ],
 	) else 
 		if not freeof(asymbol, v) then  r:v 
 		else r:0,
-	r
+	clifact(r)
 );
 
 /*
@@ -1125,7 +1190,7 @@ nscalarpart(v):=block([ r, l, sop ],
 vectorpart(v):=block([gr],
 	if freeof(asymbol, v) then return (0),
 	gr:grade(v),
-	gr[2]
+	clifact(gr[2])
 );
 
 /*
@@ -1136,18 +1201,23 @@ mvectorpart(v):=block([ r, l, gr ],
 	gr:grade(v),
 	gr:sublist(gr, lambda([u], not freeof(".", u))),
 	if emptyp(gr) then 0 else
-		substinpart("+", gr, 0)
+		gr:substinpart("+", gr, 0),
+	clifact(gr)
 );
 
 /**
  grade of order k
 */
-grpart(v,k):=block([gr, k:k+1],
-	if k>ndim+1 then k:ndim+1,
-	gr:grade(v),
-	gr[k]
+grpart(v, k):=block([gr],
+	if listp(k) then  
+		substinpart("+", map(lambda([u], grpart (v, u)), k), 0)  
+	else (
+		k:k+1,
+		if k>ndim+1 then k:ndim+1,
+		gr:grade(v),
+		clifact(gr[k])
+	)
 );
-
 
 /* 
  constructs a vector
@@ -1198,27 +1268,52 @@ celem(x, [cc]):=block([ee, ss:0, n, qq],
 */
 
 /**
- dual element
- dual(x):= x. %iv;
+   algebraical dual element
  */
-dual(x):=block ([ii ],
-  if listp(x) then maplist(dual, x)
-  elseif matrixp(x) then matrixmap(dual, x)
-  else (
-	ii:%ivnorm* %iv,
-	cliffsimp1(x. ii)
-  )
+dual(expr):=block([lste:[], lsti:[], r, l],
+	if matrixp(expr) then
+		return(matrixmap(dual, expr )),
+	if listp(expr) then
+		return(maplist(dual, expr )),
+	if not mapatom(expr) and inop(expr)="+" then 
+		map(dual, expr)
+	else (
+		[l, r]:subst('nil=1, oppart(expr, lambda([u], freeof(asymbol, u)))),
+		lste:clv(r),
+		lsti: vectors(),
+		lste: lste xor lsti,
+		r:substinpart(".", lste, 0),
+		l*r
+	)
 );
 
-/*
-conjel(x, k):= (asymbol[k]. x)/asymbol[k]	;
-*/
+/**
+   clifford dual element
+ */
+clidual(expr):=block([lste:[], lsti:[], r, l, ss:1],
+	if matrixp(expr) then
+		return(matrixmap(clidual, expr )),
+	if listp(expr) then
+		return(maplist(clidual, expr )),
+	if not mapatom(expr) and inop(expr)="+" then 
+		map(clidual, expr)
+	else (
+		[l, r]:subst('nil=1, oppart(expr, lambda([u], freeof(asymbol, u)))),
+		lste:clv(r),
+		lsti:vectors(),
+		if %ivnorm#0 then ss:%ivnorm,
+		ss:ss*permsign( append (lste, lsti)),
+		lste: lste xor lsti,
+		r:substinpart(".", lste, 0),
+		ss*l*r
+	)
+);
 
 /*
  computes a unit  element
 */
 uelem(vv):=block( [qq],
-	qq:cnorm2(vv),
+	qq:-cnorm(vv),
 	if qq=0 then return(vv),
 	if %divsimp=true then (
 		qq:trigsimp(qq),
@@ -1246,8 +1341,9 @@ prodecomp(a,b):=block( [ret, gr, l, r, m, inner:0, outer:0],
 	[inner, outer, ret]
 );
 
-comm(a,b):=expand(a.b - b.a)/2;
-acomm(a,b):=expand(a.b + b.a)/2;
+comm(a,b):= cliffsimp1 (expand(a. b - b. a))/2;
+acomm(a,b):=cliffsimp1 (expand(a. b + b. a))/2;
+
 
 /*
 grade  automorphism by  predicate
@@ -1267,16 +1363,18 @@ predautom(vv, predf):=block ([gr, v:0, k, w],
 );
 
 /* 
-Hitzer Sangwine automorphism
+Hitzer-Sangwine automorphism
 */
 hautom(vv, lst):=block([listarith:true ],
-	predautom(A, lambda([u,v],  member(v, lst+1)))
+	predautom(vv, lambda([u,v],  member(v, lst+1)))
 );
 
 /* 
-scalr part   automorphism
+scalar part   automorphism
 */
-sautom(vv):=predautom(A, lambda([u,v], not scalarp(u)));
+sautom(vv):=predautom(vv, lambda([u,v], not scalarp(u)));
+
+psautom(vv):=predautom(vv, lambda([u,v], maxgrade(u)=ndim));
 
 /*  Shirokov quaternion  type classification */
 qclass (vv) :=block ( [ar, ai, as, br, bi, bc],
@@ -1307,7 +1405,7 @@ cdgrade(vv, classf):=block ([gr, w, k, cs, clist],
 	local(cs), 
 	for i:1 thru ndim+1 do (
 		k:apply(classf, [gr[i], i]),
-		if op( cs[k])='cs then cs[k]:0, 
+		if op(cs[k])='cs then cs[k]:0, 
 		cs[k]:cs[k]+gr[i]
 	),	
 	listarray(cs)
@@ -1332,4 +1430,4 @@ print("package name: clifford.mac");
 print("author: ", get('clifford,'author));
 print("version:", get('clifford,'version));
 print("Recommended location: share/contrib");
-print("last update: 28 Aug 2016");
+print("last update: 12 Dec 2016");
