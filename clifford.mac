@@ -4,6 +4,11 @@ a lightweight package for performing Geometric Algebra calculations
 
  @version 
  
+	2.4.1 Date 17 Jun 20177
+	- simplification of Clifford exponents
+	- trigsimp inncorporated in cliffsimpall
+	- sloving 
+	
 	2.4 Date 27  Nov 2016
 	- new implementation clicoeff
 	- new implementation clidual
@@ -433,7 +438,7 @@ if get('clifford,'version)=false then (
 /*
 simplification rules
 */			
-matchdeclare(dd, lambda([u],  freeof(asymbol, u)), gg, lambda([u],  not freeof(asymbol, u))); 
+matchdeclare(dd, lambda([u],  freeof(asymbol, u)), [gg, hh], lambda([u],  not freeof(asymbol, u))); 
 matchdeclare(ds, lambda([u],  not freeof(asymbol, u) and not (freeof("^", u) or freeof("^^", u) ) ), rn, numberp);
 	
 defrule (clifsimp1, dd*bb, dd.dotsimpc(bb));
@@ -441,6 +446,30 @@ defrule (clifsimp11, bb.cc, bb.dotsimpc(cc));
 defrule (clifsimp10, bb, dotsimpc(bb));
 defrule (clifsimp21, bb/gg, bb . dotinvsimp(1/gg));
 defrule (clifsimp3, ds,  powsimp(ds));
+defrule (clifsimp4, exp(gg). exp(hh),  exp(gg+hh));
+
+
+declare (cliexpsimp, evfun);
+cliexpsimp(expr):=block([l,r, ret:1],
+	if inop(expr)="+" or listp(expr) then 
+		expr:map(cliexpsimp, expr ),
+	if not freeof(%e, expr) then (
+		[l,r]:oppart(expr, lambda([u], freeof(%e, u))),
+		/*display(l,r),*/
+		r:apply1( r, clifsimp4),
+		if not freeof(asymbol, l) then
+			l:dotsimpc(l),	
+		if not freeof(%e, r) then 
+			r: cliexpsimp(r), 
+		ret:subst(nil=1, l)*r	
+	) else ret:expr,
+	ret
+);
+
+
+trigp(expr):=block([ %trigf: 'sin or 'cos or 'tan or 'cot],
+	map(lambda([u],   not freeof(u, expr)), %trigf)
+);
 
 /*
 full simplification of expressions
@@ -458,6 +487,10 @@ cliffsimpall(expr):=block([res, aa, bb, sop, simp:true],
 		/*res:apply1(res, clifsimp3, clifsimp21, clifsimp2),*/
 		res:apply1(res, clifsimp3, clifsimp21),
 		res:apply1(res, clifsimp1, clifsimp10),
+		/*if not freeof(%e, res) then 
+			res:cliexpsimp(res),*/
+		if trigp(res) then 
+			res: trigsimp(res),
 		ratsimp(res)
 	)
 );
@@ -797,11 +830,13 @@ clifact(expr):=block([lcv:[], ret: expr],
 	),
 	ret
 );
+
+alias(clicoeff2, clicoeff); 
 /* 
 computes the element decomposition
+clicoeff2 depreciated
 */
-
-clicoeff2(expr, smat):=block([ ee:[], z:[], cc:[], qq ],
+clicoeff(expr, smat):=block([ ee:[], z:[], cc:[], qq ],
 	if length(%elements)=1 then %elements:elements(),
 	cc:map(lambda([u], coeff(expr, u)), %elements),
 	z:sublist_indices(cc, lambda([u], u#0)),
@@ -829,7 +864,14 @@ bdecompose(expr):=block([gr:expr],
 			%elements:elements(), 
 	gr:map( lambda([v], factorby(v, %elements) ), gr ),
 	gr:grade(gr),
-	map(lambda([z], clicoeff2(z, 'mat)),gr)
+	map(lambda([z], clicoeff(z, 'mat)),gr)
+);
+
+clisolve(expr, lst):=block([ee, al, ret:expr],
+	if inop(expr)="=" then 
+		ret:expand(lhs(expr)-rhs(expr)),
+	[ee, al]:clicoeff(ret,'list),
+	solve(al, lst)
 );
 
 /*
@@ -860,7 +902,15 @@ dotreverse(expr):=block ( [ret, l, r],
 		return(matrixmap(dotreverse, expr )),
 	if inop(ret)="+" or listp(ret) then 
 		map(dotreverse, ret )
-	else (
+	elseif inop(ret)="^" then (
+		[l, r]: inargs(ret),
+		r:dotreverse(r),
+		l^r
+	)elseif inop(ret)="*" then (
+		[l, r]: oppart(ret, lambda([u], freeof(asymbol, u))),
+		r:dotreverse(r),
+		l*r
+	) else (
 		[l, r]: oppart(ret, lambda([u], freeof(asymbol, u))),
 		if l='nil then l:1,
 		if r#'nil then (
@@ -1420,7 +1470,7 @@ evdecomp(vv):=cdgrade(vv, lambda([u, v ],  if oddp(v) then 1 else 2));
 qgrade(vv):=cdgrade(vv, lambda([u,v ],  qclass(u)+1));
 
 
-put('clifford, 'v20,'version);
+put('clifford, 'v24,'version);
 put('clifford, "Dimiter Prodanov", 'author);
 put('clifford, "(C) - Dimiter Prodanov, 2015 - 2016", 'copyright);
 
