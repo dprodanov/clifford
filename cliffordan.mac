@@ -58,6 +58,7 @@ if get('clifford,'version)=false then (
 );
 
 if get('cliffordan,'version)=false then (
+	remove("@", operator),
 	"inner product",
 	infix ("@", 130, 129),
 	"@"(a, b):=  scprod(a,b),

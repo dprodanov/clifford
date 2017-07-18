@@ -3,11 +3,15 @@ Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
  @version 
- 
-	2.4.1 Date 17 Jun 20177
+	2.4.2 Date 17 July 2017
+	-bugfix in explodeop
+	- change in oppart
+	- dotexpand
+	
+	2.4.1 Date 17 Jun 2017
 	- simplification of Clifford exponents
 	- trigsimp inncorporated in cliffsimpall
-	- sloving 
+	- solving 
 	
 	2.4 Date 27  Nov 2016
 	- new implementation clicoeff
@@ -55,7 +59,7 @@ a lightweight package for performing Geometric Algebra calculations
 	1.8 Date 06 Dec 2015
 	- change of notation to exclude conflicts with itensor-based packages
 	
-	oder log: changelog.txt
+	older log: changelog.txt
 	
   @license This library is free software; you can redistribute it and/or
         modify it under the terms of the GNU Lesser General Public
@@ -72,7 +76,7 @@ a lightweight package for performing Geometric Algebra calculations
         Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-max_version:build_info ()@version;
+max_version:args(build_info ())[1];
 if orderlessp(max_version,"5.37") then error("Maxima verision ", max_version, " not supported");
  
 ttyoff:true;
@@ -302,7 +306,7 @@ oppart(expr, predf):=block(
 		 	if _debug=true then display( ltrue, lfalse), 
 			lst:[ ltrue, lfalse]
 		),
-		if emptyp(err) then lst([expr, 'nil])
+		if emptyp(err) then ['nil, 'nil ]
 	),
 	lst
 );
@@ -310,10 +314,11 @@ oppart(expr, predf):=block(
 /* 
 splits an expression by occurencess of an operator
 */
-explodeop(expr, sop):=block(
-	if mapatom(expr) then return ([expr]),
-	xreduce(append , maplist(lambda([w], explodeop(w, sop)), expr))
- );
+explodeop(expr, sop):=block([lst],
+	if mapatom(expr) then return ([expr]), 
+	lst: inargs(expr),
+	lreduce(append, map(lambda([w],   explodeop(w, sop)), lst))
+);
 
 /*
 combinees a list by operator
@@ -323,7 +328,16 @@ implodeop(lsta, sop):=block(
 	xreduce(sop, maplist(lambda([w], implodeop(w, sop)), lsta))
 );
 
-
+/*
+expands recursivly the geometric product
+*/
+dotexpand(expr):=block([ sop],
+	sop:inop(expr),
+	if sop#"." then 
+		if sop="+" then return(map(dotexpand, expr))
+		else return(expr),
+	first(expr) | dotexpand(rest(expr)) + first(expr) & dotexpand(rest(expr))
+);
 
 realp (x):= featurep(x, real);
 
