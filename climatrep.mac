@@ -1,0 +1,240 @@
+/*******************************
+Clifford algebra
+a lightweight package for performing Geometric Algebra calculations
+
+Clifford Algebra Matrix representation code
+
+version 	1.0 11 May 2016
+
+@depends 'clifford
+
+**********************************
+ * @license This library is free software	 you can redistribute it and/or
+ *      modify it under the terms of the GNU Lesser General Public
+ *      License as published by the Free Software Foundation	 either
+ *      version 2.1 of the License, or (at your option) any later version.
+ *
+ *      This library is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY	 without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *       Lesser General Public License for more details.
+ *
+ *      You should have received a copy of the GNU Lesser General Public
+ *      License along with this library	 if not, write to the Free Software
+ *      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
+
+if get('clifford,'version)=false then (	
+	err:errcatch(
+		load("clifford.mac")
+	)
+);
+
+/*
+computes matrix representation of the algebra;
+experimental code
+*/
+climatrep(vv):=block([n, AA, lst, G, EE],
+	local(AA, G, EE),
+	lst: elements(all),
+	n:length(lst),
+	/* multiplication table of the algebra */
+	AA:genmatrix( lambda([i,j], dotsimpc(lst[i] . lst[j] ) ), n),
+	if vv=1 then (
+		AA:subst( asymbol[asymbol[0]]=asymbol[1], subst(1=asymbol[0], AA)), 
+		vv:asymbol[0]
+	),
+	/* signature of the algebra */
+	G:diag(AA),
+	EE:matrixmap(lambda([q], coeff (q, vv)), AA),
+	G.EE
+);
+
+climatrep1(vv):=block([n, AA, lst, EE ],
+	local(AA, EE),
+	if emptyp(%elements) then lst:elements(all)
+	elseif %elements[1] #1 then lst: cons(1, %elements) else lst: %elements,	
+	n:length(lst),
+	/* sepcial case */
+	if freeof(asymbol, vv) then 
+		return(vv*ident(n)),
+	/* multiplication table of the algebra */
+	AA:genmatrix( lambda([i,j], dotsimpc(lst[i] . lst[j] ) ), n),
+	[l, r]: oppart(vv, lambda([u], freeof(asymbol, u))),
+	/*display(AA),*/
+	if l='nil then l:1,
+	if r='nil then r:1,
+	/*display(l,r),*/
+	EE:matrixmap(lambda([q], coeff (q, r)), AA),
+	/*  twiddle to get the signs right*/
+	l*genmatrix( lambda([i,j],   dotsimpc( lst[i] . lst[i]) * EE[i,j]), n)
+);
+
+climatrep1(vv):=block([n, AA, lst, EE, opsubst :false, gs:gensym(string(asymbol)) ],
+	local(AA, EE),
+	if emptyp(%elements) then lst:elements(all)
+	elseif %elements[1] #1 then lst: cons(1, %elements) else lst: %elements,	
+	n:length(lst),
+	/* sepcial case */
+	/* multiplication table of the algebra */
+	AA:genmatrix( lambda([i,j], dotsimpc(lst[i] . lst[j] ) ), n),
+	AA:subst( asymbol[gs]=asymbol[1], subst(1=gs, AA)), 
+	[l, r]: oppart(vv, lambda([u], freeof(asymbol, u))),
+	/*display(AA),*/
+	if l='nil then l:1,
+	if r='nil then r:gs,
+	/*display(l,r),*/
+	EE:matrixmap(lambda([q], coeff (q, r)), AA),
+	/*  twiddle to get the signs right*/
+	l*genmatrix( lambda([i,j],   dotsimpc( lst[i] . lst[i]) * EE[i,j]), n)
+);
+
+elem2mat1(expr, [ulst] ):=block(
+	if emptyp(ulst) then ulst:false 
+	else ulst:true,
+	if mapatom(expr) then return(climatrep1(expr)),
+	if ulst=true then
+		maplist(climatrep1, expr)
+	else
+		map(climatrep1, expr)
+);
+
+coeffmap(vv):=block([n, AA, lst, EE],
+	local(AA,  EE),
+	lst: elements(all),
+	n:length(lst),
+	/* multiplication table of the algebra */
+	AA:genmatrix( lambda([i,j], dotsimpc(lst[i] . lst[j] ) ), n),
+	if vv=1 then (AA:subst(1=asymbol[0], AA), vv:asymbol[0]),
+	EE:matrixmap(lambda([q], coeff (q, vv)), AA)
+);
+
+/*
+identifies the abstract element from a matrix representation
+*/
+matelem(MM):=block([LL],
+	local(LL),
+	if not matrixp(MM) then error("matrix required"),
+	LL:matrix(elements(all)),
+	LL:MM.LL,
+	LL[1,1]
+);
+
+matelem1(MM):=block([LL],
+	local(LL),
+	if not matrixp(MM) then error("matrix required"),
+	LL: (matrix(elements(all))),
+	LL:row(MM,1).LL
+);
+
+
+matclimin(MM):=block([n, q:0, LL,  z:0, s],
+	if not matrixp(MM) then error("matrix required"),
+	local(LL),
+	n:length(MM),
+	while n>1 do (
+		n:n/2,
+		q:q+1
+	),
+	LL:diag(MM),
+	matrixmap(lambda([q], if q>0 then z:z+1), LL),
+	n:length(MM),
+	s:n-z,
+	while n>q do (
+		if s>1 then s:s-1, 
+		if z>1 then z:z-1,
+		n:s+z
+	),
+	[z,s]
+);
+
+lclimin(lst):=block([n, q:0,  z:0, s],
+	if not listp(lst) then error("list required"),
+	n:length(lst),
+	while n>1 do (
+		n:n/2,
+		q:q+1
+	),
+	map(lambda([q], if q>0 then z:z+1), lst),
+	n:length(lst),
+	s:n-z,
+	while n>q do (
+		if s>1 then s:s-1, 
+		if z>1 then z:z-1,
+		n:s+z
+	),
+	[z,s]
+);
+
+morthogonalp(MM):=block([n, m, LL  ],
+	if not matrixp(MM) then error("matrix required"),
+	[m,n]:matrix_size(MM),
+	if n#m then error("matrix non square"),
+	local(LL),
+	LL:transpose(MM),
+	LL:MM.LL - ident(n),
+	is(zeromatrix (n,n) = LL)
+);
+
+/*
+elem2mat(expr):=block([L:[], ei, ret, E:[], qq],
+	if emptyp(%elements) then E:elements(all)
+	elseif %elements[1] #1 then E: cons(1, %elements) else E: %elements,
+	
+	ret:expand(expr),
+	L:map(lambda([u], 
+		qq: u.expr, dotsimpc(expand(qq)) 
+		), E),
+	genmatrix( lambda([i,j],  scprod( L[i] ,  E[j]) * scprod( E[j] ,  E[j])), length(L))
+);
+*/
+
+elem2mat(expr):=block([L:[], ei, ret, E:[], qq],
+	if emptyp(%elements) then E:elements(all)
+	elseif %elements[1] #1 then E: cons(1, %elements) else E: %elements,
+	
+	ret:expand(expr),
+	ei:maplist(lambda([u],  dotsimpc(u.u).u  ), E),
+	L:map(lambda([u], 
+		qq: u.expr, dotsimpc(expand(qq)) 
+		), E),
+	genmatrix( lambda([i,j],  scprod( L[i] ,  ei[j])), length(L))
+);
+
+
+
+permatrixsym(lsta, lstb):= block([m,m],
+	if not (listp(lsta) or listp(lstb)) then error("list required"),
+	n:length(lsta), m:length(lstb),
+	genmatrix( lambda([i,j], coeff(lsta[i], lstb[j] )), n, m)
+);
+
+permatrixnum(lsta, lstb):= block([m,m, MM, ss:0],
+	if not (listp(lsta) or listp(lstb)) then error("list required"),
+	n:length(lsta), m:length(lstb),
+	local(MM),
+	MM:genmatrix( lambda([i,j], if lsta[i] =lstb[j] then 1 else 0), n, m),
+	for i:1 thru n do (
+		ss:sum(MM[i, q], q, 1, m),
+		if ss#0 then MM[i]:MM[i]/ss
+	),
+	MM
+);
+
+mtrace(MM):=block([m, n],
+	if not matrixp(MM) then error("matrix required"),
+	n:length(MM), m:length(MM[1]),
+	if n#m then error("matrix not square"),
+	sum(MM[i,i], i, 1, n)
+);
+
+permcheck(lsta, lstb):=block([PP, H, E],
+	local(PP, H, E),
+	PP:permatrixnum(lsta, lstb),
+	/* permutation matrix should be pseudo-orthogonal*/
+	H:transpose(PP).PP,
+	/* its square is idempotent */
+	E:H.H-H,
+	[is(mtrace(E)=0), E, H, PP]
+);
