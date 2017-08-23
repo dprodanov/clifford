@@ -1,0 +1,529 @@
+/*******************************
+Clifford algebra
+a lightweight package for performing Geometric Algebra calculations
+
+Clifford blade representation
+
+version 	1.1  Date 10 Apr 2016
+		- bug fixes in inner product and  outer product
+		1.0 Date  27 Jan 2016
+
+@depends 'clifford
+
+**********************************
+ * @license This library is free software	 you can redistribute it and/or
+ *      modify it under the terms of the GNU Lesser General Public
+ *      License as published by the Free Software Foundation	 either
+ *      version 2.1 of the License, or (at your option) any later version.
+ *
+ *      This library is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY	 without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *       Lesser General Public License for more details.
+ *
+ *      You should have received a copy of the GNU Lesser General Public
+ *      License along with this library	 if not, write to the Free Software
+ *      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
+ if get('clifford,'version)=false then (
+
+	err:errcatch(
+		load("clifford.mac")
+	),
+	if emptyp(err) then (
+	"inner product",
+	infix ("|", 135, 134),	
+	texput ("|", " \\circ ", infix),
+	"outer product",
+		infix("&", 135, 134),
+	texput ("&", " \\wedge ", infix)
+	),
+	infix ("xor", 60, 60),
+	"xor" (a, b):= block ([la:[], lb:[] ],
+		if listp(a) and listp(b) then (
+			la: sublist (a,  lambda([u], not member(u, b)) ),
+			lb: sublist (b,  lambda([u], not member(u, a)) ),
+			append(la, lb)
+		) else 
+		(a or b) and not (a and b)
+	)
+);
+
+	
+/* fix the code for compatibility with clifford - asymbol case
+"|"(a, b):= block ([ret], 
+		ret:expand((a.b + binvolve2(b).binvolve2(a))/2),
+		if not freeof(bsymbol, ret) then ret:blmult(ret),
+		ret
+	);
+	
+ "&"(a, b):=block ([ret], 
+		ret:expand((a.b - binvolve2(b).binvolve2(a))/2),
+		if not freeof(bsymbol, ret) then ret:blmult(ret),
+		ret
+	);
+*/
+
+	"outer product";
+	"&"(a, b):= block ([l, r, u, ret:0],
+		if ndim=0 then return ( buildq([a,b], "&"(a, b))),
+		if not mapatom(a) then a:expand(a),
+		if not mapatom(b) then b:expand(b),
+		if ipdecomp=true and (scalarp(a) or scalarp(b)) then return(0),
+		if inop(a)="+" then return (map( lambda ([u],  u & b), a)),
+		if inop(b)="+" then return (map( lambda ([u],  a & u), b)),	
+		if not freeof(".", a) then
+			a:blmult(a),
+		if not freeof(".", b) then
+			b:blmult(b),
+		l:blmaxgrade(a),
+		r:blmaxgrade(b),
+		/*display(l,r),*/
+		ret:blmult(a.b),
+		ret:blgrpart(ret, l+r),
+		ret
+	);
+	
+	
+	"|"(a, b):= block ([l,r, qq, ret:0],
+		if ndim=0 then return ( buildq([a,b],"|"(a, b))),
+		if scalarp(a) or scalarp(b) then (
+			if inprotype='lc then 
+				if scalarp(a) then ret: a*b else ret:0
+			elseif inprotype='rc then 
+				if scalarp(b) then ret: a*b else ret:0
+			elseif inprotype='sym then ret:blmult(a.b),
+				return(ret)
+		),
+		if not mapatom(a) then a:expand(a),
+		if not mapatom(b) then b:expand(b),
+		if inop(a)="+" then return (map( lambda ([u],  u | b), a)),
+		if inop(b)="+" then return (map( lambda ([u],  a | u), b)),	
+		if not freeof(".", a) then
+			a:blmult(a),
+		if not freeof(".", b) then
+			b:blmult(b),
+		l:blmaxgrade(a),
+		r:blmaxgrade(b),
+		qq: l-r,
+		/*display(l, r, qq),*/
+		if inprotype='rc then 
+			if qq<0 then return(0)
+			elseif qq<= l+r then ( 
+				ret:blmult(a.b),
+				ret:blgrpart(ret, qq)
+		),
+		if inprotype='lc then 
+			if qq>0 then return(0)
+			else (
+				qq:-qq,
+				if qq<= l+r then ( 
+				ret:blmult(a.b),
+				ret:grpart(ret, qq)
+			)
+		),
+		if inprotype='sym then (
+			qq:abs(qq),
+			ret:blmult(a.b),
+			ret:grpart(ret, qq)
+		),
+		(ret)
+	);	
+
+/*
+blade symbol
+*/ 
+bsymbol:E;
+%blelements:[1];
+%ivB:1;
+
+makeblade(var):=bsymbol:parse_string(sinvertcase(string(var)));
+
+binit([var]):=block([],
+	if emptyp(var) then var:asymbol
+	else var:var[1],
+	makeblade(var),
+	if matrixp (aform) then kill(aform),
+	declare(aform, scalar),
+	%blelements:map(blade, %elements),
+	%ivB:blade(%iv)
+);
+
+binv(ab):=block( [s, b, u:1],
+	if atom(ab) or freeof(bsymbol, ab) then 
+	if ab#0 then return(1/ab) else return('nan),
+	"first attempt - conjugattion",
+	b:bconjugate(ab),
+	s:expand(b.ab),
+	if not freeof(bsymbol, s) then s: blmult(s),
+	"second attempt - reversal",
+	if not freeof(bsymbol, s) then (
+	   b:breverse(ab),
+	   s:expand(b.ab),
+	   if not freeof(bsymbol, s) then s: blmult(s)
+	),
+	if _debug=true then  display(s),
+	if s#0 and freeof(bsymbol, s) then
+	return(b/s)
+	else return(1/ab)
+);
+
+binvolve(expr):=block ( [ret, l, r ],
+	if atom(expr) then return (expr),
+	if not freeof(".", expr) then 
+		ret: expand(expr) 
+	else ret:expr,
+	if matrixp(expr) then
+		return(matrixmap(binvolve, expr )),
+	if inop(ret)="+" or inop(ret)="*" or listp(ret) then 
+		map(binvolve, ret )
+	else (
+		[l, r]: oppart(ret, lambda([u], freeof(bsymbol, u))),
+		if l='nil then l:1,
+		if r#'nil then (
+			if oddp(length(r)) then r:-r
+			)
+		else r:1,
+		l*r
+	) 
+); 
+
+binvolve2(expr):=block(
+	if not freeof(bsymbol, expr) then binvolve(expr)
+	elseif not freeof(asymbol, expr) then cinvolve(expr)
+	else expr
+);
+
+breverse(expr):=block ( [ret, l, r ],
+	if atom(expr) then return (expr),
+	if not freeof(".", expr) then 
+		ret: expand(expr) 
+	else ret:expr,
+	if matrixp(expr) then
+		return(matrixmap(breverse, expr )),
+	if inop(ret)="+" or inop(ret)="*" or inop(ret)="." or listp(ret) then 
+		map(breverse, ret )
+	else (
+		[l, r]: oppart(ret, lambda([u], freeof(bsymbol, u))),
+		if l='nil then l:1,
+		if r#'nil then 
+			r:reverse(r)
+		else r:1,
+		l*r
+	) 
+); 
+
+bconjugate(expr):=block([ret],
+	ret: binvolve(expr),
+	breverse(ret)
+);
+
+
+declare (blade, evfun);
+blade(expr):=block([r, l, aa, ret:1, lst:[]],
+	if inop(expr)="/" then error("non canonical expression"),
+	if matrixp(expr) then
+		return(matrixmap(blade, expr )),
+	if inop(expr)="+" or listp(expr) then 
+		map(blade, expr )
+	else (
+		[l, r]: oppart(expr, lambda([u], freeof(asymbol, u))),
+		if l='nil then l:1,
+		if r#'nil then (
+			if mapatom(r) then 
+				lst:[first(args(r))]
+			else (
+				for m in r do 
+					push(first(args(m)), lst),
+				lst:reverse(lst)
+			),
+			ret:arraymake (bsymbol, lst)
+		),
+		l*ret
+	)
+);
+
+declare (unblade, evfun);
+unblade(expr):=block([r, l, ret:1, lst:[]],
+	if mapatom(expr) or freeof(bsymbol, expr) then return (expr),
+	if matrixp(expr) then
+		return(matrixmap(unblade, expr )),
+	if inop(expr)="+" or listp(expr) then 
+			ret:map(unblade, expr )
+		else (
+			[l, r]: oppart(expr, lambda([u], freeof(bsymbol, u))),
+			if l='nil then l:1,
+			if r#'nil then (
+				lst:args(r),
+				for v in lst do
+					ret:ret.asymbol[v],
+				if _debug=true then display(ret,r,lst)
+			),
+			ret:l*ret
+		),
+	ret
+);
+
+
+declare (blmult, evfun);
+blmult(expr):=block([w:1, r, l:1, ret:1, lst, vv:[], i:1, uu:[], n ],
+	if mapatom(expr) or freeof(".", expr) then return (expr),
+	if inop(expr)="+" or listp(expr) then 
+		ret:map(blmult, expr )
+	else (
+		[l, r]: oppart(expr, lambda([u], freeof(bsymbol, u))),
+		if l='nil then l:1,
+		if r#'nil then (
+			lst:inargs(r),
+			for v in lst do vv:append (vv, args(v)),
+			"display(vv)",
+			w:permsign(vv),			 
+			vv: sort(vv, lambda([u,v], if u=v then  
+						(if numberp(v) then w:w*signature[v] else w:w*aform[v,v]), 
+						orderlessp(u,v) )
+					),
+			if _debug=true then  display(w, vv),
+			n:length(vv),
+			while i<n do
+				if vv[i]=vv[i+1] then i:i+2 
+				else (push(vv[i], uu), i:i+1), 
+			if vv[n-1]#vv[n]  then push(vv[n], uu),
+			uu:reverse(uu),
+			if not emptyp(uu) then ret:arraymake (bsymbol, uu ),
+			ret: w*l*ret
+		) else ret:l
+	),
+	ret
+);
+
+declare (blsimp, evfun);
+blsimp(expr):=block([w:1, r, l:1, ret:1, lst,  i:1, uu:[], n ],
+	if atom(expr) or freeof(bsymbol, expr) then return (expr),
+	if inop(expr)="+" or listp(expr) then 
+		ret:map(blsimp, expr )
+	else (
+		[l, r]: oppart(expr, lambda([u], freeof(bsymbol, u))),
+		if _debug=true then display(l, r),
+		if l='nil then l:1,
+		if r#'nil then (
+			lst:args(r),
+			n:length(lst),
+			if n>1 then (
+				w:permsign(lst),			 
+				lst: sort(lst, lambda([u,v], if u=v then w: w*signature[v], orderlessp(u,v) )),
+				if _debug=true then display(w, lst),		
+				while i<n do
+					if lst[i]=lst[i+1] then i:i+2 
+						else (push(lst[i], uu), i:i+1), 
+				if lst[n-1]#lst[n]  then push(lst[n], uu),
+				uu:reverse(uu),
+				if not emptyp(uu) then ret:arraymake (bsymbol, uu ),
+				ret: w*l*ret
+			) else ret: l*r
+		) else ret:l
+	),
+	ret
+);
+
+blgrade(expr, [gradexpand]):=block([c, sop, k, l, r ],
+	local(c),
+	if ndim=0 then error("ndim =0"),
+	array(c, fixnum, ndim),
+	
+	if emptyp(gradexpand) then gradexpand:true
+	else gradexpand:gradexpand[1],
+	
+	if not mapatom(expr) then 
+	if gradexpand then expr:expand(expr),
+	
+	sop: inop(expr),
+	if sop="+" then (
+		for v in expr do (
+			[l, r]: oppart(v, lambda([u], freeof(bsymbol, u))),
+			if r#'nil then k:length(r) else k:0,
+			if _debug=true then display(k,v),
+			c[k]:c[k] +v 
+		)
+	)else ( "simple expression",
+		[l, r]: oppart(v, lambda([u], freeof(bsymbol, u))),
+		if r#'nil then k:length(r) else k:0,
+		c[k]:c[k] +expr 
+	),
+	listarray(c)
+);
+
+/**
+ grade of order k
+*/
+blgrpart(v,k):=block([gr, k:k+1],
+	if k>ndim+1 then k:ndim+1,
+	gr:blgrade(v),
+	gr[k]
+);
+
+bmtable2():=block([n, a, lst],
+	local (a),
+	lst: blade( elements(all)),
+	n:length(lst),
+	if _debug then 
+	a[i,j]:= (lst[i].lst[j]) else
+		a[i,j]:= blmult(lst[i].lst[j]),
+	genmatrix(a,n)
+);
+
+bmtable2r():=block([n, a, lst],
+	local (a),
+	lst: blade( elements(all)),
+	n:length(lst),
+	if _debug then 
+	a[i,j]:= (lst[i].lst[j]) else
+		a[i,j]:= blsimp(blmult( breverse( lst[i].lst[j]))),
+	genmatrix(a,n)
+);
+
+
+
+blimatrep(vv):=block([n, AA, lst, G, EE, GG, ZZ],
+	local(AA, G, EE),
+	lst:map(blade,  elements(all)),
+	n:length(lst),
+	/* multiplication table of the algebra */
+	AA:genmatrix( lambda([i,j], blmult( lst[i] . lst[j] ) ), n),
+	if vv=1 then (AA:subst(1=bsymbol[0], AA), vv:bsymbol[0]),
+	/* signature of the algebra */
+	G:diag(AA),
+	EE:matrixmap(lambda([q], coeff (q, vv)), AA),
+	G.EE
+);
+
+sgn(x):= if mapatom(x) then 1 elseif op(x)="-" then -1 else 1;
+
+bmapgrade(k, M):= if not numberp(k) then error("not a number ", k) else
+matrixmap(lambda([u], if blmaxgrade(u)=k then u else 0), M);
+
+bmapgrade1(k, M):= if not numberp(k) then error("not a number ", k) else
+matrixmap(lambda([u], if blmaxgrade(u)=k then sgn(u) else 0), M);
+
+alttable(M):=matrixmap(lambda([u], blsimp(breverse(u))), M);
+
+blimatrep0(vv, AA):=block([n,  lst],
+	lst:map(blade,  elements(all)),
+	n:length(lst),
+	/* multiplication table of the algebra */
+	if vv=1 then (AA:subst(1=bsymbol[0], AA), vv:bsymbol[0]),
+	matrixmap(lambda([q],  if not freeof(vv, q) then q else 0 ), AA)
+);
+
+/*  orhonormal case*/
+blimatrep1(vv):=block([n, AA, lst, G, EE],
+	local(AA, G, EE),
+	lst:map(blade,  elements(all)),
+	n:length(lst),
+	/* multiplication table of the algebra */
+	AA:genmatrix( lambda([i,j], blmult( lst[i] . lst[j] ) ), n),
+	if vv=1 then (AA:subst(1=bsymbol[0], AA), vv:bsymbol[0]),
+	EE:matrixmap(lambda([q], coeff (q, vv) ), AA),
+	/*  twiddle to get the signs right*/
+	genmatrix( lambda([i,j],  blmult( lst[i] . lst[i] )*EE[i,j] ), n)
+);
+
+matbelem(MM):=block([LL],
+	local(LL),
+	if not matrixp(MM) then error("matrix required"),
+	LL:matrix(map(blade,  elements(all))),
+	LL:MM.LL,
+	LL[1,1]
+);
+
+bmtable1([lst]):=block([n],
+	if emptyp(lst) then 
+		lst:makelist(bsymbol[i], i, ndim) 
+	else 
+		lst:lst[1],
+	lst:push(1,lst),
+	n:length(lst),
+	genmatrix( lambda([i,j], blmult(lst[i].lst[j]) ), n)
+);
+
+btotdiff(f,x):=block( [ret:0, lv],
+	if mapatom(x) then 
+		ret: diff( f, x )
+	else (
+		lv: sublist( listofvars(x), 
+					lambda ([z], freeof(asymbol, z) and  
+								freeof(bsymbol, z) and
+								freeof(aform, z) 
+							)
+				),
+		if _debug then display(lv),
+		for u in lv do 
+			ret: ret + binv(diff(x, u)). subst(".", "*", diff( f, u ))
+	),
+	ret
+);
+
+bmvectdiff(f, x, [k] ):=block ([s:0, n:1, m, es],
+	if emptyp(k) then k:1 else k: k[1],
+	x:expand(x),
+	for p:1 thru k do (
+		s:btotdiff(f, x),
+		s:expand(s),
+		s:(blmult(s)),
+		f:s
+	),
+	es: sublist( listofvars(x), lambda ([z], not freeof(bsymbol, z))),
+	"display(es)",
+	if not emptyp(es) then
+		s:simpfact(s, es),
+	s
+);
+
+bvect(x, [cc]):=block ([ss:0, qq],
+	if emptyp(cc) then
+		ss:sum (x[i]*bsymbol[i], i, 1, ndim)
+	else (
+		cc:cc[1],
+		for i:1 thru length(cc) do 
+			if not emptyp(cc[i]) then (
+				qq:subst(x=cc[i], buildq([x], declare(x, scalar))),
+				ev(qq, nouns),
+				ss: ss+ x[ cc[i] ]*bsymbol[i]
+			)
+		),
+	qq:buildq([x], declare(x, scalar)),
+	ev(qq, nouns),
+	ss
+);
+/*
+matchdeclare([bll ],  listp );
+matchdeclare([baa, bee], lambda([u], not freeof(bsymbol,u)));
+tellsimp(baa[bll ],  blsimp(baa[bll])  );
+*/
+
+
+blmaxgrade(expr):=block([lst, r, l],
+	if freeof (bsymbol, expr) then return (0),
+	if inop(expr)="+" then (
+		lst:maplist(blmaxgrade, expr),
+		r:lmax(lst)
+	) else (
+		[l, r]: oppart(expr, lambda([u], freeof(bsymbol, u))),
+		if r='nil then r:0
+		else if subvarp(r)then  r: length(args(r)) 
+			else error("illegal argument", r),
+		if r>ndim then return(false)
+	),
+	r
+);
+
+ 
+put('cliblade, 'v1,'version);
+put('cliblade, "Dimiter Prodanov", 'author);
+put('cliblade, "(C) - Dimiter Prodanov, 2015", 'copyright);
+
+disp("package name: cliblade.mac");
+disp("author: ", get('cliblade,'author));
+disp("version:", get('cliblade,'version));
+disp("Recommended location: share/contrib");
+disp("last update: 15 Jan 2016");

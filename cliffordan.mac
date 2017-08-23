@@ -4,7 +4,10 @@ a lightweight package for performing Geometric Algebra calculations
 
 Clifford analysis
 
-@version 	1.7 Data 12 Dec 2016
+@version 	1.8 Date 23 Aug 2017
+		-  change of variables
+		- bug fixes
+		1.7 Date 12 Dec 2016
 		- projection derivatives
 		1.6.5 Date 13 Jun 2016
 		1.6 Date 10 Apr 2016
@@ -75,6 +78,9 @@ if get('cliffordan,'version)=false then (
 %clverbose:false;
 %divsimp:true;
 
+/*
+declaring dependencies
+*/
 dependsv(F, var):= block([ ee], 
 	if subvarp(var) then var:op(var),
 	if subvarp(F) then F:op(F),
@@ -95,7 +101,7 @@ dependsv(F, var):= block([ ee],
 
 /* total differentiation; 
 no assumptions */
-totdiff(f,x, [lv]):=block( [ret:0],
+totdiff(f, x, [lv]):=block( [ret:0],
 	if mapatom(x) then 
 		ret: diff( f, x )
 	else (
@@ -108,6 +114,40 @@ totdiff(f,x, [lv]):=block( [ret:0],
 			if symbolp(u) then
 				ret: ret + diff(f, u) / diff(x, u)
 	),
+	ret
+);
+
+diffp(expr):= inop(expr)=nounify('derivative);
+
+/* total differentiation; 
+ subsitutions*/
+diffsubst(deq, dvar, eq):=block([nn, zz, sop, sargs, u, ret, l, r, dsymb:nounify('derivative) ],
+	if numberp(deq) then return(deq),
+	/*disp(deq),*/
+	sop:inop(deq),
+	if op(eq)="=" then zz:rhs(eq) else error("provide explicit equation"),
+	if inop(deq)="+" then 
+		ret:map(lambda([u],  diffsubst(u, dvar, eq)), deq)
+	else 
+		if diffp(deq) then (
+			sargs:inargs(deq),
+			nn:sargs[3],
+			/*display(lhs(eq), sargs[2]),*/
+			if lhs(eq)=sargs[2] then (
+				ret:subst(dsymb=lambda([ff, xx, nn],  'totdiff(ff, zz, [dvar])), deq),
+				ret:ev(ret, nouns),
+				if nn>1 then 
+					for k:1 thru nn-1 do ret:totdiff(ret, zz, [dvar])			
+			) else ret:deq
+		) else (
+			[l, r]: oppart(deq, lambda([u], freeof(dsymb, u))),
+			/*display(l, r),*/
+			if r#nil then
+				r: diffsubst(r, dvar, eq)
+			else r:1,
+			l: subst(eq, l),
+			ret:l*r
+		),
 	ret
 );
 
@@ -128,6 +168,49 @@ ctotdiff(f, x):=block( [ret:0, lv],
 
 
 /* 
+Christoffel symbols based on 
+Clifford-valued
+total differentiation; */
+christoffel12_cli (x, ilst):=block([ek, eq, xi, xj, i, j, k, lv, dd, g1, g2],
+	if not listp (ilst) and length (ilst)#3 then error ("not a list or bad length ", lst),
+	[xk, xi, xj]:ilst,	
+	dd:dotsimpc(expand(ctotdiff(x,  xi))),
+	dd:dotsimpc(expand(ctotdiff(dd, xj))),
+	dd:ratsimp(dd),
+	dd:trigsimp(dd),
+	/*display(dd),*/
+	eq: diff(x, xk),
+	ek: trigsimp(cinv(eq)),
+	/*display(ek, eq, xi, xj),*/	
+	g1: eq @ dd,
+	g1:trigsimp(g1),
+	g2: ek @ dd,
+	g2:trigsimp(g2),
+	[ g1, g2]
+);
+
+/* 
+Christoffel symbols based on 
+Clifford-valued
+total differentiation; */
+christoffel_table(x, lst, opt):=block([n],
+	n:length(lst),
+	if opt=1 then
+		makelist(genmatrix( lambda([i,j], first(christoffel12_cli(x, [lst[k], lst[i] , lst[j]] ) )), n), k, n)
+	else 
+		makelist(genmatrix( lambda([i,j], second(christoffel12_cli(x, [lst[k], lst[i] , lst[j]] ) )), n), k, n)
+);
+
+/* 
+Metrics table */
+metrics(x, lst):=block([n, ek],
+	ek: maplist (lambda([u], diff(x, u)), lst),
+	/*disp(ek),*/
+	n:length(lst),
+	genmatrix( lambda([i,j], trigsimp( (ek[i] @ ek[j] ))), n)
+);
+
+/* 
  Clifford-valued
  directional derivative
  */
@@ -142,7 +225,8 @@ cdirdiff(f, v, x):=block( [ret:0, lv, uu:0, qq],
 			ret: ret + uu * subst(".", "*", diff( f, u ))
 			)
 	),
-	clifact(dotsimpc(ret))
+	ret:dotsimpc(ret),
+	ret:clifact(ret)
 );
 
 cdirdualdiff(f, v, x):=block( [ret:0, lv, uu:0, qq, d],
@@ -592,8 +676,7 @@ convderiv(f, t, xx, [vs]):=block(
 	if not symbolp(t) then error(t, " must be a symbol"),	
 	lv:listofvars(xx),
  	xx:expand(xx),
-	/*es: sublist( lv, lambda ([z], not freeof(asymbol, z))),
-	ez: sublist( lv, lambda ([z],     freeof(asymbol, z))),*/
+
 	[ez, es]: oppart( lv, lambda ([z], freeof(asymbol, z))),
 	if not emptyp(vs) then vs:vs[1],
 	for j:1 thru length(ez) do (
@@ -601,7 +684,7 @@ convderiv(f, t, xx, [vs]):=block(
 			push(ez[j](t)=ez[j], bb),
 			if not emptyp(vs) then (
 				rr:arraymake (vs, [ ez[j] ] ),
-				push('diff(ez[j](t), t, 1)=rr, cc),
+				push('diff(ez[j](t), t)=rr, cc),
 				push(rr=rr(t) , dd),
 				push(rr(t)=rr , gg)
 			)
@@ -633,7 +716,8 @@ convderiv(f, t, xx, [vs]):=block(
 	),
 	if not emptyp(gg) then
 		ss:psubst(gg, ss),
-	ss:psubst(bb, ss)
+	ss:psubst(bb, ss),
+	clifact(ss)
 );
 
 
@@ -656,29 +740,23 @@ ciEL1(_F, tt, pvars, smat):=block([eq, p, pv, qq, ee, aa:[], bb:[], es:[], ez:[]
 		push(ez[j]=ez[j](tt) , cc),
 		push(ez[j](tt)=ez[j] , dd)
 	),
-	/*aa:reverse(aa),
-	bb:reverse(bb),
-	cc:reverse(cc),*/
-	/*display (aa, bb)*/
+
 	qq2: parmvectdiff(_F, pv),
 	qq2: subst(cc, qq2),
 	display(es, qq2),
-	/*
-	depends(es, tt),			
-	qq: diff(qq2, tt),	
-	ee:buildq([es], remove(es, dependency)), 
-	ev(ee, nouns),
-	*/
+
 	qp: convderiv(qq2, tt, p),
 	/* display(qq, qp, ratsimp(qq-qp)), 	*/
 	eq:eq - qp,
 	eq: psubst(dd, eq),	
 	eq: psubst(bb, eq),	
-	if smat='list then 
-		eq:subst(aa, eq)
-	else if smat='mat then  		
+	if smat='list then (
+		eq:subst(aa, eq),
+		eq: clifact(eq)
+	)else if smat='mat then (  		
 		eq:bdecompose(eq),
-	eq:factorby(eq, ez),
+		eq:factorby(eq, ez)
+	),
 	eq
 );
  
@@ -698,7 +776,7 @@ ciEL(_F, tt, pvars, smat):=block([eq, p, pv, qq, ee, aa:[], bb:[], es:[], ez:[] 
 	aa:reverse(aa),
 	bb:reverse(bb),
 	/*display (aa, bb)
-	depends(es, tt),,*/
+	depends(es, tt),*/
 	
 	qq: parmvectdiff(_F, pv),
 	qq: diff(qq, tt),
@@ -710,11 +788,13 @@ ciEL(_F, tt, pvars, smat):=block([eq, p, pv, qq, ee, aa:[], bb:[], es:[], ez:[] 
 	ee:buildq([es], remove(es, dependency)), 
 	ev(ee, nouns),
 	*/
-	if smat='list then 
-		eq:subst(aa, eq)
-	elseif smat='mat then  
+	if smat='list then (
+		eq:subst(aa, eq),
+		eq: clifact(eq)
+	)else if smat='mat then (  		
 		eq:bdecompose(eq),
-	eq:factorby(eq, ez),
+		eq:factorby(eq, ez)
+	),
 	eq
 );
 
@@ -761,12 +841,33 @@ coordsubst(rr, eqs):=block( [lv, ret:rr, qq],
 			ret:ratsubst(qq, lv[i], ret)
 			)
 	),
-	if %divsimp=true then (
-		ret:trigsimp(ret),
-		ret:ratsimp(ret)
-	),
+	ret:trigsimp(ret),
+	ret:ratsimp(ret),
 	ret
 );
+
+/*   substitution in differnetial equations*/
+eqsubst(deq, yv, rr, eqs):=block([rs, qs, ret, lv],
+	rs:coordsubst(rr, eqs),
+	/*disp(rs),*/
+	
+	/* dependent variable*/
+	ret:rs @ mvectdiff(yv, rr),
+	ret:trigsimp(ret),
+	ret:ratsimp(ret),
+	
+	qs:cdirdiff(yv, rr, rs),
+	qs:subst(eqs, qs),	
+	qs:trigsimp(qs),
+	qs:ratsimp(qs),
+	
+	lv:listofvars(maplist(rhs, eqs)),
+	/*disp(lv),*/
+	lv:solve(eqs, lv),
+	ret:subst(lv, ret),
+	rs: ratsubst( qs, ret, deq),
+	[rs, ret=qs, lv]
+); 
 
 /*
 volume element
@@ -810,7 +911,7 @@ clidet(vlist):=block([dd, n ],
 	factorby(dd, %iv)
 );
 
-clivolel(rr, eqs, [lv]):=block([ ret, qq:[], rq ],
+clivolel(rr, eqs, [lv]):=block([ ret, qq:[], rq, z ],
 	if not listp(eqs) then eqs:[eqs],
 	if not emptyp(lv) then (
 		lv:lv[1],
@@ -834,9 +935,8 @@ clivolel(rr, eqs, [lv]):=block([ ret, qq:[], rq ],
 	ret
 );
 
-  
 
-put('cliffordan, 'v16,'version);
+put('cliffordan, 'v17,'version);
 put('cliffordan, "Dimiter Prodanov", 'author);
 put('cliffordan, "(C) - Dimiter Prodanov, 2015", 'copyright);
 
@@ -844,4 +944,4 @@ print("package name: cliffordan.mac");
 print("author: ", get('cliffordan,'author));
 print("version:", get('cliffordan,'version));
 print("Recommended location: share/contrib");
-print("last update: 08 March 2016");
+print("last update: 23 Aug 2017");

@@ -3,6 +3,9 @@ Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
  @version 
+	2.4.3 Date 23 Aug 2017
+	- bugfixes in map usage
+	
 	2.4.2 Date 17 July 2017
 	-bugfix in explodeop
 	- change in oppart
@@ -314,7 +317,7 @@ oppart(expr, predf):=block(
 /* 
 splits an expression by occurencess of an operator
 */
-explodeop(expr, sop):=block([lst],
+explodeop(expr, sop):=block([lst, w],
 	if mapatom(expr) then return ([expr]), 
 	lst: inargs(expr),
 	lreduce(append, map(lambda([w],   explodeop(w, sop)), lst))
@@ -323,7 +326,7 @@ explodeop(expr, sop):=block([lst],
 /*
 combinees a list by operator
 */
-implodeop(lsta, sop):=block(
+implodeop(lsta, sop):=block([w],
 	if not listp(lsta) then return (lsta),
 	xreduce(sop, maplist(lambda([w], implodeop(w, sop)), lsta))
 );
@@ -481,7 +484,7 @@ cliexpsimp(expr):=block([l,r, ret:1],
 );
 
 
-trigp(expr):=block([ %trigf: 'sin or 'cos or 'tan or 'cot],
+trigp(expr):=block([u, %trigf: 'sin or 'cos or 'tan or 'cot],
 	map(lambda([u],   not freeof(u, expr)), %trigf)
 );
 
@@ -773,7 +776,7 @@ maxgrade(expr):=block([lst:[] ],
 /*
  Partial factoring by subexpression
 */
-factorby(expr, z):=block([quot, res, ret, ee, n, sop, %qq, radsubstflag:true ],
+factorby(expr, z):=block([quot, res, ret, ee, u, n, sop, %qq, radsubstflag:true ],
 	if emptyp(z) then return (expr),
 	if atom(expr) then return (expr),
 	if matrixp(expr) then 
@@ -824,7 +827,7 @@ quotsimp(expr):=block([quot, res, dd:denom(expr) ],
 );
 
 
-simpfact(expr, z):=block([ret:expr],
+simpfact(expr, z):=block([ret:expr, u],
 	ret:factor(ret),
 	if not mapatom(ret) then
 	map(lambda([u], factorby(u, z)), ret) else ret
@@ -836,6 +839,7 @@ listofclivars(expr):=(
 	sublist(%elements, lambda ([u], not freeof(u, expr)))
 );
 
+declare (clifact, evfun);
 clifact(expr):=block([lcv:[], ret: expr],
 	if not mapatom(expr) then (
 		lcv: listofclivars(expr),
@@ -850,7 +854,7 @@ alias(clicoeff2, clicoeff);
 computes the element decomposition
 clicoeff2 depreciated
 */
-clicoeff(expr, smat):=block([ ee:[], z:[], cc:[], qq ],
+clicoeff(expr, smat):=block([u, ee:[], z:[], cc:[], qq ],
 	if length(%elements)=1 then %elements:elements(),
 	cc:map(lambda([u], coeff(expr, u)), %elements),
 	z:sublist_indices(cc, lambda([u], u#0)),
@@ -871,14 +875,14 @@ clicoeff(expr, smat):=block([ ee:[], z:[], cc:[], qq ],
 /*
 computes the blade decomposition
 */
-bdecompose(expr):=block([gr:expr],
+bdecompose(expr):=block([gr:expr, v],
 	if not freeof(".", expr) then 
 		gr: expand(expr),
 	if length(%elements)=1 then 
 			%elements:elements(), 
 	gr:map( lambda([v], factorby(v, %elements) ), gr ),
 	gr:grade(gr),
-	map(lambda([z], clicoeff(z, 'mat)),gr)
+	map(lambda([v], clicoeff(v, 'mat)),gr)
 );
 
 clisolve(expr, lst):=block([ee, al, ret:expr],
@@ -1052,7 +1056,7 @@ mtable1([lst]):=block([n],
 		lst:makelist(asymbol[i], i, ndim) 
 	else 
 		lst:lst[1],
-	lst:push(1,lst),
+	lst:push(1, lst),
 	n:length(lst),
 	genmatrix( lambda([i,j], dotsimpc(lst[i] . lst[j] ) ), n)
 );
@@ -1272,7 +1276,7 @@ mvectorpart(v):=block([ r, l, gr ],
 /**
  grade of order k
 */
-grpart(v, k):=block([gr],
+grpart(v, k):=block([gr, u],
 	if listp(k) then  
 		substinpart("+", map(lambda([u], grpart (v, u)), k), 0)  
 	else (
@@ -1494,4 +1498,4 @@ print("package name: clifford.mac");
 print("author: ", get('clifford,'author));
 print("version:", get('clifford,'version));
 print("Recommended location: share/contrib");
-print("last update: 12 Dec 2016");
+print("last update: 23 Aug 2017");
