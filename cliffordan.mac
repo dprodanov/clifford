@@ -121,9 +121,9 @@ diffp(expr):= inop(expr)=nounify('derivative);
 
 /* total differentiation; 
  subsitutions*/
-diffsubst(deq, dvar, eq):=block([nn, zz, sop, sargs, u, ret, l, r, dsymb:nounify('derivative) ],
+ /*diffsubst(deq, dvar, eq):=block([nn, zz, sop, sargs, u, ret, l, r, dsymb:nounify('derivative) ],
 	if numberp(deq) then return(deq),
-	/*disp(deq),*/
+
 	sop:inop(deq),
 	if op(eq)="=" then zz:rhs(eq) else error("provide explicit equation"),
 	if inop(deq)="+" then 
@@ -132,7 +132,7 @@ diffsubst(deq, dvar, eq):=block([nn, zz, sop, sargs, u, ret, l, r, dsymb:nounify
 		if diffp(deq) then (
 			sargs:inargs(deq),
 			nn:sargs[3],
-			/*display(lhs(eq), sargs[2]),*/
+
 			if lhs(eq)=sargs[2] then (
 				ret:subst(dsymb=lambda([ff, xx, nn],  'totdiff(ff, zz, [dvar])), deq),
 				ret:ev(ret, nouns),
@@ -141,13 +141,55 @@ diffsubst(deq, dvar, eq):=block([nn, zz, sop, sargs, u, ret, l, r, dsymb:nounify
 			) else ret:deq
 		) else (
 			[l, r]: oppart(deq, lambda([u], freeof(dsymb, u))),
-			/*display(l, r),*/
+	
 			if r#nil then
 				r: diffsubst(r, dvar, eq)
 			else r:1,
 			l: subst(eq, l),
 			ret:l*r
 		),
+	ret
+);
+*/
+diffsubst(deq, dvar, eq):=block([nn, zz, u, sop, sargs, ret, l, r, dsymb:nounify('derivative) ],
+	if numberp(deq) then return(deq),
+	/*disp(deq),*/
+	sop:inop(deq),
+	if op(eq)="=" then zz:rhs(eq) else error("provide explicit equation"),
+	if inop(deq)="+" then 
+		ret:map(lambda([u], diffsubst(u, dvar, eq)), deq)
+	else (
+		ret:deq,
+		if diffp(deq) then (
+			sargs:inargs(deq),
+			nn:sargs[3],
+			/*display(lhs(eq), sargs[2]),*/
+			if lhs(eq)=sargs[2] then (
+				/*disp(deq),*/
+				ret:ev(deq, diff),
+				ret:subst(dsymb=lambda([ff, xx, nn], 
+					if not mapatom(ff) then
+						ff:subst(eq, ff), 
+						'totdiff(ff, zz, [dvar])
+					), ret),
+				/*ret:subst(dsymb=lambda([ff, xx, nn], disp(ff, zz), totdiff(ff, zz, [dvar])), ret),	*/
+				/*ret:subst(dsymb=lambda([ff, xx, nn],  totdiff(ff, zz, [dvar])), ret),	*/				
+				ret:ev(ret, nouns),
+				if nn>1 then 
+					for k:1 thru nn-1 do ret:totdiff(ret, zz, [dvar]),
+				/*display(ret),*/
+				ret:subst(eq, ret)
+			)		
+		) else (
+			[l, r]: oppart(deq, lambda([u], freeof(dsymb, u))),		
+			/*display(l, r),*/		
+			if r#nil then
+				r: diffsubst(r, dvar, eq)
+			else r:1,	
+			l: subst(eq, l),
+			ret:l*r
+		)
+	),
 	ret
 );
 

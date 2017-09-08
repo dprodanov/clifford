@@ -59,9 +59,6 @@ a lightweight package for performing Geometric Algebra calculations
 	- bug fix in simplification
 	- change in factorby, reflect
 	
-	1.8 Date 06 Dec 2015
-	- change of notation to exclude conflicts with itensor-based packages
-	
 	older log: changelog.txt
 	
   @license This library is free software; you can redistribute it and/or
