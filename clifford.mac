@@ -167,6 +167,10 @@ pfeformat: true;
 			qq:abs(qq),
 			ret:cliffsimp1(a.b)
 		),
+		if inprotype='ic then (
+			qq:abs(qq),
+			ret:cliffsimp1(a. invautom(b))
+		),
 		grpart(ret, qq)
 		
 	);	
@@ -497,7 +501,8 @@ cliffsimpall(expr):=block([res, aa, bb, sop, simp:true],
 		bb:cliffsimpall(rhs(expr)),
 		return( aa = bb)
 	) else (
-		res:expand(expr),
+		res:subst("^"="^^", expr),
+		res:expand(res),
 		/*res:apply1(res, clifsimp3, clifsimp21, clifsimp2),*/
 		res:apply1(res, clifsimp3, clifsimp21),
 		res:apply1(res, clifsimp1, clifsimp10),
@@ -1284,6 +1289,13 @@ grpart(v, k):=block([gr, u],
 	)
 );
 
+/**
+ grade of order k, list version
+*/
+grpartl(lst, k):=block (
+	if listp(lst) then substinpart("+", map(lambda([u], grpart (u, k)), lst), 0)  
+);
+
 /* 
  constructs a vector
 */
@@ -1409,6 +1421,20 @@ prodecomp(a,b):=block( [ret, gr, l, r, m, inner:0, outer:0],
 comm(a,b):= cliffsimp1 (expand(a. b - b. a))/2;
 acomm(a,b):=cliffsimp1 (expand(a. b + b. a))/2;
 
+/*
+reciprocal automorphism
+*/
+invautom(vv):=block( [ee, aa, ei, listarith:true],
+ [ee, aa]:clicoeff(vv,'list),
+ ei: maplist( cinvblade, ee),
+ ei. aa
+);
+
+cinvblade(ab):=block( [dd],
+	dd:dotsimpc(ab.ab),
+	if not scalarp(dd) then error(dd, "  not a scalar"),
+	dd*ab
+);
 
 /*
 grade  automorphism by  predicate
