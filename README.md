@@ -1,6 +1,37 @@
 Clifford:
 a lightweight package for performing Geometric and Clifford Algebra calculations
 
+2.4.3 Date 23 Aug 2017
+	- bugfixes in map usage
+	
+	2.4.2 Date 17 July 2017
+	-bugfix in explodeop
+	- change in oppart
+	- dotexpand
+	
+	2.4.1 Date 17 Jun 2017
+	- simplification of Clifford exponents
+	- trigsimp inncorporated in cliffsimpall
+	- solving 
+	
+	2.4 Date 27  Nov 2016
+	- new implementation clicoeff
+	- new implementation clidual
+	- convenience matrix functions
+	- added algebraical dual functionality
+	- fixed regressive product
+	- added Hestenes product
+	- added xor function
+ 
+	2.3.4 Date  11 Sept 2016
+	- fixed bug in inner product 
+	- change in declarations
+	- regressive product
+	-change in dual
+	
+	2.3.3 Date  28 Aug 2016
+	 - added automorphism code 
+	 	
 	version 2.3.2 Date 30 July 2016
 	 - bugfix release: regressions in tellsimpafter
 	 - demos extended
