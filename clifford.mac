@@ -3,6 +3,12 @@ Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
  @version 
+	2.4.3.2 Date 18 May 2018,
+	- fix in clidual
+	- fix in dual
+	- grades function
+	- countsym depreciation
+	
 	2.4.3 Date 23 Aug 2017
 	- bugfixes in map usage
 	
@@ -16,48 +22,6 @@ a lightweight package for performing Geometric Algebra calculations
 	- trigsimp inncorporated in cliffsimpall
 	- solving 
 	
-	2.4 Date 27  Nov 2016
-	- new implementation clicoeff
-	- new implementation clidual
-	- convenience matrix functions
-	- added algebraical dual functionality
-	- fixed regressive product
-	- added Hestenes product
-	- added xor function
- 
-	2.3.4 Date  11 Sept 2016
-	- fixed bug in inner product 
-	- change in declarations
-	- regressive product
-	-change in dual
-	
-	2.3.3 Date  28 Aug 2016
-	 - added automorphism code 
-	 
-	2.3.2 Date 30 July 2016
-	 - bugfix release: regressions in tellsimpafter
-	 - demos extended
-	 
-	2.3 Date 02 July
-	- bugfix release
-	- bugfixes in  clicoeff
-	 
-	2.2 Date 20 June 2016	  
-        - new definitions of inner and outer products 
-	- changes in cinvolve
-	
-	2.1 Date 12 May 2016
-	- refactoring
-	- linear algebra functionality separated
-	- matrix representations
- 
-	2.0 Date 10 Apr 2016
-	- new definitions of  inner product and  outer product (wrong)
-	- bug fiix in clicoeff
-	
-	1.9 Date 16 Feb 2016
-	- bug fix in simplification
-	- change in factorby, reflect
 	
 	older log: changelog.txt
 	
@@ -118,6 +82,9 @@ pfeformat: true;
 		(a or b) and not (a and b)
 	);
 
+	/* 
+	different types of products 
+	*/
 	infix ("|", 135, 134);	
 	texput ("|", " \\circ ", infix);
  	
@@ -236,6 +203,7 @@ pfeformat: true;
 	/*dualcoeff(a):=dual(dotsimpc(a.a.a.dual(a)));*/
 	dualcoeff(a):=coeff(dotsimpc(a.a.a.dual(a)), %iv);
 	
+	/*infix ("lc", 135, 134);	*/
 	lcprod(a, b):=  block([bi, ss, ret ],	
 		bi:dual(b), 		
 		ret:outprod(a, bi),
@@ -695,7 +663,7 @@ release():=block(
 
 /*
 counts occurences of a symbol in an expression
-*/
+
 countsym(ab, sym):=block([sop, a, b, s:0, inflag:true ],
 	if freeof(sym, ab) then return(0),
 	if atom(ab) then  
@@ -713,17 +681,21 @@ countsym(ab, sym):=block([sop, a, b, s:0, inflag:true ],
 	),
 	s
 );
+*/
+ 
+alias (countsym, countsymb); 
 
-/*  experimental code*/
-countsym2(ab, sym):=block([inflag:true ],
+/*  
+counts occurences of a symbol in an expression
+experimental code*/
+countsymb(ab, sym):=block([inflag:true ],
 	if freeof(sym, ab) then return(0),
 	if atom(ab) then  
 		if sym=ab then return(1),
 	if subvarp(ab) then  
 		if sym=op(ab) then return(1),
-	xreduce("+", maplist( lambda([i], countsym2(i, sym)), ab))
+	xreduce("+", maplist( lambda([i], countsymb(i, sym)), ab))
  );
-
 
 /*
 grade decomposition of expressions
@@ -772,7 +744,7 @@ maxgrade(expr):=block([lst:[] ],
 		lst:maplist(maxgrade, expr),
 		lmax(lst)
 	) else 
-		countsym2(expr, asymbol)
+		countsymb(expr, asymbol)
 );
 
 /*
@@ -1296,6 +1268,15 @@ grpartl(lst, k):=block (
 	if listp(lst) then substinpart("+", map(lambda([u], grpart (u, k)), lst), 0)  
 );
 
+/**
+returns non-zero grade indices
+*/
+grades(vv):=block([lst, uu, listarith:true],
+	lst:grade(vv),
+	sublist_indices (lst, lambda([uu], uu#0))-1
+);
+
+
 /* 
  constructs a vector
 */
@@ -1352,7 +1333,11 @@ dual(expr):=block([lste:[], lsti:[], r, l],
 		return(matrixmap(dual, expr )),
 	if listp(expr) then
 		return(maplist(dual, expr )),
-	if not mapatom(expr) and inop(expr)="+" then 
+		if not mapatom(expr) and op(expr)="/" then (
+		nn:num(expr),
+		dd:denom(expr),
+		return(map(dual, nn)/dd))	
+	elseif not mapatom(expr) and inop(expr)="+" then 
 		map(dual, expr)
 	else (
 		[l, r]:subst('nil=1, oppart(expr, lambda([u], freeof(asymbol, u)))),
@@ -1367,15 +1352,20 @@ dual(expr):=block([lste:[], lsti:[], r, l],
 /**
    clifford dual element
  */
-clidual(expr):=block([lste:[], lsti:[], r, l, ss:1],
+clidual(expr):=block([lste:[], lsti:[], r, l, ss:1, nn, dd],
 	if matrixp(expr) then
 		return(matrixmap(clidual, expr )),
 	if listp(expr) then
 		return(maplist(clidual, expr )),
-	if not mapatom(expr) and inop(expr)="+" then 
-		map(clidual, expr)
+	if not mapatom(expr) and op(expr)="/" then (
+		nn:num(expr),
+		dd: denom(expr),
+		return(map(clidual, nn)/dd))	
+	elseif not mapatom(expr) and inop(expr)="+" then 
+		return(map(clidual, expr))
 	else (
 		[l, r]:subst('nil=1, oppart(expr, lambda([u], freeof(asymbol, u)))),
+		display(l,r),
 		lste:clv(r),
 		lsti:vectors(),
 		if %ivnorm#0 then ss:%ivnorm,
@@ -1385,7 +1375,6 @@ clidual(expr):=block([lste:[], lsti:[], r, l, ss:1],
 		ss*l*r
 	)
 );
-
 /*
  computes a unit  element
 */
