@@ -3,7 +3,7 @@ Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
  @version 
-	2.4.3.2 Date 18 May 2018,
+	2.4.4 Date 18 May 2018,
 	- fix in clidual
 	- fix in dual
 	- grades function
@@ -21,7 +21,6 @@ a lightweight package for performing Geometric Algebra calculations
 	- simplification of Clifford exponents
 	- trigsimp inncorporated in cliffsimpall
 	- solving 
-	
 	
 	older log: changelog.txt
 	
@@ -139,7 +138,6 @@ pfeformat: true;
 			ret:cliffsimp1(a. invautom(b))
 		),
 		grpart(ret, qq)
-		
 	);	
 	texput ("\\", " \\circ ", infix);
   	
@@ -171,6 +169,10 @@ pfeformat: true;
 	
 	texput ("&", " \\wedge ", infix);
 	
+/*
+ various products
+*/
+
 	outprod(a, b):= block ([ss:0, ret:0, lva, lvb, z, lvu],
 		if ipdecompalt=true and (scalarp(a) or scalarp(b)) then return(0)
 		elseif scalarp(a) or scalarp(b) then return(a*b),
@@ -311,14 +313,26 @@ dotexpand(expr):=block([ sop],
 	first(expr) | dotexpand(rest(expr)) + first(expr) & dotexpand(rest(expr))
 );
 
+/*
+real predicate
+*/
 realp (x):= featurep(x, real);
 
+/*
+returns scalar variables
+*/
 scalarsym():=sublist(props, lambda( [z], if symbolp(z) then scalarp(z) else false));
 
+/*
+returns cliffod variables
+*/
 clivars():= block([ uu], 
 	sublist(values, lambda([z], uu:ev(z), not freeof(asymbol, uu )))
 );
 
+/*
+returns cliffod symbols
+*/
 clisym():=sublist(props, lambda( [z], if symbolp(z) then not freeof(asymbol, z) else false));
 
 /*
