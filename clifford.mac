@@ -1522,7 +1522,7 @@ qgrade(vv):=cdgrade(vv, lambda([u,v ],  qclass(u)+1));
 
 put('clifford, 'v24,'version);
 put('clifford, "Dimiter Prodanov", 'author);
-put('clifford, "(C) - Dimiter Prodanov, 2015 - 2016", 'copyright);
+put('clifford, "(C) - Dimiter Prodanov, 2015 - 2019", 'copyright);
 
 ttyoff:false;
 
@@ -1530,4 +1530,4 @@ print("package name: clifford.mac");
 print("author: ", get('clifford,'author));
 print("version:", get('clifford,'version));
 print("Recommended location: share/contrib");
-print("last update: 23 Aug 2017");
+print("last update: 20 Feb 2019");
