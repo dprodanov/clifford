@@ -4,7 +4,7 @@ a lightweight package for performing Geometric Algebra calculations
 
  @version 
 	2.4.5 Date 20 Feb 209
-	- bugfx in operpart
+	- bugfix in operpart
 	
 	2.4.4 Date 18 May 2018,
 	- fix in clidual
