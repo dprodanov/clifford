@@ -1,7 +1,18 @@
 Clifford:
 a lightweight package for performing Geometric and Clifford Algebra calculations
 
-2.4.3 Date 23 Aug 2017
+2.4.5 Date 20 Feb 209
+	- bugfix in operpart
+	
+	2.4.4 Date 18 May 2018,
+	- fix in clidual
+	- fix in dual
+	- grades function
+	- countsym depreciation
+	
+	2.4.3 Date 23 Aug 2017
+	- bugfixes in map usage
+	2.4.3 Date 23 Aug 2017
 	- bugfixes in map usage
 	
 	2.4.2 Date 17 July 2017
