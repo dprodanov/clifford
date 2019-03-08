@@ -1,0 +1,771 @@
+/* [wxMaxima batch file version 1] [ DO NOT EDIT BY HAND! ]*/
+/* [ Created with wxMaxima version 19.01.3-DevelopmentSnapshot ] */
+/* [wxMaxima: title   start ]
+ CLIFFORD Reference Manual      0.2
+   [wxMaxima: title   end   ] */
+
+
+/* [wxMaxima: comment start ]
+To do:
+1  alphabetical index list for subsection cells
+2  fill the individual cells with content - fold and unfold to get/hide global view of content
+3  find out what is left
+4  collection of user exercises
+5  test
+
+6  do the exercices von Lounesto
+7  do some problems/ erercises from Macdonald
+8  do calculations from GAelectrodynamics (Peeter Joot)
+9  do exercises from EVAlgebra  - Clifford Algebra Calculator   http://beyhfr.free.fr/EVA2/
+ 
+   [wxMaxima: comment end   ] */
+
+
+/* [wxMaxima: comment start ]
+Lexicon (Rosetta code):
+
+                              |  Clifford       |  EVAlgebra    |   GAlgebra
+                                 Maxima            EigenMath        Python
+        -------------------------------------------------------------------------
+        @
+        *
+        .
+        &
+
+
+   [wxMaxima: comment end   ] */
+
+
+/* [wxMaxima: comment start ]
+I like the design e.g. of the YaCAS Manual:
+
+https://yacas.readthedocs.io/en/latest/genindex.html
+
+May be it is also possible to enhance the wxmaxima menue entries with Clifford special inputs?
+We would have to contact Gunter Koenigsmann ..
+   [wxMaxima: comment end   ] */
+
+
+/* [wxMaxima: comment start ]
+To do: similar text for Clifford
+{Yacas} (Yet Another Computer Algebra System) is a small and highly flexible general-purpose computer algebra system and programming language. The language has a familiar, C-like infix-operator syntax. The distribution contains a small library of mathematical functions, but its real strength is in the language in which you can easily write your own symbolic manipulation algorithms. The core engine supports arbitrary precision arithmetic, and is able to execute symbolic manipulations on various mathematical objects by following user-defined rules.
+
+This document describes the functions that are useful in the context of using {Yacas} as an end user. It is recommended to first read the online interactive tutorial to get acquainted with the basic language constructs first. This document expands on the tutorial by explaining the usage of the functions that are useful when doing calculations.
+   [wxMaxima: comment end   ] */
+
+
+/* [wxMaxima: section start ]
+Getting started with Clifford
+   [wxMaxima: section end   ] */
+
+
+/* [wxMaxima: comment start ]
+
+   [wxMaxima: comment end   ] */
+
+
+/* [wxMaxima: subsect start ]
+Getting started - set path to Clifford.mac
+   [wxMaxima: subsect end   ] */
+
+
+/* [wxMaxima: comment start ]
+Installation
+
+Clifford package is available for a variety of platforms. 
+See http://www... for the package and installation instructions.
+
+Getting sources
+
+Version 1.6.0 can be downloaded from https://github.com/grzegorzmazur/yacas/archive/v1.6.0.zip or https://github.com/grzegorzmazur/yacas/archive/v1.6.0.tar.gz, while the current development version is accessible from https://github.com/grzegorzmazur/yacas/archive/develop.zip.
+
+Set path to clifford.mac
+
+As long as Maxima don't has clifford.mac in the default search path ...:
+Change directory to the clifford.mac package  ..
+how to set the path to the clifford package ..
+Execute the following input cell: ..
+
+   [wxMaxima: comment end   ] */
+
+
+/* [wxMaxima: input   start ] */
+wxMuserdir:strimr(".maxima",maxima_userdir);
+fylenames:simplode([wxMuserdir,"clifford/$$$.{mac,mc,wxm,dem}"])$
+file_search_maxima: append (file_search_maxima,[fylenames])$
+file_search_demo: append (file_search_maxima,[fylenames])$
+
+if get('clifford,'version)=false then load("clifford");
+
+("or do this:")
+/* [wxMaxima: input   end   ] */
+
+
+/* [wxMaxima: input   start ] */
+(  %path:"C:/yourPathToClifford/clifford/$$$.{mac,mc,wxm,wxmx,demo}",  /* please update your path ! */
+  file_search_maxima:append (file_search_maxima , [%path]),
+  load("clifford"), 'done);
+/* [wxMaxima: input   end   ] */
+
+
+/* [wxMaxima: section start ]
+Variables
+   [wxMaxima: section end   ] */
+
+
+/* [wxMaxima: subsect start ]
+Global Clifford variables and related functions
+   [wxMaxima: subsect end   ] */
+
+
+/* [wxMaxima: comment start ]
+vector symbol
+asymbol:e;
+
+number of dimensions";
+ndim:0;
+
+singature of the algebra
+signature:[];
+
+pseudoscalar of the algebra
+%iv:1;
+
+square of pseudoscalar
+%ivnorm:1;
+
+ elements (i.e. vector basis & 1 ) of the algebra
+%elements:[1];
+
+   [wxMaxima: comment end   ] */
+
+
+/* [wxMaxima: subsect start ]
+Maxima configuration variables
+   [wxMaxima: subsect end   ] */
+
+
+/* [wxMaxima: comment start ]
+dotexptsimp :false;
+noundisp :true;
+dotscrules:true;
+powerdisp:true;
+dotconstrules:false;
+prederror :false;
+stringdisp:true;
+ratprint:false;
+powerdisp:true;
+pfeformat: true;
+   [wxMaxima: comment end   ] */
+
+
+/* [wxMaxima: subsect start ]
+Predicate variables
+   [wxMaxima: subsect end   ] */
+
+
+/* [wxMaxima: comment start ]
+internal debug variable
+_debug:false 
+
+wedge product simplification
+wedgesimp:true;
+
+inner products
+    inprotype:sym;
+    "Hestenes product type";
+    ipdecomp:false; 
+alternative Grassman product type; 1&1 =0
+    ipdecompalt:false;
+   [wxMaxima: comment end   ] */
+
+
+/* [wxMaxima: subsect start ]
+Predicate fuctions
+   [wxMaxima: subsect end   ] */
+
+
+/* [wxMaxima: comment start ]
+trigp (expr);
+realp (x);
+vectorp(v);
+   [wxMaxima: comment end   ] */
+
+
+/* [wxMaxima: section start ]
+Products
+   [wxMaxima: section end   ] */
+
+
+/* [wxMaxima: subsect start ]
+"@" - infixed scalar product
+   [wxMaxima: subsect end   ] */
+
+
+/* [wxMaxima: subsect start ]
+"." - geometric non-commutative product
+   [wxMaxima: subsect end   ] */
+
+
+/* [wxMaxima: comment start ]
+Do non mix with matrix code. No guarantee what will happen
+   [wxMaxima: comment end   ] */
+
+
+/* [wxMaxima: subsect start ]
+"&" - infixed outer product
+   [wxMaxima: subsect end   ] */
+
+
+/* [wxMaxima: comment start ]
+       "alt-Grassman product type "outer product".   "&" (a, b)
+   [wxMaxima: comment end   ] */
+
+
+/* [wxMaxima: subsect start ]
+"|" - contactions
+   [wxMaxima: subsect end   ] */
+
+
+/* [wxMaxima: comment start ]
+       "|"(a, b). Hestenes inner prod
+   [wxMaxima: comment end   ] */
+
+
+/* [wxMaxima: section start ]
+Internal functions implementing products
+   [wxMaxima: section end   ] */
+
+
+/* [wxMaxima: subsect start ]
+rcprod (a,b)
+   [wxMaxima: subsect end   ] */
+
+
+/* [wxMaxima: subsect start ]
+lcprod(a, b)
+   [wxMaxima: subsect end   ] */
+
+
+/* [wxMaxima: subsect start ]
+dotproduct(a,b)
+   [wxMaxima: subsect end   ] */
+
+
+/* [wxMaxima: subsect start ]
+outprod(a, b)
+   [wxMaxima: subsect end   ] */
+
+
+/* [wxMaxima: subsect start ]
+regproduct(a, b)
+   [wxMaxima: subsect end   ] */
+
+
+/* [wxMaxima: section start ]
+Multiplication table functions
+
+   [wxMaxima: section end   ] */
+/* [wxMaxima: fold    start ] */
+/* [wxMaxima: subsect start ]
+
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+bdecompose(expr)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+        computes the blade decomposition
+= bdecomp ?
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+bivectors()
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+        constructs the  bi-vectors of the algebra
+
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+cconjugate(x)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+        canonical implementation of Clifford conjugate of expressions
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: subsect start ]
+ 
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: subsect start ]
+celem(x, [cc])
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+        constructs a multivector 
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+cinv(ab)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+        Clifford inverse
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+cinvolve(x)
+declare(cinvolve, linear)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+        Clifford involution of expressions
+
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+clicoeff(expr, smat)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+        clicoeff2 depreciated
+        alias(clicoeff2, clicoeff); 
+  
+
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+clidual(expr)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+        clifford dual element
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+clifact(expr)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: subsect start ]
+clifford(var, [lsig])
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+        constructor of 
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+cliffsimp1(expr)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         simplification of dot-products
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+cliffsimpall(expr)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         full simplification of expressions
+         includes dot-products and inverses
+
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+clisym()
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         returns cliffod symbols
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+clivars()
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         returns cliffod variables
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+cinvblade(ab)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: subsect start ]
+conjel
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: subsect start ]
+countsym(ab, sym)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         alias (countsym, countsymb); 
+         counts occurences of a symbol in an expression
+
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+creverse(x)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         Clifford reverse of expressions
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: input   start ] */
+
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: subsect start ]
+clisolve(expr, lst)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: subsect start ]
+cvect(x, [cc])
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+        constructs a vector
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+dotconjugate(expr)
+declare (dotconjugate, evfun)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+        functional implementation 
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+dotexpand(expr)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         expands recursivly the geometric product
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+dotinvsimp(ab)
+declare (dotinvsimp, evfun)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         simplification of inverses
+
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+dotreverse(expr)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         functional implementation 
+         vs. declare (dotreverse, evfun);
+ 
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+dual(expr)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+        algebraical dual element
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+elements([cpl])
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         constructs all  irreducible elements of the algebra, optionally includes 1
+
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+factorby(expr, z)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         Partial factoring by subexpression
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+grade(expr, [gradexpand])
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         grade decomposition of expressions
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+grades(vv)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+        returns non-zero grade indices
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+grpartl(lst, k)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         grade of order k, list version
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+grpart(v, k)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+          grade of order k
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+invautom(vv)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         reciprocal automorphism
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+listofclivars(expr)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         computes the element decomposition
+
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+matrixgrade(expr)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         grade decomposition of expressions
+         factors and produces a matrix
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+makebasis(var)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+      constructs the complete basis of the algebra
+      - additional declarations added for compatibility with complex operations
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+mtable1([lst])
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         multiplication table, reduced
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+mtable1i([lst])
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         inner product table, reduced
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+mtable1o([lst])
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         multiplication table, reduced
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+mtable1r([lst]
+
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: subsect start ]
+mtable1s([lst])
+
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: subsect start ]
+mtable2()
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         multiplication table, all elements,
+         it also has a debugging functionality
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+mtable2i()
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         inner product table, all elements
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+mtable2o()
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         outer product table, all elements 
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+mtable2s()
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         scalar product table, all elements
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+mvectorpart(v)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+          multivector part
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+nscalarpart(v)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         non scalar part
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: subsect start ]
+predautom(vv, predf)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+grade  automorphism by  predicate
+predf requires 2 arguments : grade part and grade index
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+prodecomp(a,b)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+        Clifford product decomposition
+ 
+comm(a,b) := cliffsimp1 (expand(a. b - b. a))/2;
+acomm(a,b):= cliffsimp1 (expand(a. b + b. a))/2;
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+pscalar([k])
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         constructs the pseudoscalar of the algebra
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+scalarpart(v)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         scalar part
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: subsect start ]
+ uelem(vv)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+           computes a unit element
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+ vectorpart(v)
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+           vector part
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: subsect start ]
+vectors()
+   [wxMaxima: subsect end   ] */
+
+/* [wxMaxima: comment start ]
+         constructs the vectors of the algebra
+   [wxMaxima: comment end   ] */
+
+
+/* [wxMaxima: fold    end   ] */
+
+
+/* [wxMaxima: section start ]
+Construction of Clifford expressions
+   [wxMaxima: section end   ] */
+
+
+/* [wxMaxima: section start ]
+Decomposition of Clifford expressions (grading functions)
+   [wxMaxima: section end   ] */
+
+
+/* [wxMaxima: subsect start ]
+scalarpart(v)
+   [wxMaxima: subsect end   ] */
+
+
+/* [wxMaxima: comment start ]
+scalar part of the expression v
+   [wxMaxima: comment end   ] */
+
+
+/* [wxMaxima: subsect start ]
+nscalarpart(v)
+   [wxMaxima: subsect end   ] */
+
+
+/* [wxMaxima: comment start ]
+non-scalar part of the expression v
+   [wxMaxima: comment end   ] */
+
+
+/* [wxMaxima: subsect start ]
+mvectorpart(v)
+   [wxMaxima: subsect end   ] */
+
+
+/* [wxMaxima: comment start ]
+ multivector part of the expression v
+   [wxMaxima: comment end   ] */
+
+
+
+/* Old versions of Maxima abort on loading files that end in a comment. */
+"Created with wxMaxima 19.01.3-DevelopmentSnapshot"$
