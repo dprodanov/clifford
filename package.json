@@ -1,0 +1,27 @@
+{
+	"name": "clifford",
+	"description": "Clifford: a lightweight package for performing Geometric Algebra calculations",
+	"version": "2.4.5",
+	"main": "clifford.mac",
+	"scripts": {
+		"test": ""
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/dprodanov/clifford.git"
+	},
+	"keywords": [
+		"grassmann-algebras",
+		"clifford-algebras",
+		"clifford",
+		"maxima",
+		"geometric-algebra",
+		"quaternion-algebra"
+	],
+	"author": "Dimiter Prodanov",
+	"license": "LGPLv2",
+	"bugs": {
+		"url": "https://github.com/dprodanov/clifford/issues"
+	},
+	"homepage": "http://dprodanov.github.io/clifford/"
+}
