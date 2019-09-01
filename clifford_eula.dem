@@ -43,7 +43,7 @@ if get('cliffordan,'version)=false then load("cliffordan")$
 	"Euler- Lagrange equations"$
 	dA:mvectdiff(AA,r);
 	
-	ELeq:EuLagEq2(L, t+r,[AA,dA]);
+	ELeq:ciELfdiff(L, t+r,[AA,dA]);
 	
 	"matrix form"$
 	bdecompose(ELeq);

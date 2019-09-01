@@ -1,0 +1,50 @@
+/*******************************
+Clifford algebra
+a lightweight package for performing Geometric Algebra calculations
+
+tests for version
+ v 2.4
+ 
+usage:
+file_search_maxima: append (file_search_maxima,["/path/to/clifford.mac"]);
+batch("rtest_clifford", test);
+
+@depends clifford.mac
+
+**********************************
+ * @license This library is free software; you can redistribute it and/or
+ *      modify it under the terms of the GNU Lesser General Public
+ *      License as published by the Free Software Foundation; either
+ *      version 2.1 of the License, or (at your option) any later version.
+ *
+ *      This library is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *       Lesser General Public License for more details.
+ *
+ *      You should have received a copy of the GNU Lesser General Public
+ *      License along with this library; if not, write to the Free Software
+ *      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+ (kill(all),
+  %start : absolute_real_time(),
+    %path:"C:/Dropbox/maxima/$$$.{mac,mc}",
+  file_search_maxima:append (file_search_maxima , [%path]),
+  load("clifford"),
+  'done);
+'done$
+get('clifford,'version);
+v24$
+block(
+	"init Cl(2,2)",
+	clifford(e,3)
+);
+[1,1,1]$
+E:elements();
+[e[1],e[2],e[3],e[1] . e[2],e[1] . e[3],e[2] . e[3],e[1] . e[2] . e[3]]$
+dual(E);
+[e[2] . e[3],e[1] . e[3],e[1] . e[2],e[3],e[2],e[1],1]$
+E2:clidual(E);
+[-e[2] . e[3],e[1] . e[3],-e[1] . e[2],e[3],-e[2],e[1],1]$
+clidual(E2);
+[-e[1],-e[2],-e[3],-e[1] . e[2],-e[1] . e[3],-e[2] . e[3],-e[1] . e[2] . e[3]]$

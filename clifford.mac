@@ -1,6 +1,6 @@
 /*******************************
-Clifford algebra
-a lightweight package for performing Geometric Algebra calculations
+Clifford algebra in Maxima
+Clifford: a lightweight package for performing Geometric Algebra calculations
 
  @version 
 	2.4.5 Date 20 Feb 2019
@@ -138,7 +138,7 @@ pfeformat: true;
 		),
 		if inprotype='ic then (
 			qq:abs(qq),
-			ret:cliffsimp1(a. invautom(b))
+			ret:cliffsimp1(a. (b))
 		),
 		grpart(ret, qq)
 	);	
@@ -308,8 +308,12 @@ implodeop(lsta, sop):=block([w],
 	xreduce(sop, maplist(lambda([w], implodeop(w, sop)), lsta))
 );
 
+declare(resimplify, evfun);
+resimplify(ex):=expand(ex, 0, 0);
+
 /*
 expands recursivly the geometric product
+@ depreciated
 */
 dotexpand(expr):=block([ sop],
 	sop:inop(expr),
@@ -330,9 +334,9 @@ returns scalar variables
 scalarsym():=sublist(props, lambda( [z], if symbolp(z) then scalarp(z) else false));
 
 /*
-returns cliffod variables
+returns clifford variables
 */
-clivars():= block([ uu], 
+clivars():= block([ uu, z], 
 	sublist(values, lambda([z], uu:ev(z), not freeof(asymbol, uu )))
 );
 
@@ -366,6 +370,9 @@ toggles debugging
 */
 toggle_debug():= _debug: not _debug;
 
+/*
+list of cliffor variables
+*/
 clv(expr):=(
 	sublist(listofvars(expr), lambda([u], not freeof(asymbol, u)))
 );
@@ -1385,7 +1392,7 @@ clidual(expr):=block([lste:[], lsti:[], r, l, ss:1, nn, dd],
 		return(map(clidual, expr))
 	else (
 		[l, r]:subst('nil=1, oppart(expr, lambda([u], freeof(asymbol, u)))),
-		display(l,r),
+		/*display(l,r),*/
 		lste:clv(r),
 		lsti:vectors(),
 		if %ivnorm#0 then ss:%ivnorm,
@@ -1395,6 +1402,7 @@ clidual(expr):=block([lste:[], lsti:[], r, l, ss:1, nn, dd],
 		ss*l*r
 	)
 );
+
 /*
  computes a unit  element
 */
