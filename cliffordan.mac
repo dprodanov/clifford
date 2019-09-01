@@ -4,7 +4,10 @@ a lightweight package for  component-wise Geometric Algebra calculations
 
 Clifford analysis
  
-@version 	1.8.2  Date 04 Feb 2018
+@version 1.8.3 Date 1 Sept 2019 	
+		- convdiff
+		- experimental functions moved
+		1.8.2  Date 04 Feb 2018
 		- code refactoring
 		1.8.1 Date 20 Sept 2017
 		- diffsubst bugfixes
@@ -105,22 +108,7 @@ totdiff(f, x, [lv]):=block( [ret:0],
 	ret
 );
 
-/*
-totdiff2(f, x, [lv]):=block( [ret:0, df, sargs],
-	if emptyp(lv) then
-		lv:listofvars(x)
-	else 
-		lv:lv[1],
-	sargs:subst(nil=x, inargs(f)),
-	for zz in sargs do	
-		for u in lv do
-			if symbolp(u) then (
-				df: diff(zz, u),
-				ret: ret + diff(f, u)*df / diff(x, u)
-			),
-	ret
-);
-*/
+
 diffp(expr):= inop(expr)=nounify('derivative);
 
 /* total differentiation; 
@@ -192,7 +180,7 @@ Christoffel symbols based on
 Clifford-valued
 total differentiation; */
 christoffel12_cli (x, ilst):=block([ek, eq, xi, xj, i, j, k, lv, dd, g1, g2],
-	if not listp (ilst) and length (ilst)#3 then error ("not a list or bad length ", lst),
+	if not listp (ilst) or length (ilst)#3 then error ("not a list or bad length ", lst),
 	[xk, xi, xj]:ilst,	
 	dd:dotsimpc(expand(ctotdiff(x,  xi))),
 	dd:dotsimpc(expand(ctotdiff(dd, xj))),
@@ -234,14 +222,15 @@ metrics(x, lst):=block([n, ek],
  Clifford-valued
  directional derivative
  */
-cdirdiff(f, v, x):=block( [ret:0, lv, uu:0, qq],
+cdirdiff(f, v, x):=block( [ret:0, lv, m, uu:0, qq],
 	if mapatom(x) then 
 		ret: scalarpart(v)*diff( f, x )
 	else (
 		lv: sublist( listofvars(x), lambda ([z], freeof(asymbol, z))),		
 		for u in lv do (
-			qq: cinv(diff(x, u)),
-			uu: scprod(qq , v),
+			qq: diff(x, u),
+			m: qq @ qq,
+			uu: m*(qq @ v),
 			ret: ret + uu * subst(".", "*", diff( f, u ))
 			)
 	),
@@ -257,11 +246,13 @@ cdirdualdiff(f, v, x):=block( [ret:0, lv, uu:0, qq, d],
 		lv: sublist( listofvars(x), lambda ([z], freeof(asymbol, z))),		
 		for u in lv do (
 			qq: cinv(diff(x, u)),
-			uu: scprod(qq , d),
+			uu:  (qq @ d),
 			ret: ret + uu * subst(".", "*", diff( f, u ))
 			)
 	),
-	factorby(dotsimpc(ret), %elements)
+	ret:expand(ret),
+	ret:dotsimpc(ret),
+	ret:clifact(ret)
 );
 
 cndirdiff(f, v, x):=block( [ret:0, lv, uu:0, qq],
@@ -277,22 +268,26 @@ cndirdiff(f, v, x):=block( [ret:0, lv, uu:0, qq],
 			)
 	),
 	ret:expand(ret),
-	factorby(dotsimpc(ret), %elements)
+	ret:dotsimpc(ret),
+	ret:clifact(ret)
 );
 
-ctotprojdiff(f, v, x):=block( [ret:0, lv, uu:0, qq],
+ctotprojdiff(f, v, x):=block( [ret:0, lv, uu:0, qq, gn, ss:0, ipdecomp:true],
 	if mapatom(x) then 
 		ret: scalarpart(v)*diff( f, x )
 	else (
 		lv: sublist( listofvars(x), lambda ([z], freeof(asymbol, z))),		
+		gn:maxgrade(v),
 		for u in lv do (
 			qq: cinv(diff(x, u)),
-			uu: dotsimpc(qq | v),
+			uu: dotsimpc(expand(v | qq)),
+	 
 			ret: ret + uu. subst(".", "*", diff( f, u ))
 			)
 	),
 	ret:expand(ret),
-	dotsimpc(ret)
+	ret:dotsimpc(ret),
+	ret:clifact(ret)
 );
 
 
@@ -321,16 +316,15 @@ ctotextdiff(f, x):=block( [ret:0, lv],
 /*
  multi vector derivative
 */
-mvectdiff(f, x, [k] ):=block ([s:0, n:1, m, es],
+mvectdiff(f, x, [k] ):=block ([s:0, f1:copy(f), p],
 	if emptyp(k) then k:1 else k: k[1],
 	x:expand(x),
 	for p:1 thru k do (
-		s:ctotdiff(f, x),
+		s:ctotdiff(f1, x),
 		s:cliffsimpall(s),
-		f:s
+		f1:s
 	),
 	if %divsimp=true then (
-		"display(es)",
 		s:trigsimp(s),
 		s:clifact(s)
 	),
@@ -419,7 +413,7 @@ parmvectdirdiff(f, v, x, [k] ):=block ([s, ee, xx,  df, qq,  uu ],
 	s
 );
 
-parmvectintdiff(f, x, [k] ):=block ([s, n:1, m, i, ee, xx, df, qq, es ],
+parmvectintdiff(f, x, [k] ):=block ([s, n:1, m, i, ee, xx, df, qq, es, ipdecomp:true],
 	[ee, xx]:clicoeff2(x, 'list),
 	if %clverbose=true then
 		display(xx),
@@ -447,7 +441,7 @@ parmvectintdiff(f, x, [k] ):=block ([s, n:1, m, i, ee, xx, df, qq, es ],
 /*
  interior, dual, vector derivative
 */
-intmvectdiff(f, x, [k] ):=block ([s:0, n:1, m, es],
+intmvectdiff(f, x, [k] ):=block ([s:0, n:1, m, esm, ipdecomp:true],
 	if emptyp(k) then k:1 else k: k[1],
 	x:expand(x),
 	for p:1 thru k do (
@@ -505,6 +499,10 @@ vvectdiff(f, x, [k] ):=block ([ df],
 	df
 );
 
+claplacian(f, x):=block([ret], 
+	ret:mvectdiff(f, x),
+	svectdiff(ret, x)
+);
 
 /*
  Euler-Lagrange equations
@@ -541,8 +539,9 @@ ciELfdiff(_F, tt, pvars):=block(
 	clifact(eq)
 );
 
+/*
 alias (EuLagEq2, ciELfdiff); 
-
+*/
 
 ciELfdiff1(_F, tt, pvars):=block(
 [eq:0, p, pv, ee, qq, ss:[], zz:[],  vv, lv, u, ei, mm, vi, tc, qd:0, ec, j:1],
@@ -589,57 +588,48 @@ compdiff( _F, vi, vj, tt):=block([df, dx],
 	pardiff(df, dx)
 );
 
-ciTEM(_F, tt, p):=block(
-[   ee, ei, vi, vj, n, ne, vv ],
-	ee:cons(1, %elements),
-	ne:length(ee),
-	n: ndim+1,
-	ei: map(cinv, ee), 
-	genmatrix( lambda([i,j],  vi:totdiff(p, ei[i] @ tt), vj: totdiff(p, ei[j] @ tt),
-		 sum(  (vv:ei[a]@ vi,   if vv#0 then pardiff( _F, vv  )* ( ei[a] @ vj) else 0 ) , a, 1, ne )    )  , 
-	n)
-);
 
-
-ciTEM1(_F, tt, p):=block( [ee, ei, n ],
-	ee:cons(1, vectors()),
-	n: length(ee),
-	ei: map(cinv, ee),
-	genmatrix( 
-		lambda([i,j],  vi:totdiff(p, ei[i] @ tt), vj: totdiff(p, ei[j] @ tt),
-			factor( parmvectdirdiff( _F, vj, vi ) ) 
-		) , n
-	)
-);
-
-ciTEM2(_F, tt, pvars):=block([p, pv ],
-	[p, pv]:pvars, 
-	parmvectdirdiff( _F, pv, pv ) - ndim*_F
-);
-
-notsubst(expr, xx, yy, v):=block([f1:0],
-	if listp(xx) and listp(yy) then
-		for i:1 thru length(xx) do
-			f1: f1 + notsubst(expr, xx[i], yy[i], v)
-	else (	 
-		f1:subst(xx=yy, expr),
-		diff(f1, v)
-	 )
-);
  
 /*
  EL particle lagrangians
 */
+
 /*
 convective derivative
 */
-convderiv(f, t, xx, [vs]):=block( 
-	[ lv, n:1, u, nabla:[], lv, ss:0, m, es:[], s:0, ez:[], aa:[], bb:[], cc:[], dd:[], gg:[], rr ],
-	if not symbolp(t) then error(t, " must be a symbol"),	
+convderiv(f, t, xx, [vs]):=block([ez, es, lv, tt:gensym("t"), ret, pv, 
+			aa:[], inprotype:ic,  opsubst:true, derivsubst:true],
+	xx:expand(xx),
 	lv:listofvars(xx),
- 	xx:expand(xx),
+	/*display(tt),*/
 
-	[ez, es]: oppart( lv, lambda ([z], freeof(asymbol, z))),
+	ez:sublist( lv, lambda ([u], freeof(asymbol, u))),
+	es:sublist( lv, lambda ([u], not freeof(asymbol, u))),
+	depends (ez, tt),
+	/*ret:[diff(ez,tt), es, diff(xx,tt)],*/
+	if not emptyp(vs) then vs:vs[1],
+	if listp(vs) then
+		aa:makelist(diff(ez[i],tt)=vs[i], i, length(vs)),
+	pv:(diff(xx,tt)),
+	remove (ez, dependency),
+	ret: pv | parmvectdiff(f, xx),
+	if listp(vs) then
+		ret:psubst(aa, ret),
+	ret:subst(tt=t,ret),
+	ret:diff(f,t) + ret
+);
+
+/*
+convderiv(f, t, xx, [vs]):=block( 
+	[ lv, n:1, u, nabla:[], ss:0, m, es:[], s:0, ez:[], aa:[], bb:[], cc:[], dd:[], gg:[], rr ],
+	if not symbolp(t) then error(t, " must be a symbol"),	
+
+ 	xx:expand(xx),
+	lv:listofvars(xx),
+	[ez, es]: oppart( lv, lambda ([u], freeof(asymbol, u))),
+	ez:flatten(ez),
+	es:flatten(es),
+	display(lv, ez, es),
 	if not emptyp(vs) then vs:vs[1],
 	for j:1 thru length(ez) do (
 			push(ez[j]=ez[j](t), aa),
@@ -655,7 +645,7 @@ convderiv(f, t, xx, [vs]):=block(
 		nabla:[diff( psubst(aa, xx),t)]
 	else
 		nabla:diff(args(psubst(aa, xx)),t),
-	/*display(aa,bb, cc, dd),*/
+	display(aa,bb, cc, dd),
 	if not emptyp(vs) then (
 		nabla:psubst(cc, nabla),
 		f: psubst(dd, f), 
@@ -681,7 +671,7 @@ convderiv(f, t, xx, [vs]):=block(
 	ss:psubst(bb, ss),
 	clifact(ss)
 );
-
+*/
 
 /*
 Euler - Lagrange equation derivation
@@ -705,6 +695,7 @@ ciEL1(_F, tt, pvars, smat):=block([eq, p, pv, qq, ee, aa:[], bb:[], es:[], ez:[]
 
 	qq2: parmvectdiff(_F, pv),
 	qq2: subst(cc, qq2),
+	if %clverbose=true then
 	display(es, qq2),
 
 	qp: convderiv(qq2, tt, p),
@@ -785,7 +776,21 @@ EL(_F, q, pvars):=block ([eq:0, p, pv, qq, rr, len, ret:[]],
 	),
 	[ ret, eq]
 );
-
+/*
+EuLagEq2(_F, tt, pvars):=block ([eq:0, p, pv, ret:[]],
+	[p, pv]:pvars,
+	display(p, pv),
+	if listp(p) then
+		for i:1 thru length (p) do
+			push(pv[i]='diff(p[i], tt), ret)
+	else
+		push(pv='diff(p, tt), ret),
+	depends(pv, tt),
+	eq:mvectdiff(_F, p)-diff(parmvectdiff(_F, pv), tt),
+	eq:subst(ret, eq=0),
+	remove (pv, dependency),
+eq
+);*/
 
 
 /*
