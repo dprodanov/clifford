@@ -3,6 +3,10 @@ Clifford algebra in Maxima
 Clifford: a lightweight package for performing Geometric Algebra calculations
 
  @version 
+	2.4.6 Date 1 Sept 2019
+	- bugfix in operpart
+	- inprotype='ic computes the Hestenes contraction
+	
 	2.4.5 Date 20 Feb 2019
 	- bugfix in operpart
 	
@@ -276,11 +280,15 @@ oppart(expr, predf):=block(
 		err:errcatch (
 			ltrue:if not emptyp(lsttrue) then 
 				/*substinpart(sop, lsttrue, 0) */
-				implodeop(lsttrue, sop)
+				if sop#"[" then
+					implodeop(lsttrue, sop)
+				else lsttrue
 				else 'nil,
 			lfalse:if not emptyp(lstfalse) then 
 				/*substinpart(sop, lstfalse, 0) */
-				implodeop(lstfalse, sop)
+				if sop#"[" then
+					implodeop(lstfalse, sop)
+				else lstfalse
 				else 'nil,
 		 	if _debug=true then display( ltrue, lfalse), 
 			lst:[ ltrue, lfalse]
@@ -343,7 +351,9 @@ clivars():= block([ uu, z],
 /*
 returns cliffod symbols
 */
-clisym():=sublist(props, lambda( [z], if symbolp(z) then not freeof(asymbol, z) else false));
+clisym():=block([z],
+	sublist(props, lambda( [z], if symbolp(z) then not freeof(asymbol, z) else false))
+);
 
 /*
 simplification of dot-products, ordergreat
@@ -352,7 +362,7 @@ dotsimp1(ab):=block([a, b],
   if mapatom(ab) or op(ab)#"." then return(ab),
   a:inpart(ab,1),
   b:rest(ab),
- if orderlessp(a,b) then -b.a else ab
+  if orderlessp(a,b) then -b.a else ab
 );
 
 /*
