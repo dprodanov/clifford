@@ -3,6 +3,9 @@ Clifford algebra in Maxima
 Clifford: a lightweight package for performing Geometric Algebra calculations
 
  @version 
+ 	2.4.7 Date 17 Sept 2019
+	- bugfix in dual and clidual
+	
 	2.4.6 Date 1 Sept 2019
 	- bugfix in operpart
 	- inprotype='ic computes the Hestenes contraction
@@ -1373,11 +1376,13 @@ dual(expr):=block([lste:[], lsti:[], r, l],
 		if not mapatom(expr) and op(expr)="/" then (
 		nn:num(expr),
 		dd:denom(expr),
-		return(map(dual, nn)/dd))	
+		/*display(nn, dd),*/
+		return(dual(nn)/dd))	
 	elseif not mapatom(expr) and inop(expr)="+" then 
 		map(dual, expr)
 	else (
 		[l, r]:subst('nil=1, oppart(expr, lambda([u], freeof(asymbol, u)))),
+		/*display(l,r),*/
 		lste:clv(r),
 		lsti: vectors(),
 		lste: lste xor lsti,
@@ -1397,7 +1402,7 @@ clidual(expr):=block([lste:[], lsti:[], r, l, ss:1, nn, dd],
 	if not mapatom(expr) and op(expr)="/" then (
 		nn:num(expr),
 		dd: denom(expr),
-		return(map(clidual, nn)/dd))	
+		return(clidual(nn)/dd))	
 	elseif not mapatom(expr) and inop(expr)="+" then 
 		return(map(clidual, expr))
 	else (

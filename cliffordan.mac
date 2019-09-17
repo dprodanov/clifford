@@ -5,14 +5,14 @@ a lightweight package for  component-wise Geometric Algebra calculations
 Clifford analysis
  
 @version 1.8.3 Date 1 Sept 2019 	
-		- convdiff
+		- convderiv
 		- experimental functions moved
 		1.8.2  Date 04 Feb 2018
 		- code refactoring
 		1.8.1 Date 20 Sept 2017
 		- diffsubst bugfixes
 		1.8 Date 23 Aug 2017
-		-  change of variables
+		- change of variables
 		- bug fixes
 		1.7 Date 12 Dec 2016
 		- projection derivatives
@@ -238,6 +238,7 @@ cdirdiff(f, v, x):=block( [ret:0, lv, m, uu:0, qq],
 	ret:clifact(ret)
 );
 
+/*
 cdirdualdiff(f, v, x):=block( [ret:0, lv, uu:0, qq, d],
 	if mapatom(x) then 
 		ret: scalarpart(v)*diff( f, x )
@@ -246,7 +247,8 @@ cdirdualdiff(f, v, x):=block( [ret:0, lv, uu:0, qq, d],
 		lv: sublist( listofvars(x), lambda ([z], freeof(asymbol, z))),		
 		for u in lv do (
 			qq: cinv(diff(x, u)),
-			uu:  (qq @ d),
+			uu: expand(qq . d) - scprod(qq , d),
+			uu: dotsimpc(uu),
 			ret: ret + uu * subst(".", "*", diff( f, u ))
 			)
 	),
@@ -254,7 +256,18 @@ cdirdualdiff(f, v, x):=block( [ret:0, lv, uu:0, qq, d],
 	ret:dotsimpc(ret),
 	ret:clifact(ret)
 );
+*/
+/*
+dual of the directional derivative
+*/
+cdirdualdiff(f, v, x):=block( [ret:0],
+ ret: cdirdiff(f, v, x),
+ clidual(ret)
+);
 
+/*
+
+*/
 cndirdiff(f, v, x):=block( [ret:0, lv, uu:0, qq],
 	if mapatom(x) then 
 		ret: scalarpart(v)*diff( f, x )
@@ -598,11 +611,9 @@ compdiff( _F, vi, vj, tt):=block([df, dx],
 convective derivative
 */
 convderiv(f, t, xx, [vs]):=block([ez, es, lv, tt:gensym("t"), ret, pv, 
-			aa:[], inprotype:ic,  opsubst:true, derivsubst:true],
+			aa:[], inprotype:ic, u, opsubst:true, derivsubst:true],
 	xx:expand(xx),
 	lv:listofvars(xx),
-	/*display(tt),*/
-
 	ez:sublist( lv, lambda ([u], freeof(asymbol, u))),
 	es:sublist( lv, lambda ([u], not freeof(asymbol, u))),
 	depends (ez, tt),
@@ -611,7 +622,7 @@ convderiv(f, t, xx, [vs]):=block([ez, es, lv, tt:gensym("t"), ret, pv,
 	if listp(vs) then
 		aa:makelist(diff(ez[i],tt)=vs[i], i, length(vs)),
 	pv:(diff(xx,tt)),
-	remove (ez, dependency),
+	remove(ez, dependency),
 	ret: pv | parmvectdiff(f, xx),
 	if listp(vs) then
 		ret:psubst(aa, ret),
