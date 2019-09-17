@@ -1,7 +1,14 @@
 Clifford:
 a lightweight package for performing Geometric and Clifford Algebra calculations
 
-2.4.5 Date 20 Feb 2019
+	2.4.7 Date 17 Sept 2019
+	- bugfix in dual and clidual
+	
+	2.4.6 Date 1 Sept 2019
+	- bugfix in operpart
+	- inprotype='ic computes the Hestenes 
+	
+	2.4.5 Date 20 Feb 2019
 	- bugfix in operpart
 	
 	2.4.4 Date 18 May 2018,
