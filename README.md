@@ -6,7 +6,7 @@ a lightweight package for performing Geometric and Clifford Algebra calculations
 	
 	2.4.6 Date 1 Sept 2019
 	- bugfix in operpart
-	- inprotype='ic computes the Hestenes 
+	- inprotype='ic computes the Hestenes contraction
 	
 	2.4.5 Date 20 Feb 2019
 	- bugfix in operpart
