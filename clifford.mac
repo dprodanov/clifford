@@ -1415,7 +1415,7 @@ clidual(expr):=block([lste:[], lsti:[], r, l, ss:1, nn, dd],
 		/*display(l,r),*/
 		lste:clv(r),
 		lsti:vectors(),
-		
+
 		ss:ss*permsign( append (lste, lsti)),
 		lste: lste xor lsti,
 		r:substinpart(".", lste, 0),
