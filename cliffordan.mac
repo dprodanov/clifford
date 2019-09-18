@@ -622,7 +622,7 @@ convderiv(f, t, xx, [vs]):=block([ez, es, lv, tt:gensym("t"), ret, pv,
 	if listp(vs) then
 		aa:makelist(diff(ez[i],tt)=vs[i], i, length(vs)),
 	pv:(diff(xx,tt)),
-	remove(ez, dependency),
+	apply ('remove, [ez, 'dependency]),
 	ret: pv | parmvectdiff(f, xx),
 	if listp(vs) then
 		ret:psubst(aa, ret),

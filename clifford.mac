@@ -1381,6 +1381,8 @@ dual(expr):=block([lste:[], lsti:[], r, l],
 	elseif not mapatom(expr) and inop(expr)="+" then 
 		map(dual, expr)
 	else (
+		if scalarp(expr) then
+			return (expr*%iv),
 		[l, r]:subst('nil=1, oppart(expr, lambda([u], freeof(asymbol, u)))),
 		/*display(l,r),*/
 		lste:clv(r),
@@ -1406,11 +1408,14 @@ clidual(expr):=block([lste:[], lsti:[], r, l, ss:1, nn, dd],
 	elseif not mapatom(expr) and inop(expr)="+" then 
 		return(map(clidual, expr))
 	else (
+		if %ivnorm#0 then ss:%ivnorm,
+		if scalarp(expr) then
+			return (expr*%iv*ss),
 		[l, r]:subst('nil=1, oppart(expr, lambda([u], freeof(asymbol, u)))),
 		/*display(l,r),*/
 		lste:clv(r),
 		lsti:vectors(),
-		if %ivnorm#0 then ss:%ivnorm,
+		
 		ss:ss*permsign( append (lste, lsti)),
 		lste: lste xor lsti,
 		r:substinpart(".", lste, 0),
