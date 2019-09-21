@@ -1058,7 +1058,7 @@ mtable2r():=block([n, a, lst],
 mtable2s():=block([n, a, lst],
 	lst: elements(all),
 	n:length(lst),
-	genmatrix( lambda([i,j],  scalarpart ( dotsimpc(lst[i] . lst[j] ) )), n)
+	genmatrix( lambda([i,j], scprod(lst[i] . lst[j]) ), n)
 );
 
 
@@ -1072,7 +1072,7 @@ mtable1([lst]):=block([n],
 		lst:lst[1],
 	lst:push(1, lst),
 	n:length(lst),
-	genmatrix( lambda([i,j], dotsimpc(lst[i] . lst[j] ) ), n)
+	genmatrix( lambda([i,j], dotsimpc(expand(lst[i] . lst[j]) ) ), n)
 );
 
 /**
