@@ -4,6 +4,7 @@ Clifford: a lightweight package for performing Geometric Algebra calculations
 
  @version 
  	2.4.7 Date 17 Sept 2019
+	- dotexpand removed
 	- bugfix in dual and clidual
 	
 	2.4.6 Date 1 Sept 2019
@@ -322,17 +323,6 @@ implodeop(lsta, sop):=block([w],
 declare(resimplify, evfun);
 resimplify(ex):=expand(ex, 0, 0);
 
-/*
-expands recursivly the geometric product
-@ depreciated
-*/
-dotexpand(expr):=block([ sop],
-	sop:inop(expr),
-	if sop#"." then 
-		if sop="+" then return(map(dotexpand, expr))
-		else return(expr),
-	first(expr) | dotexpand(rest(expr)) + first(expr) & dotexpand(rest(expr))
-);
 
 /*
 real predicate
@@ -384,7 +374,7 @@ toggles debugging
 toggle_debug():= _debug: not _debug;
 
 /*
-list of cliffor variables
+list of clifford variables
 */
 clv(expr):=(
 	sublist(listofvars(expr), lambda([u], not freeof(asymbol, u)))
@@ -394,7 +384,6 @@ clv(expr):=(
 simplification of dot-products
 */
 declare (dotsimpc, evfun);
- 
 dotsimpc(ab):=block([ba, c:1, v, w:1, q, r, l, sop],
   mode_declare(w, fixnum),
   mode_declare([r,l], any),
@@ -441,7 +430,7 @@ permsign(arr):=block([k:0, len, ret:0 ] ,
 );
 
 /*
-Abstract Cliford algebra construction
+Abstract Clifford algebra construction
 */
 matchdeclare([aa, ee], lambda([u], not freeof(asymbol,u) and freeof ("+", u) and not scalarp(u) ), [bb,cc], true, 
 			[kk, mm, nn], lambda( [z],  integerp(z) and z>0)); 	
@@ -676,6 +665,12 @@ constructs the  bi-vectors of the algebra
 */
 bivectors():=makelist(asymbol[i].asymbol[mod(i,ndim)+1],i,1,ndim);
 
+
+grelem(k):=block([u],
+	sublist(%elements, lambda([u],  countsymb(u, asymbol)=k))
+);
+
+
 /*
 constructs the pseudoscalar of the algebra
 */
@@ -700,28 +695,6 @@ release():=block(
 	rem('clifford,'copyright)
 );
 
-
-/*
-counts occurences of a symbol in an expression
-
-countsym(ab, sym):=block([sop, a, b, s:0, inflag:true ],
-	if freeof(sym, ab) then return(0),
-	if atom(ab) then  
-		if sym=ab then return(1),
-	if subvarp(ab) then  
-		if sym=op(ab) then return(1),
- 
-	sop:inop(ab),	 
-	if _debug=true then display(sop),
-	if member(sop, ["+", "*","."]) then (
-		a: part(ab, 1),
-		b: rest (ab, 1),
-		if _debug=true then display(a,b),
-		s:s+ countsym(a, sym)+ countsym(b, sym)
-	),
-	s
-);
-*/
  
 alias (countsym, countsymb); 
 
@@ -787,6 +760,7 @@ maxgrade(expr):=block([lst:[] ],
 		countsymb(expr, asymbol)
 );
 
+
 /*
  Partial factoring by subexpression
 */
@@ -841,9 +815,9 @@ quotsimp(expr):=block([quot, res, dd:denom(expr) ],
 );
 
 
-simpfact(expr, z):=block([ret:expr, u],
+simpfact(expr, z):=block([ret:expr, u, maperror:false, mapprint:false],
 	ret:factor(ret),
-	if not mapatom(ret) then
+	if not mapatom(ret) and not numberp(ret) then
 	map(lambda([u], factorby(u, z)), ret) else ret
 );
 
@@ -899,11 +873,13 @@ bdecompose(expr):=block([gr:expr, v],
 	map(lambda([v], clicoeff(v, 'mat)),gr)
 );
 
-clisolve(expr, lst):=block([ee, al, ret:expr],
+
+clisolve(expr, lst):=block([ee, al, u, ret:expr, maperror:false, sol],
 	if inop(expr)="=" then 
 		ret:expand(lhs(expr)-rhs(expr)),
 	[ee, al]:clicoeff(ret,'list),
-	solve(al, lst)
+	sol:map(lambda( [v], map(lambda( [u], solve(v, u)), lst)), al),
+	flatten(sol)
 );
 
 /*
@@ -1330,6 +1306,24 @@ cvect(x, [cc]):=block ([ss:0, qq],
 				qq:subst(x=cc[i], buildq([x], declare(x, scalar))),
 				ev(qq, nouns),
 				ss: ss+ x[ cc[i] ]*asymbol[i]
+			)
+		),
+	qq:buildq([x], declare(x, scalar)),
+	ev(qq, nouns),
+	ss
+);
+
+cmvect(x, k, [cc]):=block ([ss:0, qq, n, elst:grelem(k)],
+	n: length(elst),
+	if emptyp(cc) then
+		ss:sum (x[i]*elst[i], i, 1, n)
+	else (
+		cc:cc[1],
+		for i:1 thru length(cc) do 
+			if not emptyp(cc[i]) then (
+				qq:subst(x=cc[i], buildq([x], declare(x, scalar))),
+				ev(qq, nouns),
+				ss: ss+ x[ cc[i] ]*elst[i]
 			)
 		),
 	qq:buildq([x], declare(x, scalar)),
