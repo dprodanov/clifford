@@ -1,6 +1,13 @@
 Clifford:
 a lightweight package for performing Geometric and Clifford Algebra calculations
 
+To run the package clone the repository and add the folder to Maxima by executing commands
+
+file_search_demo: append (file_search_demo,["/path/to/folder"]);
+file_search_maxima: append (file_search_maxima,["/path/to/folder"]);
+
+Changelog
+
 	2.4.7 Date 17 Sept 2019
 	- bugfix in dual and clidual
 	
