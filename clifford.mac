@@ -3,7 +3,13 @@ Clifford algebra in Maxima
 Clifford: a lightweight package for performing Geometric Algebra calculations
 
  @version 
- 	2.4.7 Date 17 Sept 2019
+ 	2.4.8 Date 12 Dec 2019
+	- clidual deprecated
+	- clihdual -  Hodge dual implementation
+	- added documentation of Hodge dual computation
+	- bug in bivectors
+	
+	2.4.7 Date 17 Sept 2019
 	- dotexpand removed
 	- bugfix in dual and clidual
 	
@@ -663,8 +669,7 @@ vectors():=makelist(asymbol[i], i, 1, ndim);
 /*
 constructs the  bi-vectors of the algebra
 */
-bivectors():=makelist(asymbol[i].asymbol[mod(i,ndim)+1],i,1,ndim);
-
+bivectors():=grelem(2);
 
 grelem(k):=block([u],
 	sublist(%elements, lambda([u],  countsymb(u, asymbol)=k))
@@ -1389,30 +1394,31 @@ dual(expr):=block([lste:[], lsti:[], r, l],
 
 /**
    clifford dual element
+   hodege dual 
  */
-clidual(expr):=block([lste:[], lsti:[], r, l, ss:1, nn, dd],
+clihdual(expr):=block([lste:[], lsti:[], lstj:[], r, l, ss:1, nn, dd, ue:1],
 	if matrixp(expr) then
-		return(matrixmap(clidual, expr )),
+		return(matrixmap(clihdual, expr )),
 	if listp(expr) then
-		return(maplist(clidual, expr )),
+		return(maplist(clihdual, expr )),
 	if not mapatom(expr) and op(expr)="/" then (
 		nn:num(expr),
-		dd: denom(expr),
-		return(clidual(nn)/dd))	
+		dd:denom(expr),
+		return(clihdual(nn)/dd))	
 	elseif not mapatom(expr) and inop(expr)="+" then 
-		return(map(clidual, expr))
+		return(map(clihdual, expr))
 	else (
-		if %ivnorm#0 then ss:%ivnorm,
 		if scalarp(expr) then
-			return (expr*%iv*ss),
+			return (expr*%iv),
 		[l, r]:subst('nil=1, oppart(expr, lambda([u], freeof(asymbol, u)))),
-		/*display(l,r),*/
 		lste:clv(r),
 		lsti:vectors(),
-
-		ss:ss*permsign( append (lste, lsti)),
-		lste: lste xor lsti,
-		r:substinpart(".", lste, 0),
+		for ue in lste do 
+			ss: ss* dotsimpc(ue.ue),
+		lstj: lste xor lsti,
+		/* dual elements*/
+		r:substinpart(".", lstj, 0),
+		ss:ss*permsign( append (lste, lstj)),
 		ss*l*r
 	)
 );
