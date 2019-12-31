@@ -9,6 +9,15 @@ file_search_maxima: append (file_search_maxima,["/path/to/folder/$$$.{mac,wxm}"]
 
 Changelog
 
+	2.4.9 Date 26 Dec 2019
+	- bugfix in maxgrade
+	
+ 	2.4.8 Date 12 Dec 2019
+	- clidual deprecated
+	- clihdual -  Hodge dual implementation
+	- added documentation of Hodge dual computation
+	- bugfix in bivectors
+	
 	2.4.7 Date 17 Sept 2019
 	- bugfix in dual and clidual
 	
