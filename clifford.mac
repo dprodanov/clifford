@@ -3,6 +3,9 @@ Clifford algebra in Maxima
 Clifford: a lightweight package for performing Geometric Algebra calculations
 
  @version 
+	2.4.9 Date 26 Dec 2019
+	- bugfix in maxgrade
+	
  	2.4.8 Date 12 Dec 2019
 	- clidual deprecated
 	- clihdual -  Hodge dual implementation
@@ -84,6 +87,7 @@ stringdisp:true;
 ratprint:false;
 powerdisp:true;
 pfeformat: true;
+
 /*
  custom operators
 */
@@ -758,6 +762,7 @@ maximal grade of an expression
 */
 maxgrade(expr):=block([lst:[] ],
 	if freeof (asymbol, expr) then return (0),
+	if not mapatom(expr) then expr:expand(expr),
 	if inop(expr)="+" then (
 		lst:maplist(maxgrade, expr),
 		lmax(lst)
