@@ -3,14 +3,15 @@ Clifford algebra in Maxima
 Clifford: a lightweight package for performing Geometric Algebra calculations
 
  @version 
-	2.4.9 Date 26 Dec 2019
+	2.4.9 Date 21 Jan 2020
+	- lvect
 	- bugfix in maxgrade
 	
  	2.4.8 Date 12 Dec 2019
 	- clidual deprecated
 	- clihdual -  Hodge dual implementation
 	- added documentation of Hodge dual computation
-	- bug in bivectors
+	- bugfix in bivectors
 	
 	2.4.7 Date 17 Sept 2019
 	- dotexpand removed
@@ -261,8 +262,9 @@ pfeformat: true;
 		ss*dotsimpc ( ai & bi )
 	);
 
-/*
+/**
  This part implements a generic partition split operation 
+ will  be moved to operpart
 */
 inop(expr):= if not mapatom (expr)  then inpart(expr, 0) else 'nil;
 
@@ -333,6 +335,9 @@ implodeop(lsta, sop):=block([w],
 declare(resimplify, evfun);
 resimplify(ex):=expand(ex, 0, 0);
 
+/**
+end of operpart
+*/
 
 /*
 real predicate
@@ -1183,7 +1188,7 @@ cnorm(x):=block([u:expand(x), z, v],
 
 /*
 symmetric bilinear form of the algebra; 
-*/
+@deprecated 
 psnorm(x, sgn):=block([u, z, v, ss:0, neg:-1, l, r, ret ],
 	if not (sgn='minus or sgn='neg or  sgn='plus or sgn='pos ) then 
 		error("plus, pos, neg or minus expected"),	
@@ -1206,6 +1211,7 @@ psnorm(x, sgn):=block([u, z, v, ss:0, neg:-1, l, r, ret ],
 		ret:neg*apply1(u.u, clifsimp10),
 	subst('nil=0, ret)	
 );
+*/
 
 /**
 vector predicate
@@ -1215,7 +1221,7 @@ vectorp(v):= (
 	freeof(".", v) and not freeof(asymbol, v)
 );
 
-/*
+/***********************
  grading functions
 */
 
@@ -1304,7 +1310,7 @@ grades(vv):=block([lst, uu, listarith:true],
 
 
 /* 
- constructs a vector
+ constructs a vector by indexing a symbol
 */
 cvect(x, [cc]):=block ([ss:0, qq],
 	if emptyp(cc) then
@@ -1321,6 +1327,15 @@ cvect(x, [cc]):=block ([ss:0, qq],
 	qq:buildq([x], declare(x, scalar)),
 	ev(qq, nouns),
 	ss
+);
+
+/* 
+ constructs a vector from a given list
+*/
+lvect(lst ):=block ([ss:0, qq],
+	if not listp(lst) then error("list expected",lst),
+	if length(lst)>ndim then error("dimension mismatch",lst),
+	sum (lst[i]*asymbol[i], i, 1, ndim)
 );
 
 cmvect(x, k, [cc]):=block ([ss:0, qq, n, elst:grelem(k)],
@@ -1555,7 +1570,7 @@ qgrade(vv):=cdgrade(vv, lambda([u,v ],  qclass(u)+1));
 
 put('clifford, 'v24,'version);
 put('clifford, "Dimiter Prodanov", 'author);
-put('clifford, "(C) - Dimiter Prodanov, 2015 - 2019", 'copyright);
+put('clifford, "(C) - Dimiter Prodanov, 2015 - 2020", 'copyright);
 
 ttyoff:false;
 
@@ -1563,4 +1578,4 @@ print("package name: clifford.mac");
 print("author: ", get('clifford,'author));
 print("version:", get('clifford,'version));
 print("Recommended location: share/contrib");
-print("last update: 20 Feb 2019");
+print("last update: 18 Jan 2020");
