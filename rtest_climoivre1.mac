@@ -1,0 +1,72 @@
+/*******************************
+Clifford algebra
+a lightweight package for performing Geometric Algebra calculations
+
+tests for version
+ v 1.5
+ 
+usage:
+file_search_maxima: append (file_search_maxima,["/path/to/clifford.mac"]);
+batch("rtest_clifform3", test);
+
+@depends clifford.mac
+
+**********************************
+ * @license This library is free software; you can redistribute it and/or
+ *      modify it under the terms of the GNU Lesser General Public
+ *      License as published by the Free Software Foundation; either
+ *      version 2.1 of the License, or (at your option) any later version.
+ *
+ *      This library is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *       Lesser General Public License for more details.
+ *
+ *      You should have received a copy of the GNU Lesser General Public
+ *      License along with this library; if not, write to the Free Software
+ *      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+ (kill(all),
+ /*
+  %path:read("Path to package"),
+  %path:append ([%path,"$$$.{mac,mc}"]),
+  */
+  %path:"C:/Dropbox/maxima/$$$.{mac,mc}",
+  file_search_maxima:append (file_search_maxima , [%path]),
+  %start : absolute_real_time(),
+  load("clifford"),
+  load("climoivre"),
+  get('clifford,'version)
+);
+v24$
+/* init clifford" */
+clifford(e,1,3);
+[1,-1,-1,-1]$
+
+phase:clihdual(e[1].e[2]);
+-e[3] . e[4]$
+
+(
+print ("tests for  ceparse"),
+	L:exp(1/2*phase),
+	ceparse(L)
+);
+cos(1/2)-sin(1/2)*(e[3] . e[4])$
+
+(
+print ("tests for  climoivre"),
+ climoivre(L)
+);
+cos(1/2)-sin(1/2)*(e[3] . e[4])$
+
+(
+L3:exp(%pi*phase),
+climoivre(L3));
+-1$
+
+
+(
+ Z:dotreverse(L).L,
+climoivre(Z));
+(cos(1/2)+sin(1/2)*(e[3] . e[4])) . (cos(1/2)-sin(1/2)*(e[3] . e[4]))$
+

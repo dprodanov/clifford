@@ -4,22 +4,25 @@ a lightweight package for  component-wise Geometric Algebra calculations
 
 Clifford analysis
  
-@version 1.8.5 Date 17 Jan 2020
-		- partcoord
-		- grank
-		- potentiate 
+@version 1.8.6 Date 26 Jan 2019 
+		- climoivre integrated
+		1.8.5 Date 17 Jan 2020
+		- pintegrate added
+		- partcoord added
+		- grank added
+		- potentiate added
 		1.8.4 Date 11 Jan 2020
 		- cndirdiff sign change
 		- obsolete parts removed (old convderiv)
 		1.8.3 1 Sept 2019 	
-		- convderiv
+		- convderiv added
 		- experimental functions moved
 		1.8.2  Date 04 Feb 2018
 		- code refactoring
 		1.8.1 Date 20 Sept 2017
 		- diffsubst bugfixes
 		1.8 Date 23 Aug 2017
-		- change of variables
+		- change of variables fixed
 		- bug fixes
 		1.7 Date 12 Dec 2016
 		- projection derivatives
@@ -47,13 +50,14 @@ Clifford analysis
  *      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
  
- stringdisp :true;
+ stringdisp:true;
  declare(trigsimp, evfun);
  
 if get('clifford,'version)=false then (
 	
 	err:errcatch(
-		load("clifford.mac")
+		load("clifford.mac"),
+		load("climoivre.mac")
 	),
 	
 	if emptyp(err) then (
@@ -187,6 +191,9 @@ ctotdiff(f, x):=block( [ret:0, lv],
 	ret
 );
 
+/*
+ connection-type of derivatives
+*/
 conmderivl(f, x):=block([lv, sq],
 	sq:makelist( asymbol[i] @ asymbol[i],  i , ndim),
 	lv:makelist( asymbol[i]@x *sq[i],  i , ndim),
@@ -513,7 +520,7 @@ parmvectintdiff(f, x, [k] ):=block ([s, n:1, z, m, i, ee, xx, df, qq, es, ipdeco
 );
 
 /*
- interior, dual, vector derivative
+ interior vector derivative
 */
 intmvectdiff(f, x, [k] ):=block ([s:0, n:1, m, esm, ipdecomp:true],
 	if emptyp(k) then k:1 else k: k[1],
@@ -536,7 +543,7 @@ intmvectdiff(f, x, [k] ):=block ([s:0, n:1, m, esm, ipdecomp:true],
 
 
 /*
- exterior, dual, vector derivative
+ exterior vector derivative
 */
 extvectdiff(f, x, [k] ):=block ([s:0, n:1, m, es],
 	if emptyp(k) then k:1 else k: k[1],
