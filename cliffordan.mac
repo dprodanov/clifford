@@ -4,8 +4,12 @@ a lightweight package for  component-wise Geometric Algebra calculations
 
 Clifford analysis
  
-@version 
-		1.8.4 Date 18 Dec 2019
+@version 1.8.5 Date 17 Jan 2020
+		- partcoord
+		- grank
+		- potentiate 
+		1.8.4 Date 11 Jan 2020
+		- cndirdiff sign change
 		- obsolete parts removed (old convderiv)
 		1.8.3 1 Sept 2019 	
 		- convderiv
@@ -183,6 +187,17 @@ ctotdiff(f, x):=block( [ret:0, lv],
 	ret
 );
 
+conmderivl(f, x):=block([lv, sq],
+	sq:makelist( asymbol[i] @ asymbol[i],  i , ndim),
+	lv:makelist( asymbol[i]@x *sq[i],  i , ndim),
+	genmatrix( lambda([i,j], sq[i]* dotsimpc(expand(asymbol[i]. ctotdiff(f, lv[j])))), ndim)
+);
+
+conmderivr(f, x):=block([lv, sq],
+	sq:makelist( asymbol[i] @ asymbol[i],  i , ndim),
+	lv:makelist( asymbol[i]@x *sq[i],  i , ndim),
+	genmatrix( lambda([i,j], sq[i]* dotsimpc(expand(ctotdiff(f, lv[j]). asymbol[i]))), ndim)
+);
 
 /* 
 Christoffel symbols based on 
@@ -226,6 +241,8 @@ metrics(x, lst):=block([n, ek],
 	n:length(lst),
 	genmatrix( lambda([i,j], trigsimp( (ek[i] @ ek[j] ))), n)
 );
+
+
 
 /* 
  Clifford-valued
@@ -310,15 +327,17 @@ cdirdualdiff(f, v, x):=block( [ret:0],
 /*
 
 */
-cndirdiff(f, v, x):=block( [ret:0, lv, uu:0, qq],
+cndirdiff(f, v, x):=block( [ret:0, lv, uu:0, m, qq],
 	if mapatom(x) then 
 		ret: scalarpart(v)*diff( f, x )
 	else (
 		lv: sublist( listofvars(x), lambda ([z], freeof(asymbol, z))),		
 		for u in lv do (
-			qq: cinv(diff(x, u)),
-			uu: expand(qq . v) - scprod(qq , v),
-			uu: dotsimpc(uu),
+			qq: diff(x, u),
+			m: qq @ qq,
+			uu: m*(v & qq),
+			/*uu: expand(qq . v) - scprod(qq , v),
+			uu: dotsimpc(uu),*/
 			ret: ret + uu. subst(".", "*", diff( f, u ))
 			)
 	),
@@ -882,12 +901,63 @@ clivolel(rr, eqs, [lv]):=block([ ret, qq:[], rq, z ],
 );
 
 
+partcoord(rv, dvar):=block([dr, s],
+	if not mapatom(dvar) then error("map atom expected ", dvar),
+	dr:diff(rv, dvar),
+	s:cliabs(dr),
+	s:trigsimp(s),
+	asymbol[dvar]=ratsimp(dr/s)
+);
+
+grank(lst):=block([r:0, lsta, res, n, q],
+	lsta:sort(lst, 'ordergreatp),
+	n:length(lst),
+	q:first(lsta),
+	for i:1 thru n-1 do (
+		res:resultant(q, lsta[i+1], lsta[i+1]),
+		display(res),
+		if res#0 then (
+			q:res,
+			r:r+1
+		) else return(r)
+	),
+	r
+);
+
+potentiate(expr, r):=block([vp, ri, xv, vv, u, L , nz, ret, rnk],
+	vp:vectorpart(expr),
+	vp:trigreduce(vp),
+	vv:vectors(),
+	ri:(invautom(r)),
+	L:map( lambda([u], xv:ri @ u, integrate(vp  @ u, xv) ), vv),
+	display(L),
+	nz:countsym(L,0),
+	rnk:grank(L),
+	ret:implodeop(L,"+"),
+	ratsimp(ret)/(ndim-nz-rnk)
+);
+
+/* path integral*/
+pintegrate(ff, rv, eqs, tvar, [bnd]):=block([dr, ffs, ker, ret],
+ dr:psubst(eqs, rv),
+ dr:diff(dr, tvar),
+ ffs:psubst(eqs, ff),
+ ker:dotsimpc(expand(ffs.dr + dr.ffs)/2),
+ ker:trigsimp(ker),
+ if not emptyp(bnd) then (
+	bnd:first(bnd),
+	ret:'integrate(ker, tvar, bnd[1], bnd[2])
+ ) else 
+	ret:'integrate(ker, tvar),
+ ret
+);
+
 put('cliffordan, 'v18,'version);
 put('cliffordan, "Dimiter Prodanov", 'author);
-put('cliffordan, "(C) - Dimiter Prodanov, 2015 - 2018", 'copyright);
+put('cliffordan, "(C) - Dimiter Prodanov, 2015 - 2020", 'copyright);
 
 print("package name: cliffordan.mac");
 print("author: ", get('cliffordan,'author));
 print("version:", get('cliffordan,'version));
 print("Recommended location: share/contrib");
-print("last update: 04 Feb 2018");
+print("last update: 18 Jan 2020");

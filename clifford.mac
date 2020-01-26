@@ -3,7 +3,9 @@ Clifford algebra in Maxima
 Clifford: a lightweight package for performing Geometric Algebra calculations
 
  @version 
-	2.4.9 Date 21 Jan 2020
+	2.4.9 Date 26 Jan 2020
+	- fix in dotsimpc 
+	- psnorm removed
 	- lvect
 	- bugfix in maxgrade
 	
@@ -399,7 +401,7 @@ clv(expr):=(
 simplification of dot-products
 */
 declare (dotsimpc, evfun);
-dotsimpc(ab):=block([ba, c:1, v, w:1, q, r, l, sop],
+dotsimpc(ab):=block([ba, c:1, v, w:1, q, r, l, z, sop],
   mode_declare(w, fixnum),
   mode_declare([r,l], any),
   sop:inop(ab),
@@ -416,6 +418,8 @@ dotsimpc(ab):=block([ba, c:1, v, w:1, q, r, l, sop],
 	/*ba:copy(ab),*/
 	v:copy(inargs(ab)),
 	if _debug=true then display(sop, v),
+	/* fix for exp*/
+	if not freeof (%e, v) then return(ab),
 	w:sublist( v, lambda ([z], not freeof(asymbol,z) and mapatom(z))),
 	w:permsign(w),
 	if w#0 then (
@@ -888,7 +892,9 @@ bdecompose(expr):=block([gr:expr, v],
 	map(lambda([v], clicoeff(v, 'mat)),gr)
 );
 
-
+/*
+solves for a list of vairables in clifford-valued equation
+*/
 clisolve(expr, lst):=block([ee, al, u, ret:expr, maperror:false, sol],
 	if inop(expr)="=" then 
 		ret:expand(lhs(expr)-rhs(expr)),
@@ -1186,32 +1192,6 @@ cnorm(x):=block([u:expand(x), z, v],
 	u:ratsimp(u)
 );
 
-/*
-symmetric bilinear form of the algebra; 
-@deprecated 
-psnorm(x, sgn):=block([u, z, v, ss:0, neg:-1, l, r, ret ],
-	if not (sgn='minus or sgn='neg or  sgn='plus or sgn='pos ) then 
-		error("plus, pos, neg or minus expected"),	
-	
-	if mapatom(x) then return (x.x),
-	if sgn=plus or sgn=pos then neg:1,
-	if not freeof(".",x) then u:expand(x) 
-	else u:x,
-	
-	if nterms(u)>1 then (
-		[l,r]: oppart (u, lambda ([u], freeof(asymbol, u))),
-		if _debug=true then display(l,r),
-		if nterms(r)>1 then (
-			for v in r do 
-				ss:ss + apply1(v.v, clifsimp10),
-			ret:neg*ss + l^2
-		) else
-			ret: l^2+ neg*apply1(r.r, clifsimp10)
-	)else 
-		ret:neg*apply1(u.u, clifsimp10),
-	subst('nil=0, ret)	
-);
-*/
 
 /**
 vector predicate
@@ -1487,6 +1467,9 @@ invautom(vv):=block( [ee, aa, ei, listarith:true],
  ei. aa
 );
 
+/*
+inverse of a blade
+*/
 cinvblade(ab):=block( [dd],
 	dd:dotsimpc(ab.ab),
 	if not scalarp(dd) then error(dd, "  not a scalar"),
