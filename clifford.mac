@@ -3,7 +3,8 @@ Clifford algebra in Maxima
 Clifford: a lightweight package for performing Geometric Algebra calculations
 
  @version 
-	2.4.9 Date 26 Jan 2020
+	2.4.9 Date 26 Jan 2020	
+	- change in | and & binding power
 	- fix in dotsimpc 
 	- psnorm removed
 	- lvect
@@ -108,7 +109,7 @@ pfeformat: true;
 	/* 
 	different types of products 
 	*/
-	infix ("|", 135, 134);	
+	infix ("|", 110, 109);	
 	texput ("|", " \\circ ", infix);
  	
 	wedgesimp:true;
@@ -167,8 +168,10 @@ pfeformat: true;
   	
 	"alt-Grassman product type";
 	ipdecompalt:false;
+	
+	
 	"outer product";
-	infix("&", 135, 134);
+	infix("&", 110, 109);
 	declare("&", additive);
 	
 	"&"(a, b):= block ([l,r, ret:0],
@@ -1473,7 +1476,7 @@ inverse of a blade
 cinvblade(ab):=block( [dd],
 	dd:dotsimpc(ab.ab),
 	if not scalarp(dd) then error(dd, "  not a scalar"),
-	dd*ab
+	ab/dd
 );
 
 /*
@@ -1501,7 +1504,7 @@ hautom(vv, lst):=block([listarith:true ],
 );
 
 /* 
-scalar part   automorphism
+scalar part automorphism
 */
 sautom(vv):=predautom(vv, lambda([u,v], not scalarp(u)));
 
