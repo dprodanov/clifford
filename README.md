@@ -9,7 +9,11 @@ file_search_maxima: append (file_search_maxima,["/path/to/folder/$$$.{mac,wxm}"]
 
 Changelog
 
-	2.4.9 Date 26 Dec 2019
+	2.4.9 Date 26 Jan 2020	
+	- change in | and & binding power
+	- fix in dotsimpc 
+	- psnorm removed
+	- lvect
 	- bugfix in maxgrade
 	
  	2.4.8 Date 12 Dec 2019
