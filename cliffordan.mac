@@ -4,7 +4,10 @@ a lightweight package for  component-wise Geometric Algebra calculations
 
 Clifford analysis
  
-@version 1.8.6 Date 26 Jan 2019 
+@version 1.8.7 Date 25 Apr 2020 
+		- cdirdiffn - directional derivative of order n-1
+		- cdirdiffi - 
+		1.8.6 Date 26 Jan 2020
 		- climoivre integrated
 		1.8.5 Date 17 Jan 2020
 		- pintegrate added
