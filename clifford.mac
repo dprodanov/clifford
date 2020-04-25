@@ -362,6 +362,13 @@ clivars():= block([ uu, z],
 );
 
 /*
+returns  variables excluding clifford symbols
+*/
+clivarsq(expr):= block([ z], 
+	sublist(listofvars(expr), lambda([z], freeof(asymbol, z )  ))
+);
+
+/*
 returns cliffod symbols
 */
 clisym():=block([z],
@@ -1421,7 +1428,8 @@ clihdual(expr):=block([lste:[], lsti:[], lstj:[], r, l, ss:1, nn, dd, ue:1],
 		lstj: lste xor lsti,
 		/* dual elements*/
 		r:substinpart(".", lstj, 0),
-		ss:ss*permsign( append (lste, lstj)),
+		/* non-degenerate algebra*/
+		ss:1/ss*permsign( append (lste, lstj)),
 		ss*l*r
 	)
 );
