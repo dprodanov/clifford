@@ -80,6 +80,9 @@ if get('cliffordan,'version)=false then (
 %clverbose:false;
 %divsimp:true;
 
+matchdeclare([%ff, %xx], symbolp, %nn, integerp, %bb, true);
+defmatch(%diffpar, %bb*'diff(%ff, %xx, %nn));
+
 /*
 declaring dependencies
 */
@@ -109,7 +112,7 @@ dependsv(F, var):= block([ ee, u],
 
 /* total differentiation; 
 no assumptions */
-totdiff(f, x, [lv]):=block( [ret:0],
+totdiff(f, x, [lv]):=block( [ret:0, u],
 	if mapatom(x) then 
 		ret: diff( f, x )
 	else (
@@ -125,6 +128,68 @@ totdiff(f, x, [lv]):=block( [ret:0],
 	ret
 );
 
+/*
+totdiffs(f, x, [lv]):=block( [ret:0, ia, fo, dvar, dn, u, df],
+	if inop(f)="+" then 
+		return(map( lambda([u],  disp(u), totdiffs(u, x, [lv])), f)),
+	if mapatom(x) then 
+		ret: diff( f, x )
+	else (
+		if emptyp(lv) then
+			lv:listofvars(x)
+		else 
+			lv:lv[1],
+		for u in lv do
+			if symbolp(u) then
+				if symbolp(f) then
+					ret: ret + diff(f, u) / diff(x, u)
+				else (
+					ia:inargs(f),
+					fo:inop(f),
+					display(ia, fo),
+					if fo#dsymb then (
+						if length(ia)=1 then
+							ret: ret + diff(fo, u)* diff(first(ia), u) / diff(x, u)
+						else
+							ret: ret + diff(f, u) / diff(x, u)
+					) else (
+						[df, dvar, dn]: (ia),
+						display(df, dvar),
+						ia:inargs(df),
+						fo:inop(df),
+						display(ia, fo),
+						if length(ia)=1 then
+							ret: ret + diff(diff(fo, u), dvar, dn )* diff(first(ia), u) / diff(x, u)
+						else
+							ret: ret + diff(f, u) / diff(x, u)
+
+					)
+				)
+	),
+	ret
+);
+*/
+/* fix */
+ctotdiffs(f, x):=block( [ret:0, lv, ia],
+	if mapatom(x) then 
+		ret: diff( f, x )
+	else (
+		lv: sublist( listofvars(x), lambda ([z], freeof(asymbol, z))),		
+		for u in lv do
+			if symbolp(u) then
+				if symbolp(f) then
+					ret: ret + cinv(diff(x, u)). subst(".", "*", diff( f, u ))
+				else (
+					ia:inargs(f),
+					if length(ia)=1 then
+						ret: ret + cinv(diff(x, u)). subst(".", "*", diff(inop(f), u)* diff(first(ia), u))
+					else
+						ret: ret + cinv(diff(x, u)). subst(".", "*", diff( f, u ))
+				)	
+			
+	),
+	ret
+);
 
 diffp(expr):= inop(expr)=nounify('derivative);
 
@@ -206,6 +271,7 @@ conmderivr(f, x):=block([lv, sq],
 	genmatrix( lambda([i,j], sq[i]* dotsimpc(expand(ctotdiff(f, lv[j]). asymbol[i]))), ndim)
 );
 
+
 /* 
 Christoffel symbols based on 
 Clifford-valued
@@ -255,7 +321,7 @@ metrics(x, lst):=block([n, ek],
  Clifford-valued
  directional derivative
  */
-cdirdiff(f, v, x):=block( [ret:0, lv, m, uu:0, qq],
+cdirdiff(f, v, x):=block( [ret:0, lv, m, z, uu:0, qq],
 	if mapatom(x) then 
 		ret: scalarpart(v)*diff( f, x )
 	else (
@@ -271,23 +337,20 @@ cdirdiff(f, v, x):=block( [ret:0, lv, m, uu:0, qq],
 	ret:clifact(ret)
 );
 
-cdirdiffn(f, v, x, [k]):=block ([s:0, f1:copy(f), p],
-	if emptyp(k) then k:1 else k: k[1],
-	x:expand(x),
-	for p:1 thru k do (
-		s:cdirdiff(f1, v, x),
-		s:cliffsimpall(s),
-		f1:s
-	),
-	if %divsimp=true then (
-		s:trigsimp(s),
-		s:clifact(s)
-	),
-	s
+cdirdiffn(f, v, x, n):=block([ret],
+	if not numberp(n) then return ('cdirdiffn(f, v, x, n)),
+	ret:cdirdiff(f, v, x),
+	for i:1 thru n-1 do 
+		ret: cdirdiff(ret, v, x),
+	ret
 );
 
-/*
-cdirdiff2(f, v, x):=block( [ret:0, lv, m, uu:0, qq],
+
+/* 
+ Clifford-valued
+ meet of the directional derivative
+ */
+cdirdiffi(f, v, x):=block ([ret:0, m, z, p],
 	if mapatom(x) then 
 		ret: scalarpart(v)*diff( f, x )
 	else (
@@ -295,34 +358,14 @@ cdirdiff2(f, v, x):=block( [ret:0, lv, m, uu:0, qq],
 		for u in lv do (
 			qq: diff(x, u),
 			m: qq @ qq,
-			uu: m*(qq @ v),
-			ret: ret +  subst(".", "*", diff( uu *f, u ))
-			)
-	),
-	ret:dotsimpc(ret),
-	ret:clifact(ret)
-);
-*/
-
-/*
-cdirdualdiff(f, v, x):=block( [ret:0, lv, uu:0, qq, d],
-	if mapatom(x) then 
-		ret: scalarpart(v)*diff( f, x )
-	else (
-		d: clidual(v),
-		lv: sublist( listofvars(x), lambda ([z], freeof(asymbol, z))),		
-		for u in lv do (
-			qq: cinv(diff(x, u)),
-			uu: expand(qq . d) - scprod(qq , d),
-			uu: dotsimpc(uu),
+			uu: m*(qq | v),
 			ret: ret + uu * subst(".", "*", diff( f, u ))
 			)
 	),
-	ret:expand(ret),
 	ret:dotsimpc(ret),
 	ret:clifact(ret)
 );
-*/
+
 /*
 dual of the directional derivative
 */
@@ -412,6 +455,20 @@ mvectdiff(f, x, [k] ):=block ([s:0, f1:copy(f), p],
 	s
 );
 
+mvectdiffs(f, x, [k] ):=block ([s:0, f1:copy(f), p],
+	if emptyp(k) then k:1 else k: k[1],
+	x:expand(x),
+	for p:1 thru k do (
+		s:ctotdiffs(f1, x),
+		s:cliffsimpall(s),
+		f1:s
+	),
+	if %divsimp=true then (
+		s:trigsimp(s),
+		s:clifact(s)
+	),
+	s
+);
  
 /*
 partial derivative
@@ -494,6 +551,32 @@ parmvectdirdiff(f, v, x, [k] ):=block ([s, ee, xx,  df, qq,  uu ],
 	s
 );
 
+parmvectextdiff(f, x, [k] ):=block ([s, n:1, z, m, i, ee, xx, df, qq, es, ipdecomp:true],
+	[ee, xx]:clicoeff2(x, 'list),
+	if %clverbose=true then
+		display(xx),
+	if emptyp(k) then k:1 else k: k[1],
+	es: sublist( listofvars(x), lambda ([z], not freeof(asymbol, z))),
+	"display(es)",
+	for p:1 thru k do (
+		i:1, s:0,
+		for m in xx do (			
+			df: expand(pardiff( f, m )),
+			qq: cinv(ee[i]),
+			s: s +  cliffsimpall(qq & subst(".", "*", df )),
+			i:i+1
+		),
+		if %divsimp=true then (
+			/*s:cliffsimpall(s),*/
+			if not emptyp(es) then
+				s:simpfact(s, es)
+		),
+		f:s
+	),
+	clifact(s)
+);
+
+
 parmvectintdiff(f, x, [k] ):=block ([s, n:1, z, m, i, ee, xx, df, qq, es, ipdecomp:true],
 	[ee, xx]:clicoeff2(x, 'list),
 	if %clverbose=true then
@@ -516,7 +599,7 @@ parmvectintdiff(f, x, [k] ):=block ([s, n:1, z, m, i, ee, xx, df, qq, es, ipdeco
 		),
 		f:s
 	),
-	s
+	clifact(s)
 );
 
 /*
@@ -560,6 +643,8 @@ extvectdiff(f, x, [k] ):=block ([s:0, n:1, m, es],
 	),
 	s
 );
+
+alias (extmvectdiff, extvectdiff); 
 
 svectdiff(f, x, [k] ):=block ([ df],
 	if emptyp(k) then k:1 else k: k[1],
@@ -931,18 +1016,41 @@ grank(lst):=block([r:0, lsta, res, n, q],
 	r
 );
 
-potentiate(expr, r):=block([vp, ri, xv, vv, u, L , nz, ret, rnk],
+clc(expr):=(
+	sublist(listofvars(expr), lambda([u],  freeof(asymbol, u)))
+);
+
+code2(deq, dvar, r):=block([lv, dl, ret, dv, q, u, sol:[]],
+	lv:clc(r),
+	dl:map( lambda([u], diff(dvar, u)), lv),
+	ret: clisolve(deq, dl),
+	for i:1 thru length(ret) do (
+		q:ode2(ret[i], dvar, lv[i]),
+		push(q, sol)
+	),
+	sol
+);
+
+/* to check end condition */
+potentiate(expr, r):=block([vp, ri, xv, vv, u, L , nz, ret, rnk, dvar, deq, dsol],
 	vp:vectorpart(expr),
 	vp:trigreduce(vp),
 	vv:vectors(),
-	ri:(invautom(r)),
+	ri:invautom(r),
 	L:map( lambda([u], xv:ri @ u, integrate(vp  @ u, xv) ), vv),
 	display(L),
 	nz:countsym(L,0),
 	rnk:grank(L),
 	ret:implodeop(L,"+"),
-	ratsimp(ret)/(ndim-nz-rnk)
+	dvar:apply(%c,clc(r)),
+	ret:ratsimp(ret)/(ndim-nz-rnk)+dvar,
+	deq:mvectdiff(ret, r)-vp,
+	dsol:code2(deq, dvar, r),
+	subst(dsol,ret)
 );
+
+
+
 
 /* path integral*/
 pintegrate(ff, rv, eqs, tvar, [bnd]):=block([dr, ffs, ker, ret],
