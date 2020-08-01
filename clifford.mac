@@ -229,10 +229,15 @@ pfeformat: true;
 		scalarpart(ret)
 	);
 	
-	/*dualcoeff(a):=dual(dotsimpc(a.a.a.dual(a)));*/
-	dualcoeff(a):=coeff(dotsimpc(a.a.a.dual(a)), %iv);
+	/* change for dimensionality */
+	/*dualcoeff(a):=coeff(dotsimpc(a.a.a.dual(a)), %iv);*/
+	dualcoeff(a):=block([ss:scprod(a,a) ],
+		if ss#0 then
+			coeff(dotsimpc(a.dual(a))/ss, %iv)
+		else 0
+	);
 	
-	/*infix ("lc", 135, 134);	*/
+	/*infix ("<<", 110, 109);	*/
 	lcprod(a, b):=  block([bi, ss, ret ],	
 		bi:dual(b), 		
 		ret:outprod(a, bi),
@@ -240,6 +245,7 @@ pfeformat: true;
 		ss*dual(ret)
 	);
 	
+	/*infix (">>", 110, 109);	*/
 	rcprod(a, b):= block([ai, ss, ret ],		
 		ai:dual(a), 		
 		ret:outprod(ai, b),
@@ -1062,10 +1068,10 @@ mtable2r():=block([n, a, lst],
 /**
  scalar product table, all elements
 */ 
-mtable2s():=block([n, a, lst],
+mtable2s():=block([n, lst],
 	lst: elements(all),
 	n:length(lst),
-	genmatrix( lambda([i,j], scprod(lst[i] . lst[j]) ), n)
+	genmatrix( lambda([i,j], scprod(lst[i] , lst[j]) ), n)
 );
 
 
