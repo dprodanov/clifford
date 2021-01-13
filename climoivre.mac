@@ -5,7 +5,9 @@ a lightweight package for performing Geometric Algebra calculations
 Clifford exponential simplifications
 
 
-@version 1.0 Date 26 Jan 2020
+@version 1.1 Date 13 Jan 2021
+		- bugfix: nameclash between csign and maxima function. renamed to ssign
+		1.0 Date 26 Jan 2020
 		-conjsimp
 		-csign
 		-ceparse
@@ -30,8 +32,9 @@ Clifford exponential simplifications
  */
  
 if get('clifford,'version)=false then (
+	print("loading clifford"),
 	load("clifford"),
-	 
+ 
 	simp:false,
 	tellsimpafter(conjugate(rr),rr),
 	tellsimpafter(conjugate(aa), conjsimp(aa)),
@@ -53,13 +56,15 @@ conjsimp(ab):=block([ sop, s ],
 /*
 syntactic sign
 */
-csign(expr):= 
+ssign(expr):= 
 	if expr =0 then 0
 	else 
 		if atom (expr) then (if expr<0 then 'minus else 'plus)
 	else 
 	if op(expr)="-" then 'minus else 'plus; 
 
+/* backward compatibility */
+alias(csign, ssign);
 
 /*
 	De Moivre argument
@@ -80,13 +85,14 @@ ceparse(pp):=block([l,r,s, q:1, m, sop],
 			s: dotsimpc(s),
 			if l='nil then l:1,
 			if _debug=true then  display(s),
-			if s<0 or csign(s)=minus then q: cos(l)+r*sin(l),
-			if s>0 or csign(s)=plus then q: cosh(l)+r*sinh(l),
-			if s=0 or csign(s)=0 then q: 1+ r*l
+			if s<0 or ssign(s)=minus then q: cos(l)+r*sin(l),
+			if s>0 or ssign(s)=plus then q: cosh(l)+r*sinh(l),
+			if s=0 or ssign(s)=0 then q: 1+ r*l
 		),
 		q
 	)
 );
+
 
 /*
   Clifford De Moivre
