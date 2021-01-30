@@ -3,6 +3,10 @@ Clifford algebra in Maxima
 Clifford: a lightweight package for performing Geometric Algebra calculations
 
  @version 
+	2.5.0 Date 29 Jan 2021	
+	- matrix code moved to climatrep
+	- mingrade
+	 
 	2.4.9 Date 26 Jan 2020	
 	- change in | and & binding power
 	- fix in dotsimpc 
@@ -582,7 +586,7 @@ cinv(ab):=block( [s, b, u:1],
 	b:dotconjugate(ab),
 	s:expand(b.ab),
 	if not freeof(asymbol, s) then s: apply1(s, clifsimp10, clifsimp21),
-	"second attempt - reversal",
+	"second attempt - reversal for blades",
 	if not freeof(asymbol, s) then (
 	   b:creverse(ab),
 	   s:expand(b.ab),
@@ -795,6 +799,18 @@ maxgrade(expr):=block([lst:[] ],
 		countsymb(expr, asymbol)
 );
 
+/*
+minimal grade of an expression
+*/
+mingrade(expr):=block([lst:[] ],
+	if freeof (asymbol, expr) then return (0),
+	if not mapatom(expr) then expr:expand(expr),
+	if inop(expr)="+" then (
+		lst:maplist(mingrade, expr),
+		lmin(lst)
+	) else 
+		countsymb(expr, asymbol)
+);
 
 /*
  Partial factoring by subexpression
@@ -1135,42 +1151,7 @@ mtable1s([lst]):=block([n],
 );
  
 
-/*
- matrix representation of the algebra;
-experimental code
-*/
 
-/*
-diagnoal transposition of a matrix
-*/
-dtranspose(M):= map(reverse, M);
-
-diag(MM):=block([n],
-	if not matrixp(MM) then error("matrix required"),
-	n:length(MM),
-	genmatrix( lambda([i,j],  if i=j then MM[i,j] else 0 ), n)
-);
-
-adiag(MM):=block([n],
-	if not matrixp(MM) then error("matrix required"),
-	n:length(MM),
-	genmatrix( lambda([i,j],  if i=j then MM[n-i +1, j] else 0 ), n)
-);
-
-diaglist(MM):=block([n, LL],
-	if not matrixp(MM) then error("matrix required"),
-	n:length(MM),
-	local(LL),
-	LL:genmatrix( lambda([i,j],  if i=j then MM[i,j] else 0 ), n),
-	list_matrix_entries(matrix(makelist(1, n)).LL)
-);
-
-mdiag(MM):=block([n],
-	if not listp(MM) then error("list required"),
-	n:length(MM),
-	genmatrix( lambda([i,j],  if i=j then MM[i] else 0 ), n)
-);
- 
 /*
  computes the commutation table with all basis vectors
 */
@@ -1371,8 +1352,10 @@ celem(x, [cc]):=block([ee, ss:0, n, qq],
 				ss: ss+ x[ cc[i] ]*ee[i]
 			)
 		),
-	qq:buildq([x], declare(x, scalar)),
-	ev(qq, nouns),
+	if mapatom(x) then (
+		qq:buildq([x], declare(x, scalar)),
+		ev(qq, nouns)
+	),
 	ss
 );
 
@@ -1570,7 +1553,7 @@ qgrade(vv):=cdgrade(vv, lambda([u,v ],  qclass(u)+1));
 
 put('clifford, 'v24,'version);
 put('clifford, "Dimiter Prodanov", 'author);
-put('clifford, "(C) - Dimiter Prodanov, 2015 - 2020", 'copyright);
+put('clifford, "(C) - Dimiter Prodanov, 2015 - 2021", 'copyright);
 
 ttyoff:false;
 
@@ -1578,4 +1561,4 @@ print("package name: clifford.mac");
 print("author: ", get('clifford,'author));
 print("version:", get('clifford,'version));
 print("Recommended location: share/contrib");
-print("last update: 18 Jan 2020");
+print("last update: 29 Jan 2021");

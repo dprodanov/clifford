@@ -4,7 +4,8 @@ a lightweight package for performing Geometric Algebra calculations
 
 Clifford Algebra Matrix representation code
 
-version 	1.0 11 May 2016
+version 	2.0 29 Jan 2021
+			1.0 11 May 2016
 
 @depends 'clifford
 
@@ -31,73 +32,289 @@ if get('clifford,'version)=false then (
 	)
 );
 
+
+/*
+diagnoal transposition of a matrix
+*/
+dtranspose(M):= map(reverse, M);
+
+diag(MM):=block([n],
+	if not matrixp(MM) then error("matrix required"),
+	n:length(MM),
+	genmatrix( lambda([i,j],  if i=j then MM[i,j] else 0 ), n)
+);
+
+adiag(MM):=block([n],
+	if not matrixp(MM) then error("matrix required"),
+	n:length(MM),
+	genmatrix( lambda([i,j],  if i=j then MM[n-i +1, j] else 0 ), n)
+);
+
+diaglist(MM):=block([n, LL],
+	if not matrixp(MM) then error("matrix required"),
+	n:length(MM),
+	local(LL),
+	LL:genmatrix( lambda([i,j],  if i=j then MM[i,j] else 0 ), n),
+	list_matrix_entries(matrix(makelist(1, n)).LL)
+);
+
+mdiag(MM):=block([n],
+	if not listp(MM) then error("list required"),
+	n:length(MM),
+	genmatrix( lambda([i,j],  if i=j then MM[i] else 0 ), n)
+);
+ 
+ 
+diaglist(M):=block([n],
+	if not matrixp(M) then error("matrix required"),
+	n:length(M),
+	makelist(M[i,i], i, n)
+);
+
+
+
 /*
 computes matrix representation of the algebra;
 experimental code
 */
-climatrep(vv):=block([n, AA, lst, G, EE],
-	local(AA, G, EE),
-	lst: elements(all),
+climatrep(vv):=block([n, q, AA, lst: elements(all), nn, dd, G, EE],
+	local(AA, G, EE, q),
 	n:length(lst),
 	/* multiplication table of the algebra */
 	AA:genmatrix( lambda([i,j], dotsimpc(lst[i] . lst[j] ) ), n),
-	if vv=1 then (
-		AA:subst( asymbol[asymbol[0]]=asymbol[1], subst(1=asymbol[0], AA)), 
-		vv:asymbol[0]
-	),
 	/* signature of the algebra */
 	G:diag(AA),
-	EE:matrixmap(lambda([q], coeff (q, vv)), AA),
+	ratvars(q),
+	nn:expand(ratnum(vv)), dd:ratdenom(vv),
+	EE:matrixmap(lambda([q],  scalarpart(ratcoeff (nn, q))/dd), AA),
 	G.EE
 );
 
-climatrep1(vv):=block([n, AA, lst, EE ],
-	local(AA, EE),
-	if emptyp(%elements) then lst:elements(all)
-	elseif %elements[1] #1 then lst: cons(1, %elements) else lst: %elements,	
-	n:length(lst),
-	/* sepcial case */
-	if freeof(asymbol, vv) then 
-		return(vv*ident(n)),
-	/* multiplication table of the algebra */
-	AA:genmatrix( lambda([i,j], dotsimpc(lst[i] . lst[j] ) ), n),
-	[l, r]: oppart(vv, lambda([u], freeof(asymbol, u))),
-	/*display(AA),*/
-	if l='nil then l:1,
-	if r='nil then r:1,
-	/*display(l,r),*/
-	EE:matrixmap(lambda([q], coeff (q, r)), AA),
-	/*  twiddle to get the signs right*/
-	l*genmatrix( lambda([i,j],   dotsimpc( lst[i] . lst[i]) * EE[i,j]), n)
+/*
+mattrace(a) := block([ret : 0, i],
+  if not matrixp(a) then return ('mattrace(a))
+  else (
+    i : lmin(matrix_size(a)),
+    while i > 0 do (
+      ret : ret + inpart(a,i,i),
+      i : i - 1)
+	),
+   ret
+ );
+ */
+
+
+
+nelements([cpl]):=block([c:1, lst:[] ],
+	if emptyp(cpl) then ( 
+		for i:1 thru ndim do c:c.(1+ asymbol[i] ),
+		c:expand(c),
+		c:dotsimpc(c),
+		lst:inargs(c)
+	)else (
+		cpl:cpl[1],
+		for i:1 thru length(cpl) do (
+			c:c  & cpl[i] ,
+			push(c, lst)
+		)
+	),
+	lst:sort(lst, lambda([u,v], 
+				ordergreatp(u,v) and if not (numberp(u) or numberp(v)) then length(u)< length(v)
+				)
+			),
+	lst
 );
 
-climatrep1(vv):=block([n, AA, lst, EE, opsubst :false, gs:gensym(string(asymbol)) ],
+climatrep1(vv):=block([n, AA, lst, EE, l,r, q, opsubst :false, gs:gensym(string(asymbol)), MM ],
 	local(AA, EE),
 	if emptyp(%elements) then lst:elements(all)
 	elseif %elements[1] #1 then lst: cons(1, %elements) else lst: %elements,	
 	n:length(lst),
-	/* sepcial case */
+	/* special case */
 	/* multiplication table of the algebra */
 	AA:genmatrix( lambda([i,j], dotsimpc(lst[i] . lst[j] ) ), n),
 	AA:subst( asymbol[gs]=asymbol[1], subst(1=gs, AA)), 
+	vv:subst( asymbol[gs]=asymbol[1], subst(1=gs, vv)), 
+	/*display(vv, gs),*/
 	[l, r]: oppart(vv, lambda([u], freeof(asymbol, u))),
 	/*display(AA),*/
 	if l='nil then l:1,
 	if r='nil then r:gs,
-	/*display(l,r),*/
-	EE:matrixmap(lambda([q], coeff (q, r)), AA),
+	display(l,r),
+	EE:matrixmap(lambda([q], ratcoeff (q, r)), AA),
+	display(EE),
 	/*  twiddle to get the signs right*/
-	l*genmatrix( lambda([i,j],   dotsimpc( lst[i] . lst[i]) * EE[i,j]), n)
+	MM:genmatrix( lambda([i,j],   dotsimpc( lst[i] . lst[i]) * EE[i,j]), n),
+	subst( gs=1,l*MM)
 );
 
-elem2mat1(expr, [ulst] ):=block(
+
+fadlevi(A):=block([n, m, c, M, K, I, i, cq],
+	if not matrixp(A) then error ("not a matrix ", A),
+	[n,m]:matrix_size(A),
+	if n#m then error ("not a square matrix"),
+	c: makelist(1,n+1),
+	M:ident(n),
+	I:ident(n),
+	for i:1 thru n do (
+		K: (ratsimp(A.M)),
+		c[i+1]: -1/i* mtrace(K),
+		if i<n then  
+			M:ratsimp(K + c[i+1]*I)
+	), 
+	c:factor((c)),
+	cq:last(c),
+	if cq=0 then cq:1,
+	M:ratsimp(-M/cq),
+	[ M, c]
+);
+
+
+/*
+Generalized inverse
+reference implementation
+*/
+fadlevic(A):=block([c, M:1, K, i, n:2^ndim, cq],
+	local(c),
+	c: makelist(1,n+1),
+	for i:1 thru n do (
+		K: dotsimpc(expand(A.M)),
+		c[i+1]: -n/i* scalarpart(K),
+		if i<n then  
+			M:ratsimp(K + c[i+1])
+	), 
+	c:factor(c),
+	cq:last(c),
+	if cq=0 then cq:1,
+	M:ratsimp(-(M)/cq),
+   [M, c]
+);	
+
+
+fadlevicg(A, v):=block([c, M:1, K, i, n, cq],
+	local(c),
+	n: 2^maxgrade(A),
+	if _debug then
+		display(n),
+	array(c,n), 
+	c[0]:1,
+	A:rat(A),
+	ratvar(v),
+	for i:1 thru n do (
+		K: dotsimpc(ratexpand (A.M)),
+		c[i]: -n/i* scalarpart(K),
+		if _debug then
+			print(i, " ", c[i]),
+		/*print(i, " ", c[i], " ", K),*/
+		if i<n then  
+			M:rat(K + c[i])
+	), 
+	c:factor(c),
+	cq: c[n],
+	if cq=0 then (
+		if _debug then print("determinant ", cq),
+		M:0
+	) else
+		M:factor(-(M)/cq),
+	[M, sum(c[n-i]*v^(i),i,0, n)]
+);
+
+/*
+fadlevicg1(A):=block([  M:1, K, i, n, cq:1],
+	n: 2^maxgrade(A),
+	display(n),
+  	A:rat(A),
+	for i:1 thru n do (
+		K: dotsimpc(expand(A.M)),
+		cq: -n/i* scalarpart(K),
+		if _debug then
+			print(i, " ", cq, " ", K),
+		if i<n then  
+			M:K + cq
+	), 
+	cq:factor(cq),
+	if cq=0 then cq:1,
+	M:factor(-(M)/cq)
+);
+*/
+
+/* pseudoinverse : for n idempotent returns the complement zero divisor */
+fadlevicg1(A):=block([ M:1, K, i:1, n, sc:1, cq],
+	n: 2^maxgrade(A),
+	display(n),
+	A:rat(A),
+	while i<n and K#0 do (
+		K: dotsimpc(ratexpand (A.M)),
+		cq: -n/i* scalarpart(K),
+		if _debug then
+			print(i, " ", cq),
+		/*print(i, " ", cq, " ", K),*/
+		if K#0 then
+			M: (K + cq), 
+		i:i+1
+	), 
+	 
+	K: dotsimpc(expand(A.M)),
+	cq: -n/i* scalarpart(K),
+	cq:factor(cq),
+	if cq=0 then cq:1,
+	M:factor(-(M)/cq)
+	
+);
+
+
+
+
+/*
+fadlev(A, v):=block([n, m, c, M, K, I, i],
+	if not matrixp(A) then error ("not a matrix ", A),
+	[n,m]:matrix_size(A),
+	if n#m then error ("not a square matrix"),
+	c: makelist(1,n+1),
+	M:ident(n),
+	I:ident(n),
+	for i:1 thru n do (
+		K: (ratsimp(A.M)),
+		c[i+1]: -1/i* mattrace(K),
+		M:ratsimp(K + c[i+1]*I)
+	),
+	c:factor(expand(c)),
+	c:reverse(c),
+	[sum(c[i]*v^i,i,1, n+1) , M]
+);
+*/
+
+/* characteristic polynomial Faddeev -Le Verrier */
+fadlevcp(A, v):=block([n, m, c, M, K, I, ss:0], 
+	local(c),
+	if not matrixp(A) then error ("not a matrix ", A),
+	[n,m]:matrix_size(A),
+	if n#m then error ("not a square matrix"),
+	array(c,n+1), 
+	for r:0 thru n+1 do c[r]:1,
+	ratvars(v),
+	A:rat(A),
+	M:ident(n),
+	I:ident(n),
+	ss:c[1]*v^n,
+	for i:1 thru n do (
+		K: A.M,
+		c[i+1]: -1/i* mtrace(K),
+		M:(K + c[i+1]*I),
+		ss:ss+c[i+1]*v^(n-i)
+	),
+	/*[ ss , M]*/
+	ss
+);
+
+elem2mat(expr, [ulst] ):=block(
 	if emptyp(ulst) then ulst:false 
 	else ulst:true,
-	if mapatom(expr) then return(climatrep1(expr)),
+	if mapatom(expr) then return(climatrep(expr)),
 	if ulst=true then
-		maplist(climatrep1, expr)
+		maplist(climatrep, expr)
 	else
-		map(climatrep1, expr)
+		map(climatrep, expr)
 );
 
 coeffmap(vv):=block([n, AA, lst, EE],
@@ -107,7 +324,7 @@ coeffmap(vv):=block([n, AA, lst, EE],
 	/* multiplication table of the algebra */
 	AA:genmatrix( lambda([i,j], dotsimpc(lst[i] . lst[j] ) ), n),
 	if vv=1 then (AA:subst(1=asymbol[0], AA), vv:asymbol[0]),
-	EE:matrixmap(lambda([q], coeff (q, vv)), AA)
+	EE:matrixmap(lambda([q], ratcoeff (vv, q)), AA)
 );
 
 /*
@@ -167,6 +384,7 @@ lclimin(lst):=block([n, q:0,  z:0, s],
 	[z,s]
 );
 
+/*  checks if M is an orthogonal matrix*/
 morthogonalp(MM):=block([n, m, LL  ],
 	if not matrixp(MM) then error("matrix required"),
 	[m,n]:matrix_size(MM),
@@ -175,6 +393,16 @@ morthogonalp(MM):=block([n, m, LL  ],
 	LL:transpose(MM),
 	LL:MM.LL - ident(n),
 	is(zeromatrix (n,n) = LL)
+);
+
+idemps():=block([n, ee, ilst, rilst, iilst, ret],
+	ee: elements(all),
+	n:length(ee),
+	ilst:makelist(dotsimpc(ee[i] . ee[i] ), i, n ),
+	rilst:(sublist_indices(ilst, lambda([u], u>0))),
+	iilst:(sublist_indices(ilst, lambda([u], u<0))),
+	ret:makelist((ee[i] +1)/2, i, rilst),
+	append(ret, makelist((ee[i]*%i +1)/2, i, iilst))
 );
 
 /*
@@ -238,3 +466,35 @@ permcheck(lsta, lstb):=block([PP, H, E],
 	E:H.H-H,
 	[is(mtrace(E)=0), E, H, PP]
 );
+
+/*  random stuff*/
+
+lrandomrat(n, m):=block([rs, rn, rd],
+ makelist( (rs:random(2), rn:random(m), rd:subst(0=1,random(m)),  
+ (if oddp(rs) then -1 else 1))*rn/rd, n) 
+);
+
+rancelem(m):=block([n:2^ndim, lst],
+ lst:lrandomrat(n, m),
+ celem(lst)
+);
+
+celemr(x, rng):=block([ee, ss:0, n, cc, qq],
+	if not numberp(rng) then return (false),
+	ee:elements(all),
+	n:length(ee),
+	rng:float(rng), 
+	ss:sum (random(rng)*ee[i], i, 1, n),
+	ss
+);
+
+put('climatrep, 'v20,'version);
+put('climatrep, "Dimiter Prodanov", 'author);
+put('climatrep, "(C) - Dimiter Prodanov, 2016 - 2021", 'copyright);
+
+
+print("package name: climatrep.mac");
+print("author: ", get('climatrep,'author));
+print("version:", get('climatrep,'version));
+print("Recommended location: share/contrib");
+print("last update: 29 Jan 2021");

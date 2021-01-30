@@ -5,6 +5,7 @@ a lightweight package for  component-wise Geometric Algebra calculations
 Clifford analysis
  
 @version 1.8.7 Date 25 Apr 2020 
+		- change in cdirdiff
 		- cdirdiffn - directional derivative of order n-1
 		- cdirdiffi - 
 		1.8.6 Date 26 Jan 2020
@@ -65,7 +66,7 @@ if get('clifford,'version)=false then (
 	
 	if emptyp(err) then (
 	infix ("|", 130, 129),
-	infix("&", 130, 129)
+	infix ("&", 130, 129)
 
 	)
 	
@@ -332,7 +333,8 @@ cdirdiff(f, v, x):=block( [ret:0, lv, m, z, uu:0, qq],
 		for u in lv do (
 			qq: diff(x, u),
 			m: qq @ qq,
-			uu: m*(qq @ v),
+			if m#0 then m:1/m,
+			uu:m*(qq @ v),
 			ret: ret + uu * subst(".", "*", diff( f, u ))
 			)
 	),
@@ -348,6 +350,26 @@ cdirdiffn(f, v, x, n):=block([ret],
 	ret
 );
 
+/**
+Cartan decomposition
+*/
+cdirdiffa(f, v, x):=block( [ret:0, qq, pp, ee, kv, %k:gensym("k"), ipdecomp:true, inprotype:sym, lv],
+	if mapatom(x) then 
+		ret: scalarpart(v)*diff( f, x )
+	else (
+		 kv:cvect(%k),
+		 lv: invautom( clv(v)),
+		 ret:mvectdiff( kv | f, x),
+		 display(ret),
+		 for ee in lv do (
+		   qq: ee @ v,
+		   pp: ee @ kv, 
+		   ret:subst(pp=qq, ret)
+		 ),
+		 ret: v | mvectdiff (f, x) +  ret
+	),
+	ret:clifact(ret)
+);
 
 /* 
  Clifford-valued
