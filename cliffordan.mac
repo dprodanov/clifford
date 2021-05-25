@@ -4,7 +4,9 @@ a lightweight package for  component-wise Geometric Algebra calculations
 
 Clifford analysis
  
-@version 1.8.7 Date 25 Apr 2020 
+@version 1.8.8 Date 25 May 2021 
+		- potentiategr - integrates a k-vector
+		1.8.7 Date 25 Apr 2020 
 		- change in cdirdiff
 		- cdirdiffn - directional derivative of order n-1
 		- cdirdiffi - 
@@ -1045,6 +1047,34 @@ clc(expr):=(
 	sublist(listofvars(expr), lambda([u],  freeof(asymbol, u)))
 );
 
+
+potentiategr(expr,  r):=block([vv, ee, k, ri, t:gensym("t"), gp, lvc, dr, ker],
+	k:maxgrade(expr),
+	ee:buildq([t], declare(t, scalar) ), 
+	ev(ee, nouns),
+	ri:invautom(r),
+ 	gp:grpart(expr, k),
+	lvc:clc(expr),
+	/* we can also use a exponential substitution*/
+	for vv in lvc do
+		gp:subst(vv=vv*t,gp),
+	ker:ri | gp,
+	display(gp, ker),
+	integrate(ker*t^(k-1), t, 0, 1)
+);
+
+/*
+potentiate(expr, lv):=block([ret:0, r, rnk: maxgrade(expr)],
+
+	for k:1 thru rnk do (
+	  r:cmvect(lv, k),
+	  disp(r),
+	  ret:potentiategr(expr, r)+ret
+	  ),
+	ret
+);
+*/
+/*
 code2(deq, dvar, r):=block([lv, dl, ret, dv, q, u, sol:[]],
 	lv:clc(r),
 	dl:map( lambda([u], diff(dvar, u)), lv),
@@ -1055,8 +1085,8 @@ code2(deq, dvar, r):=block([lv, dl, ret, dv, q, u, sol:[]],
 	),
 	sol
 );
-
-/* to check end condition */
+*/
+/* to check end condition 
 potentiate(expr, r):=block([vp, ri, xv, vv, u, L , nz, ret, rnk, dvar, deq, dsol],
 	vp:vectorpart(expr),
 	vp:trigreduce(vp),
@@ -1074,7 +1104,7 @@ potentiate(expr, r):=block([vp, ri, xv, vv, u, L , nz, ret, rnk, dvar, deq, dsol
 	subst(dsol,ret)
 );
 
-
+*/
 
 
 /* path integral*/
