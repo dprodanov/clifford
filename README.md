@@ -9,6 +9,13 @@ file_search_maxima: append (file_search_maxima,["/path/to/folder/$$$.{mac,wxm}"]
 
 Changelog
 
+	1.8.8 Date 25 May 2021 
+	- potentiategr - integrates a k-vector
+	1.8.7 Date 25 Apr 2020 
+	- change in cdirdiff
+	- cdirdiffn - directional derivative of order n-1
+	- cdirdiffi - 
+	
 	2.4.9 Date 26 Jan 2020	
 	- change in | and & binding power
 	- fix in dotsimpc 
