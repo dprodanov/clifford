@@ -927,11 +927,11 @@ bdecompose(expr):=block([gr:expr, v],
 /*
 solves for a list of vairables in clifford-valued equation
 */
-clisolve(expr, lst):=block([ee, al, u, ret:expr, maperror:false, sol],
+clisolve(expr, lst):=block([ee, al, u, ret:expr, maperror:false, sol, solveexplicit:true],
 	if inop(expr)="=" then 
 		ret:expand(lhs(expr)-rhs(expr)),
 	[ee, al]:clicoeff(ret,'list),
-	sol:map(lambda( [v], map(lambda( [u], solve(v, u)), lst)), al),
+	sol:map(lambda( [v], map(lambda( [u], solve(factor(v), u)), lst)), al),
 	flatten(sol)
 );
 
@@ -1309,10 +1309,11 @@ cvect(x, [cc]):=block ([ss:0, qq],
 /* 
  constructs a vector from a given list
 */
-lvect(lst ):=block ([ss:0, qq],
+lvect(lst ):=block ([ss:0, qq, n],
 	if not listp(lst) then error("list expected",lst),
-	if length(lst)>ndim then error("dimension mismatch",lst),
-	sum (lst[i]*asymbol[i], i, 1, ndim)
+	n: length(lst),
+	if n>ndim then error("dimension mismatch",lst),
+	sum (lst[i]*asymbol[i], i, 1, n)
 );
 
 cmvect(x, k, [cc]):=block ([ss:0, qq, n, elst:grelem(k)],
