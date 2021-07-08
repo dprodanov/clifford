@@ -1,0 +1,886 @@
+/*******************************
+Clifford algebra
+a lightweight package for performing Differential forms calculations based on Gemetric Algebra representation
+
+Clifford-based differential forms
+
+@version 	1.2.2 25 May 2021
+			- potentiatef
+			1.2.1 02 May 2020
+			- syntactic improvements:  
+				contractions - <|, |>, |< 
+				Hodge dual - %%
+			1.2.0 25 Feb 2020
+			1.1.7 Date 1 Jan 2020
+			1.1.6 Date 12 Dec 2019
+			1.1.5 Date 17 Oct 2019
+			1.1 Date 03 Sept 2019 
+			1.0 Date 04 Feb 2018
+ 
+@depends 'clifford
+@depends 'cliffordan
+
+**********************************
+ * @license This library is free software	 you can redistribute it and/or
+ *      modify it under the terms of the GNU Lesser General Public
+ *      License as published by the Free Software Foundation	 either
+ *      version 2.1 of the License, or (at your option) any later version.
+ *
+ *      This library is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY	 without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *       Lesser General Public License for more details.
+ *
+ *      You should have received a copy of the GNU Lesser General Public
+ *      License along with this library	 if not, write to the Free Software
+ *      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
+ if get('cliffordan,'version)=false then (
+	
+	declare(differential, feature),
+	err:errcatch(
+		load("clifford.mac"),
+		load("cliffordan.mac")
+	),
+	load('stringproc),
+	
+	matchdeclare(%x, mapatom, %F, symbolp),
+	tellsimpafter('integrate('diff(%F,%x,1), %x), %F+gensym("c")),
+	
+	infix ("~", 130, 129),
+	infix ("<|", 110, 109),
+	infix ("|<", 110, 109),
+	infix ("|>", 110, 109),
+	prefix( "%%", 110)
+);
+
+/*
+declare("~", rassociative);
+exterior multiplication between forms
+*/
+"~"(a, b):= block ([ ca, cb, ret:a*b, lv],
+	lv: getbasevar(ret),
+	if emptyp(lv) then return (0),
+	ca:form2clif(a, lv),
+	cb:form2clif(b, lv),
+	ret: ca & cb,
+	clif2form(ret, lv)
+);
+
+ 
+/*
+interior multiplication between forms
+*/
+
+/**
+right contraction
+*/
+"|>"(a, b):= block ([ ca, cb, ret:a*b, lv, inprotype:'rc],
+	lv: getbasevar(ret),
+	if emptyp(lv) then return (0),
+	ca:form2clif(a, lv),
+	cb:form2clif(b, lv),
+	ret: ca | cb,
+	clif2form(ret, lv)
+);
+
+/**
+left contraction
+*/
+"<|"(a, b):= block ([ ca, cb, ret:a*b, lv, inprotype:'lc],
+	lv: getbasevar(ret),
+	if emptyp(lv) then return (0),
+	ca:form2clif(a, lv),
+	cb:form2clif(b, lv),
+	ret: ca | cb,
+	clif2form(ret, lv)
+);
+
+
+dspaces():=block([lst, l, c:[], m:1, n:1, u ],
+	for i:1 thru ndim do (
+		l:sublist(%elements, lambda( [u], length(u)=i)),
+		c:endcons(l,c)
+	),
+	clif2forma(c)
+);
+
+/*  differential forms*/
+%diffletter:"d";
+%diffspaces:[];
+%basevars:[];
+%diffvars:[];
+%diffvarslist:[];
+%diffvolel;
+
+declare(delsubst, evfun);
+delsubst(dvar):=block([u, sop:inop(dvar)],
+ if sop=nil then return(dvar), 
+ if sop=del then 
+	subst(del=lambda([u], if not freeof(asymbol, u) then 0 else makediffvar(u)), dvar)
+ else 
+   map( delsubst, dvar)
+);
+
+
+fchangediffvars(expr, rr, eqs):=block([ dexpr, lv, sol, ret],
+ dexpr:coordsubst(expr, eqs),
+ dlv:diff(listofvars(map(lhs, eqs))),
+ sol:solve(diff(eqs), dlv),
+ sol:delsubst(sol),
+ ret:subst(sol, dexpr),
+ ret:ratsimp(ret),
+ trigsimp(ret)
+);
+
+
+/* constructor*/
+cliffspace(dlist):=block(
+	%diffspaces:diffspaces(dlist),
+	%diffvolel:diffvolel(dlist),
+	%diffvars:args(%diffvolel),
+	%basevars:dlist,
+	%diffvarslist:dspaces()
+);
+
+
+getcomponents(expr):=block([u],
+  sublist(listofvars(expr), lambda([u], freeof( %diffvars, u) and freeof(asymbol, u)))
+);
+
+
+getdiffvar(expr):=sublist(listofvars(expr), 
+	lambda([u], not freeof(%diffletter, substring(string(u), 1, 2)))
+);
+
+getbasevar(expr):=block([dv, u, str],
+	dv:getdiffvar(expr),
+	map(lambda([u], str:string(u), 
+					str:substring(str, 2), 
+					parse_string(str) 
+		), dv)
+);
+
+diffvarp(u):=symbolp(u) and not freeof(%diffletter, substring(string(u), 1, 2));
+
+makediffvar(x):=block([dv, l,r, qq, u, dvi],
+	if mapatom(x) then
+		dv : parse_string(concat(%diffletter, string(x)))
+	else (
+	[l,r]:oppart(x, lambda([u], symbolp(u) and not constantp(u))),  
+		dv:  parse_string(concat(%diffletter, string(l)))
+	),
+    if algebraic then tellrat(dv^2),
+	qq:  buildq([dv], (if not subvarp(dv) then declare(dv, scalar))
+		),
+	ev(qq, nouns),
+	dv
+);
+
+makediffvarl(lst):=if listp(lst) then maplist(makediffvar, lst) else false;
+
+makediffvect(cv, [dual]):=block( [dv, ss:0, i:1, uu:1],
+	if not listp(cv) then error("not a list"),
+	if length(cv)>ndim then error ("dimensions mismatch"),
+	dv: makediffvarl(cv),
+	if emptyp(dual) then dual:false else dual:true,
+	for du in dv do (
+		if dual then
+			uu: asymbol[i]. asymbol[i],
+		ss:ss + uu* asymbol[i] . du,
+		i:i+1
+	),
+	ss
+);
+
+
+diffgrade(ab ):=block([vv, ret:0 ], 
+	ret: expand(ab),
+	if inop(ret)="+" then 
+		ret:lmax(maplist(diffgrade,ab ))
+	else (
+		vv:form2clif(ab, %basevars),  
+		ret:countsym(vv, asymbol)
+  	),
+	ret
+);
+ 
+ 
+/* sorted by order*/
+diffelements(dlist, [k]):=block([c:1, lst:[], dv, nn ],
+	if not listp(dlist) then error("not a list"),
+	nn:length(dlist),
+	if nn> ndim then error ("dimensions mismatch"),
+	dv: makediffvarl(dlist),
+	for i:1 thru nn do c:c.(1+ dv[i] * asymbol[i] ),
+	c:expand(c),
+	lst:inargs(c),
+	pop(lst),
+	if not emptyp(k) then (
+		k:first(k),
+		if k >ndim then error ("dimensions mismatch"),
+		lst: sublist(lst, lambda([u], maxgrade(u)=k))
+	),
+	 sort(lst, lambda([u,v], 
+			orderlessp(first(getvect(u)), first(getvect(v)))  
+			)
+	)
+);
+
+getvect(expr):=sublist(listofvars(expr), vectorp);
+
+diffsubspace(dlist, k):=block( [ee],
+	if k>ndim then error ("dimensions mismatch"),
+	ee:diffelements(dlist),
+	grpartl(ee, k)
+);
+
+diffspaces(dlist):=block([ee, lst:[]],
+	if k>ndim then error ("dimensions mismatch"),
+	ee:diffelements(dlist),
+	for i:1 thru ndim do
+		push(grpartl(ee, i), lst),
+	reverse(lst)
+);
+
+diffsym():=sublist(props, lambda( [z], if symbolp(z) then diffvarp(z) and scalarp(z) else false));
+
+
+/* 
+permutation matrix, scalar product
+*/
+permatrixai(elst):=block([qq],
+	if not listp(elst) then error("list expected"),
+	if length(elst)# ndim then error(" size mismatch"),
+	genmatrix( lambda([i,j],   asymbol[i] @ elst[j]), ndim, ndim)
+);
+
+
+/* permutation matrix, 1, 0 */
+permatrix(elst):=block([qq],
+	if not listp(elst) then error("list expected"),
+	if length(elst)# ndim then error(" size mismatch"),
+	genmatrix( lambda([i,j], if asymbol[i] = elst[j] then 1 else 0), ndim, ndim)
+);
+
+/* frame substitution */
+dframe(lst, [ee]):=block( [dd , dl, ret:[], qq, pm, vm, zm],
+	if not emptyp(ee) then (
+		/* explicit order*/
+		ee:first(ee),
+		if not listp(ee) then error("list expected"),
+		local(pm, zm),
+		pm: permatrix(ee),
+		vm: makediffvarl(first(transpose(pm. lst))),
+		zm: first(transpose(pm. ee)),
+		/*disp (vm, zm),*/
+		ret:makelist( vm[i] =zm[i] ,  i , length(ee))
+	) else (
+		/* implicit order*/
+		dd:diffelements(lst, 1),
+		dl:makediffvarl(lst), /* implicit ordering*/
+		ret:makelist( (qq:(asymbol[i] @ asymbol[i]), dl[i]=subst(dl[i]=1, dd[i])/qq) ,  i , length(dl))
+	),
+	ret
+);
+
+dframea(lst, [ee]):=block( [dd , dl, ret:[], qq, pm, vm, zm],
+	if not emptyp(ee) then (
+		/* explicit order*/
+		ee:first(ee),
+		if not listp(ee) then error("list expected"),
+		local(pm, zm),
+		pm: permatrix(ee),
+		vm: makediffvarl(first(transpose(pm. lst))),
+		zm: first(transpose(pm. ee)),
+		/*disp (vm, zm),*/
+		ret:makelist( vm[i] =zm[i] ,  i , length(ee))
+	) else (
+		/* implicit order*/
+		dd:diffelements(lst, 1),
+		dl:makediffvarl(lst), /* implicit ordering*/
+		ret:makelist( dl[i]=subst(dl[i]=1, dd[i]) ,  i , length(dl))
+	),
+	ret
+);
+
+/* inverse frame subsitution*/
+idframe(lst, [ee]):=block( [dd, dl, ret:[], qq:1, pm, vm],
+	if not emptyp(ee) then (
+		/* explicit order*/
+		ee:first(ee),
+		if not listp(ee) then error("list expected"),
+		local(pm, zm),
+		pm: permatrixai(ee),
+		vm: makediffvarl(first(transpose(pm. lst))),
+		zm: first(transpose(pm. ee)),
+		/*disp (vm, zm),*/ 
+		ret:makelist( ( vm[i] =zm[i]  ),  i , length(ee))
+	) else (
+		/* implicit order*/
+		dd:diffelements(lst, 1),
+		dl:makediffvarl(lst),
+		ret:makelist(  subst(dl[i]=1, dd[i]) =dl[i] * (asymbol[i] @ asymbol[i]) ,  i , length(dl))
+	),
+	ret
+);
+
+/*
+* inverse frame  
+* absolute subsitution
+*/
+idframea(lst, [ee]):=block( [dd, dl, ret:[], qq:1, pm, vm],
+	if not emptyp(ee) then (
+		/* explicit order*/
+		ee:first(ee),
+		if not listp(ee) then error("list expected"),
+		local(pm, zm),
+		pm: permatrix(ee),
+		vm: makediffvarl(first(transpose(pm. lst))),
+		zm: first(transpose(pm. ee)),
+		/*disp (vm, zm),*/ 
+		ret:makelist( ( vm[i] =zm[i]  ),  i , length(ee))
+	) else (
+		/* implicit order*/
+		dd:diffelements(lst, 1),
+		dl:makediffvarl(lst),
+		ret:makelist(  subst(dl[i]=1, dd[i]) =dl[i],  i , length(dl))
+	),
+	ret
+);
+
+dualframes(vl, ee):=block([dv, dfr, rdv, omega],
+	dfr:idframea( vl ),
+	dv:map( lambda([u],  subst (dfr,u)), ee),
+	omega:diffvolel(vl),
+	makelist(dv[i]=omega/dv[i], i, length(dv))
+);
+
+
+/*
+ differential form -> clifford expression
+*/
+form2clif(expr, [lv]):=block( [df],
+	if not freeof(asymbol, expr) then return(0),
+	if emptyp(lv) then 
+		df:dframe(%basevars)
+	else
+		df:dframe(lv[1]),
+	subst(".", "*", subst(df, expr))
+);
+
+form2clifa(expr, [lv]):=block( [df],
+	if not freeof(asymbol, expr) then return(0),
+	if emptyp(lv) then 
+		df:dframea(%basevars)
+	else
+		df:dframea(lv[1]),
+	subst(".", "*", subst(df, expr))
+);
+
+/*
+clifford expression -> differential form
+*/
+clif2form(expr, [lv]):=block( [df],
+	if emptyp(lv) then lv:%basevars
+	else lv:lv[1],
+	df:idframe(lv),
+	subst(df, expr)
+);
+
+/*
+clifford expression -> differential form
+absolute substitution
+*/
+clif2forma(expr, [lv]):=block( [df],
+	if emptyp(lv) then lv:%basevars
+	else lv:lv[1],
+	df:idframea(lv),
+	subst(df, expr)
+);
+
+/*
+Algebraic dual
+*/
+fdual(f, [lv]):=block ([omega, ve, dv],
+	if emptyp(lv) then lv:%basevars
+	else lv:lv[1],
+	dv:makediffvarl(lv),
+	ve: expand(form2clifa(f, lv)), 
+	ve:dual(ve),
+	omega:clif2forma (ve, lv),
+	factorby(omega, dv)
+);
+
+/*
+Hodge dual
+*/
+hdual(f, [lv]):=block ([omega, ve,  dv],
+    if emptyp(lv) then lv:%basevars
+    else lv:lv[1],
+    dv:makediffvarl(lv),
+    ve: form2clifa(expand(f), lv),
+    ve:clihdual(ve),
+    ve:dotsimpc(ve),
+	ve:clifact(ve),
+    omega:clif2forma(ve, lv)
+);
+
+"%%"(f):=hdual(f);
+
+/*
+contraction of a form with a multivector
+sym-type of interior product
+*/
+diffcontract(mvect, diform, [lv]):=block ([inprotype: sym , ipdecomp:true, vi, dv, omega ],
+	if scalarp(mvect) then return (0),
+	if not emptyp(lv) then  
+		lv:first(lv) 
+	else 
+		lv:%basevars, 	
+	dv: form2clif(diform, lv),
+	vi:mvect | dv, 
+	/*display(vi),*/
+	omega:clif2form(vi, lv),
+	dv:makediffvarl(lv),
+	factorby(omega, dv)
+);
+
+"|<"(mvect, diform):=diffcontract(mvect, diform);
+
+
+/*
+Cartan connection matrices
+*/
+cartconn(rr, eqs, [dlv]):=block([ee:vectors(), rs, drs, BM, dBM, iBM, zz, frvect, ds:makediffvar(asymbol) ],
+	rs:coordsubst(rr, eqs), 
+	if emptyp(dlv) then (
+		dlv: sublist( listofvars(rs), lambda ([zz], freeof(asymbol, zz))),
+		dlv: makediffvarl(dlv)
+	) else dlv:dlv[1],
+	drs: delsubst(diff(rs)), 
+	drs:clifact(drs), 
+	display(dlv, drs),
+	n:length(eqs),
+	BM:genmatrix( lambda([i,j], if i=j then trigsimp( ratsimp(rs @ ee[i]))  else 0),  n, ndim),
+	iBM:invert(BM),
+	dBM:genmatrix( lambda([i,j], ratcoeff( trigsimp( ratsimp(drs @ ee[i])), dlv[j] ) ),  n, ndim),
+/*	frvect: makelist ( subvar(ds,i)= trigsimp( ratsimp(drs @ ee[i])), i,  ndim),*/
+	[iBM.dBM, dBM. iBM, BM,  matrix(dlv)]
+);
+
+
+
+/*  
+* exterior differential
+*/
+extdiff(f, x):=block([k, df, lv, dv],	
+	 lv: makelist( (x @ asymbol[i])* (asymbol[i] @ asymbol[i]), i, ndim),
+	 dv:makediffvarl(lv), 
+	 if not lfreeof (dv, f) then
+		df:form2clif(f, lv)
+	 else df:f,	
+	 df: extvectdiff(df, x ),
+	 if df#0 then  
+		 clif2form(df, lv)
+	 else df
+);
+
+/*  
+* partial exterior differential
+*/
+parextdiff(f, x):=block([k, df, lv, dv],	
+	 df:form2clif(f),
+	 df: parmvectextdiff(df, x ),
+	 if df#0 then  
+		 clif2form(df)
+	 else df
+);
+
+/*
+* interior differential
+*/
+intdiff(f, x):=block([k, df, lv, dv],	
+	 lv: makelist( (x @ asymbol[i])* (asymbol[i] @ asymbol[i]), i, ndim),
+	 dv:makediffvarl(lv), 
+	 if not lfreeof (dv, f) then
+		df:form2clif(f, lv)
+	 else df:f,	
+	 df: intmvectdiff(df, x ),
+	 if df#0 then  
+		 df:clif2form(df, lv)
+	 else df,
+	(df)
+);
+
+/*
+* partial interior differential
+*/
+parintdiff(f, x):=block([k, df, lv, dv],	
+	 df:form2clif(f),
+	 df: intmvectdiff(df, x ),
+	 if df#0 then  
+		 clif2form(df)
+	 else df
+);
+
+
+/*
+experimental
+*/
+intdiffa(f, x):=block([k, df, lv, dv],	
+	 df:hdual(f),
+	 df:extdiff(df,x),
+	 hdual(df)
+);
+
+
+laplacian(f, x):=block([ df1, df2, ret],	
+	  df1:intdiff(f, x),
+	  df2:extdiff(f, x),
+	  ret:extdiff(df1, x)+ intdiff(df2, x),
+	  ratsimp(ret)
+);
+
+diffcommut1(F,r):=block([q1,q2],
+	q1:hdual(intdiff(F ,r)),
+	q2:extdiff(hdual(F) ,r),
+	first(divide(q1,q2))
+);
+
+diffcommut2(F,r):=block([q1,q2],
+	q1:hdual(extdiff(F ,r)),
+	q2:intdiff(hdual(F) ,r),
+	first(divide(q1,q2))
+);
+
+lapcommut(F,r):=block([q1,q2],
+	q1:hdual(laplacian(F ,r)),
+	q2:laplacian(hdual(F) ,r),
+	first(divide(q1,q2))
+);
+
+/*  
+* Lie differential
+* f - differential form, v - vector
+L_v f = d (i_v f ) + i_v (d f) 
+*/
+liediff(f, v, x):=block ( [dd, lv, id, q],
+	lv: makelist( (x @ asymbol[i])/ (asymbol[i] @ asymbol[i]), i, ndim),
+	dd:diffcontract(v, f, lv),
+	dd:extdiff(dd, x),
+	id:extdiff(f, x),
+	id:diffcontract(v, id, lv),
+	dd+id
+);
+
+/*
+Lie bracekt (derivative) L_[X,Y] f= L_X (Y f) = [X,Y]f
+*/
+liebracket(f, v, u, x):=  block([ dd , id],
+    dd: cdirdiff( cdirdiff (f, v, x), u, x)- cdirdiff(cdirdiff (f, u, x), v, x),
+      clifact(dd) 
+);
+
+/*  Lie differential
+returns 2 components
+*/
+liediff2(f, v, x):=block ( [dd, lv, id],
+	lv: makelist( (x @ asymbol[i])/ (asymbol[i] @ asymbol[i]), i, ndim),
+	dd:diffcontract(v, f, lv),
+	/*dd:extdiff(dd, x),*/
+	id:extdiff(f, x),
+	id:diffcontract(v, id, lv),
+	[dd,id]
+);
+
+%indvar:false;
+/* connection matrix elements*/
+declare(%G, scalar);
+covderivv(ee, z, r):=block([ez, ek, ej, ss:0],
+	if freeof(asymbol, ee) then return(diff(ee,z)),
+	if %indvar=true then (
+		ez:z,
+		/*ek: (r @ee) / ee@ee, */
+		ek: diff (r,ee)
+	) else (
+		ez:first(args(diff(r,z))),
+		ek:first(args(ee))
+	),
+ 	for i:1 thru ndim do
+		if %indvar=true then (
+			ej:  diff (r,asymbol[i]),
+			ss:ss+  asymbol[i]* %G([ek],[ej, ez])
+		)else
+			ss:ss+  asymbol[i]* %G([ek],[i, ez]) ,
+	ss  
+);
+
+declare(del,outative);
+covderivm(ee, z, x):=block([v,lv, ss:diff(ee), u ],
+	 ss:subst( del=lambda([u], covderivv(u, z, x)),ss),
+	 ss:dotsimpc(expand(ss))
+);
+
+ctotdiffcov(f, x):=block( [ret:0, lv, vv],
+	if mapatom(x) then 
+		ret: diff( f, x )
+	else (
+		lv: sublist( listofvars(x), lambda ([z], freeof(asymbol, z))),		
+		for u in lv do (
+			vv:cinv(diff(x, u)),
+			ret: ret + vv . subst(".", "*", covderivm( f, u, x))
+			)
+	),
+	ret
+);
+
+mvectdiffcov(f, x, [k] ):=block ([s:0, f1:copy(f), p],
+	if emptyp(k) then k:1 else k: k[1],
+	x:expand(x),
+	for p:1 thru k do (
+		s:ctotdiffcov(f1, x),
+		s:cliffsimpall(s),
+		f1:s
+	),
+	if %divsimp=true then (
+		s:trigsimp(s),
+		s:clifact(s)
+	),
+	s
+);
+
+covderiv1(dv, z, x):=block([v,lv, ss:0],
+	if not diffvarp(dv) then return(0),
+	lv: clc(x),
+	v:first(getbasevar(dv)),
+	for vv in lv do
+		ss:ss-%G([vv],[ v,z])* makediffvar(vv),
+	ss  
+);
+
+
+covderivf(dv, z, x):=block([v,lv, ss:diff(dv), u ],
+	 ss:form2clifa(ss),
+	 ss:subst( del=lambda([u], -covderivv(u, z, x)),ss),
+	 ss:dotsimpc(expand(ss)),
+	 clif2forma(ss)
+);
+
+
+/*Pfaffian sequence*/
+pfseq (dform, x):=block( [ls:[], k:1, tau:1, qq, df, u, v],
+	df: dform,
+	while k<=ndim and tau#0 and df#0 do (
+		push(factor(df), ls),
+		if tau# 1 then
+			push(factor(tau), ls),
+		qq: df ~ tau,
+		df:ratsimp(qq),
+		tau: extdiff(df, x),
+		display(k, df, tau),
+		k:k+1
+	),
+	ls:listify(setify(ls)),
+	sort(ls, lambda([u, v], diffgrade(u) <diffgrade(v)) )
+);
+
+fdecompose(expr):=block([vv, ret],
+	vv:form2clif(expr, %basevars),
+	dsiplay(vv),
+	ret:bdecompose(vv),
+	clif2forma(ret, %basevars)
+);
+
+/*integrates a differential form expr,
+pole at infinity
+*/
+potentiatef(expr,  r):=block([vv, ee,  ri, t:gensym("t"), gp, lvc, dr, ker],
+	ee:buildq([t], declare(t, scalar) ), 
+	ev(ee, nouns),
+ 	gp:expr,
+	lvc:append(%basevars, %diffvars),
+	for vv in lvc do (
+			display(vv),
+			gp:subst(vv=vv*t,gp)
+			),
+	ker:r |< gp,
+	display(gp, ker),
+	integrate(ker/t, t, 0, 1)
+);
+
+/*integrates a differential form expr,
+algebraic pole at zero
+*/
+potentiatef2(expr,  r):=block([vv, ee,  ri, t:gensym("t"), gp, lvc, dr, ker],
+	ee:buildq([t], declare(t, scalar) ), 
+	ev(ee, nouns),
+ 	gp:expr,
+	lvc:append(%basevars, %diffvars),
+	for vv in lvc do (
+			display(vv),
+			gp:subst(vv=vv*t,gp)
+			),
+	ker:r |< gp,
+	display(gp, ker),
+	-integrate(ker/t, t, 1, inf)
+);
+
+/*integrates a differential form expr,
+logarithimic pole at zero
+*/ 
+potentiatef3(expr, a, r):=block([vv, ee, k, ri, t:gensym("t"), gp, lvc, dr, ker, assume_pos:true],
+	/*k:diffgrade(expr),*/
+	ee:buildq([t], declare(t, scalar) ), 
+	ev(ee, nouns),
+ 	gp:expr,
+	lvc:append(%basevars, %diffvars),
+	for vv in lvc do (
+			display(vv),
+			gp:subst(vv=vv*t,gp)
+			),
+	ker:r |< gp,
+	display(gp, ker),
+	integrate(ker/t, t, 1, a)
+);
+
+/*
+G. Torres del  Castillo, M Marciano Melchor, Symmetries and integration of differential equations
+Revista Colombiana de Matematicas, 39 (2005),  133--143
+*/
+potentiate2(expr,  b):=block([vv, ee, k, t:gensym("t"), gp, lvc, i:1, li:{}, ker , sol, vi:[]],
+	if not symbolp(b) then error( b, "not a symbol"),
+	/*k:diffgrade(expr),*/
+	ee:buildq([t], declare(t, scalar) ), 
+	ev(ee, nouns),
+ 	gp:expr,
+
+	lvc:append(%basevars, %diffvars),
+
+	for vv in lvc do (
+		i:(if diffvarp(vv) then first(getbasevar(vv)) else vv),
+		i:parse_string(concat("%", string(i))),
+		li:adjoin(b[i], li),
+		/* semigroup dilation transform*/
+		gp:subst(vv=vv*exp(t*b[i]),gp),
+		if not diffvarp(vv) then
+			push(vv*b[i], vi) 
+	),
+	/* vector field*/
+	vi:reverse(vi),
+	vi:lvect(vi),
+	
+	ker: factor(expr ~ gp),
+
+	display(ker),
+	/* the form is exact*/
+	if ker=0 then 
+		return ([1, gp, vi]),
+	li:listify(li),
+	sol:diffsolve(ker, li), 
+	sol:sublist(sol, lambda([u], lfreeof(lvc, u))),
+
+	vi:subst(sol, vi),
+	gp: subst(sol, gp), 
+	[ vi |< gp, gp, vi]
+);
+
+potentiate2(expr,  b):=block([vv, ee,  ri, t:gensym("t"), gp, lvc, i:1, li:[], ker , sol, vi:[]],
+	if not symbolp(b) then error( b, "not a symbol"),
+	ee:buildq([t], declare(t, scalar) ), 
+	ev(ee, nouns),
+ 	gp:expr,
+	for vv in %basevars do (
+		i:parse_string(concat("%", string(vv))),
+		li:cons(b[i], li),
+		/* semigroup dilation transform*/
+		gp:subst(vv=vv*exp(t*b[i]),gp),
+		ri: diff(vv*exp(t*b[i]), t),
+		ri: at(ri, t=0),
+		push(ri, vi) 
+	),
+	for vv in %diffvars do (
+		i:first(getbasevar(vv)) ,
+		i:parse_string(concat("%", string(i))),
+		/* semigroup dilation transform*/
+		gp:subst(vv=vv*exp(t*b[i]),gp)
+	),
+	/* vector field*/
+	vi:reverse(vi),
+	vi:lvect(vi),
+	
+	ker: factor(expr ~ gp),
+
+	display(ker),
+	/* the form is exact*/
+	if ker=0 then 
+		return ([1, gp, vi]),
+	sol:diffsolve(ker, li), 
+	display(sol),
+	sol:sublist(sol, lambda([u], lfreeof(%basevars, u))),
+
+	vi:subst(sol, vi),
+	gp: subst(sol, gp), 
+	[ vi |< expr, gp, vi]
+);
+/*
+potentiate4(expr,  b):=block([vv, ee,  ri, t:gensym("t"), gp, lvc, i:1, li:[], ker , sol, vi:[]],
+	if not symbolp(b) then error( b, "not a symbol"),
+	ee:buildq([t], declare(t, scalar) ), 
+	ev(ee, nouns),
+ 	gp:expr,
+	for vv in %basevars do (
+		i:parse_string(concat("%", string(vv))),
+		li:cons(b[i], li),
+		gp:subst(vv=vv +(t*b[i]),gp),
+		ri: diff(vv+(t*b[i]), t),
+		ri: at(ri, t=0),
+		push(ri, vi) 
+	),
+	for vv in %diffvars do (
+		i:first(getbasevar(vv)) ,
+		i:parse_string(concat("%", string(i))),
+		gp:subst(vv=vv+(t*b[i]),gp)
+	),
+	vi:reverse(vi),
+	vi:lvect(vi),	
+	ker: factor(expr ~ gp),
+	display(ker),
+	if ker=0 then 
+		return ([1, gp, vi]),
+	sol:diffsolve(ker, li), 
+	display(sol),
+	sol:sublist(sol, lambda([u], lfreeof(%basevars, u))),
+
+	vi:subst(sol, vi),
+	gp: subst(sol, gp), 
+	[ vi |< expr, gp, vi]
+);
+*/
+/*
+diffvolel(lv):=block([s:dotsimpc(%iv.%iv)], 
+	s*clif2form(%iv, lv)
+);
+*/
+diffvolel(lv):=clif2forma(%iv, lv);
+
+diffsolve(expr, lvars):=block([ cexpr],
+ if lfreeof (%diffvars, expr) then 'nil else (
+ cexpr:form2clif(expr),
+ /* cexpr:clifact(cexpr),
+ display(cexpr),*/
+ clisolve(cexpr, lvars)
+ )
+);
+
+
+put('clifform, 'v13,'version);
+put('clifform, "Dimiter Prodanov", 'author);
+put('clifform, "(C) - Dimiter Prodanov, 2018 - 2021", 'copyright);
+
+print("package name: clifform.mac");
+print("author: ", get('clifform,'author));
+print("version:", get('clifform,'version));
+print("Recommended location: share/contrib");
+print("last update: 22 Jun 2021");

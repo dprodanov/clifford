@@ -134,47 +134,7 @@ totdiff(f, x, [lv]):=block( [ret:0, u],
 	ret
 );
 
-/*
-totdiffs(f, x, [lv]):=block( [ret:0, ia, fo, dvar, dn, u, df],
-	if inop(f)="+" then 
-		return(map( lambda([u],  disp(u), totdiffs(u, x, [lv])), f)),
-	if mapatom(x) then 
-		ret: diff( f, x )
-	else (
-		if emptyp(lv) then
-			lv:listofvars(x)
-		else 
-			lv:lv[1],
-		for u in lv do
-			if symbolp(u) then
-				if symbolp(f) then
-					ret: ret + diff(f, u) / diff(x, u)
-				else (
-					ia:inargs(f),
-					fo:inop(f),
-					display(ia, fo),
-					if fo#dsymb then (
-						if length(ia)=1 then
-							ret: ret + diff(fo, u)* diff(first(ia), u) / diff(x, u)
-						else
-							ret: ret + diff(f, u) / diff(x, u)
-					) else (
-						[df, dvar, dn]: (ia),
-						display(df, dvar),
-						ia:inargs(df),
-						fo:inop(df),
-						display(ia, fo),
-						if length(ia)=1 then
-							ret: ret + diff(diff(fo, u), dvar, dn )* diff(first(ia), u) / diff(x, u)
-						else
-							ret: ret + diff(f, u) / diff(x, u)
 
-					)
-				)
-	),
-	ret
-);
-*/
 /* fix */
 ctotdiffs(f, x):=block( [ret:0, lv, ia],
 	if mapatom(x) then 
@@ -775,13 +735,13 @@ ciELfdiff1(_F, tt, pvars):=block(
 	clifact(eq)
 );
 
+/*
 compdiff( _F, vi, vj, tt):=block([df, dx],
 	df: _F @ vi,
 	dx: tt @ vj,
-	/*display(tt, dx, df),*/
 	pardiff(df, dx)
 );
-
+*/
 
  
 /*
@@ -1054,7 +1014,7 @@ potentiategr(expr,  r):=block([vv, ee, k, ri, t:gensym("t"), gp, lvc, dr, ker],
 	ev(ee, nouns),
 	ri:invautom(r),
  	gp:grpart(expr, k),
-	lvc:clc(expr),
+	lvc:clc(r),
 	/* we can also use a exponential substitution*/
 	for vv in lvc do
 		gp:subst(vv=vv*t,gp),
@@ -1124,10 +1084,10 @@ pintegrate(ff, rv, eqs, tvar, [bnd]):=block([dr, ffs, ker, ret],
 
 put('cliffordan, 'v18,'version);
 put('cliffordan, "Dimiter Prodanov", 'author);
-put('cliffordan, "(C) - Dimiter Prodanov, 2015 - 2020", 'copyright);
+put('cliffordan, "(C) - Dimiter Prodanov, 2015 - 2021", 'copyright);
 
 print("package name: cliffordan.mac");
 print("author: ", get('cliffordan,'author));
 print("version:", get('cliffordan,'version));
 print("Recommended location: share/contrib");
-print("last update: 18 Jan 2020");
+print("last update: 7 Jul 2021");
