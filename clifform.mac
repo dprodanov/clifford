@@ -668,6 +668,40 @@ covderivf(dv, z, x):=block([v,lv, ss:diff(dv), u ],
 	 clif2forma(ss)
 );
 
+/* 
+Christoffel symbols based on 
+Clifford-valued
+total differentiation; */
+christoffel12_cli (x, ilst):=block([ek, eq, xi, xj, i, j, k, lv, dd, g1, g2],
+	if not listp (ilst) or length (ilst)#3 then error ("not a list or bad length ", lst),
+	[xk, xi, xj]:ilst,	
+	dd:dotsimpc(expand(ctotdiff(x,  xi))),
+	dd:dotsimpc(expand(ctotdiff(dd, xj))),
+	dd:ratsimp(dd),
+	dd:trigsimp(dd),
+	/*display(dd),*/
+	eq: diff(x, xk),
+	ek: trigsimp(cinv(eq)),
+	/*display(ek, eq, xi, xj),*/	
+	g1: eq @ dd,
+	g1:trigsimp(g1),
+	g2: ek @ dd,
+	g2:trigsimp(g2),
+	[ g1, g2]
+);
+
+/* 
+Christoffel symbols based on 
+Clifford-valued
+total differentiation; */
+christoffel_table(x, lst, opt):=block([n],
+	n:length(lst),
+	if opt=1 then
+		makelist(genmatrix( lambda([i,j], first(christoffel12_cli(x, [lst[k], lst[i] , lst[j]] ) )), n), k, n)
+	else 
+		makelist(genmatrix( lambda([i,j], second(christoffel12_cli(x, [lst[k], lst[i] , lst[j]] ) )), n), k, n)
+);
+
 
 /*Pfaffian sequence*/
 pfseq (dform, x):=block( [ls:[], k:1, tau:1, qq, df, u, v],

@@ -239,40 +239,6 @@ conmderivr(f, x):=block([lv, sq],
 
 
 /* 
-Christoffel symbols based on 
-Clifford-valued
-total differentiation; */
-christoffel12_cli (x, ilst):=block([ek, eq, xi, xj, i, j, k, lv, dd, g1, g2],
-	if not listp (ilst) or length (ilst)#3 then error ("not a list or bad length ", lst),
-	[xk, xi, xj]:ilst,	
-	dd:dotsimpc(expand(ctotdiff(x,  xi))),
-	dd:dotsimpc(expand(ctotdiff(dd, xj))),
-	dd:ratsimp(dd),
-	dd:trigsimp(dd),
-	/*display(dd),*/
-	eq: diff(x, xk),
-	ek: trigsimp(cinv(eq)),
-	/*display(ek, eq, xi, xj),*/	
-	g1: eq @ dd,
-	g1:trigsimp(g1),
-	g2: ek @ dd,
-	g2:trigsimp(g2),
-	[ g1, g2]
-);
-
-/* 
-Christoffel symbols based on 
-Clifford-valued
-total differentiation; */
-christoffel_table(x, lst, opt):=block([n],
-	n:length(lst),
-	if opt=1 then
-		makelist(genmatrix( lambda([i,j], first(christoffel12_cli(x, [lst[k], lst[i] , lst[j]] ) )), n), k, n)
-	else 
-		makelist(genmatrix( lambda([i,j], second(christoffel12_cli(x, [lst[k], lst[i] , lst[j]] ) )), n), k, n)
-);
-
-/* 
 Metrics table */
 metrics(x, lst):=block([n, ek],
 	ek: maplist (lambda([u], diff(x, u)), lst),
@@ -280,7 +246,6 @@ metrics(x, lst):=block([n, ek],
 	n:length(lst),
 	genmatrix( lambda([i,j], trigsimp( (ek[i] @ ek[j] ))), n)
 );
-
 
 
 /* 
@@ -1023,48 +988,7 @@ potentiategr(expr,  r):=block([vv, ee, k, ri, t:gensym("t"), gp, lvc, dr, ker],
 	integrate(ker*t^(k-1), t, 0, 1)
 );
 
-/*
-potentiate(expr, lv):=block([ret:0, r, rnk: maxgrade(expr)],
 
-	for k:1 thru rnk do (
-	  r:cmvect(lv, k),
-	  disp(r),
-	  ret:potentiategr(expr, r)+ret
-	  ),
-	ret
-);
-*/
-/*
-code2(deq, dvar, r):=block([lv, dl, ret, dv, q, u, sol:[]],
-	lv:clc(r),
-	dl:map( lambda([u], diff(dvar, u)), lv),
-	ret: clisolve(deq, dl),
-	for i:1 thru length(ret) do (
-		q:ode2(ret[i], dvar, lv[i]),
-		push(q, sol)
-	),
-	sol
-);
-*/
-/* to check end condition 
-potentiate(expr, r):=block([vp, ri, xv, vv, u, L , nz, ret, rnk, dvar, deq, dsol],
-	vp:vectorpart(expr),
-	vp:trigreduce(vp),
-	vv:vectors(),
-	ri:invautom(r),
-	L:map( lambda([u], xv:ri @ u, integrate(vp  @ u, xv) ), vv),
-	display(L),
-	nz:countsym(L,0),
-	rnk:grank(L),
-	ret:implodeop(L,"+"),
-	dvar:apply(%c,clc(r)),
-	ret:ratsimp(ret)/(ndim-nz-rnk)+dvar,
-	deq:mvectdiff(ret, r)-vp,
-	dsol:code2(deq, dvar, r),
-	subst(dsol,ret)
-);
-
-*/
 
 
 /* path integral*/
