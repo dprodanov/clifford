@@ -102,7 +102,18 @@ mattrace(a) := block([ret : 0, i],
    ret
  );
  */
-
+climatrep2(vv, lst):=block([n, q, AA, nn, dd, G, EE],
+	local(AA, G, EE, q),
+	n:length(lst),
+	/* multiplication table of the algebra */
+	AA:genmatrix( lambda([i,j], dotsimpc(lst[i] . lst[j] ) ), n),
+	/* signature of the algebra */
+	G:diag(AA),
+	ratvars(q),
+	nn:expand(ratnum(vv)), dd:ratdenom(vv),
+	EE:matrixmap(lambda([q],  scalarpart(ratcoeff (nn, q))/dd), AA),
+	G.EE
+);
 
 
 nelements([cpl]):=block([c:1, lst:[] ],
@@ -191,19 +202,19 @@ fadlevic(A):=block([c, M:1, K, i, n:2^ndim, cq],
 );	
 
 
-fadlevicg(A, v):=block([c, M:1, K, i, n, cq],
+fadlevicg(A, v):=block([c, M:1, K, i, n, cq, ss:0],
 	local(c),
 	n: 2^maxgrade(A),
-	if _debug then
+	if _debug1=true then
 		display(n),
 	array(c,n), 
 	c[0]:1,
 	A:rat(A),
 	ratvar(v),
 	for i:1 thru n do (
-		K: dotsimpc(ratexpand (A.M)),
+		K:  (dotsimpc(expand (A.M))),
 		c[i]: -n/i* scalarpart(K),
-		if _debug then
+		if _debug1=true then
 			print(i, " ", c[i]),
 		/*print(i, " ", c[i], " ", K),*/
 		if i<n then  
@@ -212,11 +223,13 @@ fadlevicg(A, v):=block([c, M:1, K, i, n, cq],
 	c:factor(c),
 	cq: c[n],
 	if cq=0 then (
-		if _debug then print("determinant ", cq),
+		if _debug1=true then print("determinant ", cq),
 		M:0
 	) else
 		M:factor(-(M)/cq),
-	[M, sum(c[n-i]*v^(i),i,0, n)]
+	ss:sum(c[n-i]*v^(i),i,0, n),
+	ss:factor(ss),
+	[M, ss]
 );
 
 /*
@@ -238,19 +251,18 @@ fadlevicg1(A):=block([  M:1, K, i, n, cq:1],
 );
 */
 
-/* pseudoinverse : for n idempotent returns the complement zero divisor */
-fadlevicg1(A):=block([ M:1, K, i:1, n, sc:1, cq],
-	n: 2^maxgrade(A),
-	display(n),
+/* pseudoinverse : for n idempotent it returns the complement zero divisor */
+fadlevicg1(A):=block([ M:1, K, i:1, n, k: maxgrade(A), cq],
+	n: 2^k,
+	if _debug1=true then print("n=",n),
 	A:rat(A),
 	while i<n and K#0 do (
-		K: dotsimpc(ratexpand (A.M)),
+		K: dotsimpc(expand (A.M)),
 		cq: -n/i* scalarpart(K),
-		if _debug then
-			print(i, " ", cq),
-		/*print(i, " ", cq, " ", K),*/
+		if _debug1=true then print(i, " ", cq),
+		if _debug1=all then print("t[",i,"]=", cq, " m[",i,"]=", K),
 		if K#0 then
-			M: (K + cq), 
+			M: rat(K + cq), 
 		i:i+1
 	), 
 	 
@@ -263,7 +275,29 @@ fadlevicg1(A):=block([ M:1, K, i:1, n, sc:1, cq],
 );
 
 
-
+fadlevicg2(A):=block([ M:1, K, i:1, n, sc:1, cq],
+	n: ndim,
+	if _debug1=true then print("n=",n),
+	A:rat(A),
+	while i<n and K#0 do (
+		K: dotsimpc(expand (A.M)),
+		cq: n/i* scalarpart(K),
+		if _debug1=true then
+			print(i, " ", cq),
+		if _debug1=all then
+			print("t[",i,"]=", cq, " m[",i,"]=", K),
+		if K#0 then
+			M: rat(K - cq), 
+		i:i+1
+	), 
+	 
+	K: dotsimpc(expand(A.M)),
+	cq: -n/i* scalarpart(K),
+	cq:factor(cq),
+	if cq=0 then cq:1,
+	M:factor(-(M)/cq)
+	
+);
 
 /*
 fadlev(A, v):=block([n, m, c, M, K, I, i],
@@ -304,7 +338,7 @@ fadlevcp(A, v):=block([n, m, c, M, K, I, ss:0],
 		ss:ss+c[i+1]*v^(n-i)
 	),
 	/*[ ss , M]*/
-	ss
+	factor(ss)
 );
 
 elem2mat(expr, [ulst] ):=block(
@@ -432,13 +466,13 @@ elem2mat(expr):=block([L:[], ei, ret, E:[], qq],
 
 
 
-permatrixsym(lsta, lstb):= block([m,m],
+permatrixsym(lsta, lstb):= block([n,m],
 	if not (listp(lsta) or listp(lstb)) then error("list required"),
 	n:length(lsta), m:length(lstb),
 	genmatrix( lambda([i,j], coeff(lsta[i], lstb[j] )), n, m)
 );
 
-permatrixnum(lsta, lstb):= block([m,m, MM, ss:0],
+permatrixnum(lsta, lstb):= block([n,m, MM, ss:0],
 	if not (listp(lsta) or listp(lstb)) then error("list required"),
 	n:length(lsta), m:length(lstb),
 	local(MM),

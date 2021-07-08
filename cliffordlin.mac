@@ -1,0 +1,294 @@
+/*******************************
+Clifford algebra
+a lightweight package for performing Geometric Algebra calculations
+
+Clifford Linear algebra functions
+
+version 	1.0 11 May 2016
+
+@depends 'clifford
+
+**********************************
+ * @license This library is free software	 you can redistribute it and/or
+ *      modify it under the terms of the GNU Lesser General Public
+ *      License as published by the Free Software Foundation	 either
+ *      version 2.1 of the License, or (at your option) any later version.
+ *
+ *      This library is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY	 without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *       Lesser General Public License for more details.
+ *
+ *      You should have received a copy of the GNU Lesser General Public
+ *      License along with this library	 if not, write to the Free Software
+ *      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
+stringdisp :true;
+declare(trigsimp, evfun);
+ 
+if get('clifford,'version)=false then (
+	err:errcatch(
+		load("clifford.mac")
+	)
+);
+
+ 
+ /*
+Linear algebra functions
+*/
+
+colvect(n):=transpose(matrix(n));
+
+/*
+vect2mat(vlist):=block([a, n],
+	local(a),
+	n:min(length(vlist), ndim),
+	a[i,j]:= dotsimpc(expand( vlist[i] | asymbol[j])),
+	genmatrix(a,n)
+);
+*/
+
+vect2mat(vlist):=block([ n],
+	n:min(length(vlist), ndim),
+	genmatrix( lambda([i,j],  scprod( vlist[i] ,  asymbol[j])), n)
+);
+
+vect2mat(vlist, slist):=block(
+	genmatrix( lambda([i,j],  scprod( vlist[i] ,  slist[j])), length(vlist), length(slist))
+);
+
+mat2vect(M):=block([ velem:vectors(), Mt, qq:[], dd, listarith:true, n],
+	if not matrixp(M) then error("matrix required"),
+	Mt:transpose(M),
+	n:length(Mt),
+	for i:1 thru min(n, ndim) do 
+		push( Mt[i].velem, qq),
+	reverse(qq)
+);
+
+
+	
+prepsyst(eqs, lvs):=block([ M, qq:[], L, R, mm ],
+	M:coefmatrix( eqs, lvs),
+	for vv in eqs do (
+		mm:0,
+		if op(vv) # "="  then (
+			[l, r]: oppart(vv, lambda([z], lfreeof (lvs, z))),
+			if %verbose=true then display(l),
+			mm:-l
+		) else (
+			L:lhs(vv),
+			R:rhs(vv),
+			if L#0 then (
+				[l, r]: oppart(L, lambda([z], lfreeof (lvs, z))),
+				if %verbose=true then display(L, l),
+				if l#nil then mm:mm-l
+			),
+			if R#0 then (
+				[l, r]: oppart(R, lambda([z], lfreeof (lvs, z))),
+				if %verbose=true then display(R, l),
+				if l#nil then mm:mm+l
+			)
+			),
+		push( mm, qq)
+	),
+	qq:reverse(qq),
+	[M, qq]
+);
+
+/*
+ computes a unit  element
+
+uvect(vv):=block( [qq],
+	qq:cnorm2(vv),
+	if %divsimp=true then (
+		qq:trigsimp(qq),
+		qq:ratsimp(qq)
+	),
+	vv/sqrt(qq)
+);
+*/
+
+/*
+determinants
+*/
+
+clidet(vlist):=block([dd, n ],
+	n:length(vlist),
+	dd:vlist[1], 
+	for i:2 thru n do (
+		dd:dotsimpc(dd & vlist[i]),
+		if dd=0 then return(dd)
+	),
+	factorby(dd, %iv)
+);
+
+clidetmat(M):=block([   Mt, v, dd,   n],
+	if not matrixp(M) then error("matrix required"),
+	Mt:transpose(M),
+	n:length(Mt),
+	dd:sum(Mt[1, i]. asymbol[i], i, 1, length(Mt[1])),
+	for i:2 thru n do (
+		v:sum(Mt[i, j]. asymbol[j], j, 1, length(Mt[i])),
+		dd:dotsimpc(dd & v)
+	),
+	coeff(dd, %iv)
+);
+
+clisyst(M, B):=block([   Mt, MP, qq:[], dd, ss, n,v ],
+	if not matrixp(M) then error("matrix required"),	
+	ss: clidetmat(M),
+	if ss=0 then return (false),
+	Mt:transpose(M),
+	n:length(Mt),
+	for i:1 thru n do (
+		MP:copymatrix(Mt),
+		MP[i]:B,
+		MP:transpose(MP),
+		if %verbose=true then disp(MP), 
+		dd:clidetmat(MP),
+		push(dd/ss, qq)
+		),
+	reverse(qq)
+);
+
+
+
+/* computes the absolute projection */
+proj(v, u):=block([w],
+	w: cinv(u),
+	w: expand( scprod(v, w)  . u ),
+	w:dotsimpc(w),
+	clifact(w)
+);
+
+/* computes the absolute rejection */
+rej(v, u):=block([w ],
+	w: cinv(u),
+	w: expand( v - scprod(v, w)  . u ),
+	w:dotsimpc(w),
+	clifact(w)
+);
+
+/*  Gram-Smidt  orthogonalization
+projection-based
+*/
+gramsmidt(vlist):=block([dd:[], n, v, u ],
+	n:length(vlist),
+	push( vlist[1],  dd),
+	for k:2 thru n do (
+		u: vlist[k] - proj( vlist[k], dd[1]),
+		for j:1 thru k-1 do 
+			u: u - proj( u, dd[j]),
+		push(u, dd)
+		),
+	reverse(dd)
+);
+ 
+/*  Gram-Smidt  orthogonalization
+rejection-based
+*/
+gramsmidt2(vlist):=block([dd:[], n, u ],
+	n:length(vlist),
+	push( vlist[1],  dd),
+	for k:2 thru n do (
+		u: rej( vlist[k], dd[1]),
+		for j:1 thru k-1 do 
+			u: rej( u, dd[j]),
+		push(u, dd)
+		),
+	reverse(dd)
+);
+ 
+/*
+characteristic polynomial of  a vector set
+*/
+clipoly(vlist, xx):=block([n, dd:1, quot, res], 
+	n:min(length(vlist), ndim),
+	for i:1 thru n do 
+		dd:dotsimpc(dd & (vlist[i] - xx * asymbol[i] )),
+	[quot, res]:divide(dd, %iv),
+	quot
+);
+
+/* 
+symmetric tensor specified by eigenvector 
+*/
+Ts(a, mm):=block([v, l, b, s, m],
+	if not listp(mm) then error("list required", mm),
+	if inop(a)="+" then 
+		map(lambda([z], Ts(z, mm)), a)
+	else (	
+		[l, b]:mm,
+		m: (b | b),
+		s: l*(a | b)/m,
+		/*display(a, m,  s),*/
+		expand( s . b)
+	)
+);
+
+Tsl(a, mm):=block([ q, ss:0],
+	if not listp(mm) then error("list required", mm),
+ 	for q in mm do
+		ss: ss+ Ts(a, q),
+	ss
+);
+
+mtable2sv(vlist):=block([n, a, m, lst],
+	lst: elements(all),
+	n:length(lst),
+	m:length(vlist),
+	genmatrix( lambda([i,j], scprod(lst[i] , vlist[j])), n, m)
+);
+
+idemps():=block([n, ee, ilst, rilst, iilst, ret],
+	ee: elements(all),
+	n:length(ee),
+	ilst:makelist(dotsimpc(ee[i] . ee[i] ), i, n ),
+	rilst:(sublist_indices(ilst, lambda([u], u>0))),
+	iilst:(sublist_indices(ilst, lambda([u], u<0))),
+	ret:makelist((ee[i] +1)/2, i, rilst),
+	append(ret, makelist((ee[i]*%i +1)/2, i, iilst))
+);
+
+idemps2():=block([n, ee, ilst],
+	ee: elements(all),
+	n:length(ee),
+	ilst:makelist(dotsimpc(ee[i] . ee[i] ), i, n ),
+	ilst:(sublist_indices(ilst, lambda([u], u>0))),
+	[ makelist((ee[i] +1)/2, i, ilst), makelist((-ee[i] +1)/2, i, ilst)]
+);
+
+idemp(aa):=block([uu: expand(aa. aa)],
+	uu:dotsimpc(uu) -aa,
+	uu:ratsimp(uu),
+	if uu=0 then true else false
+);
+
+cliodeven(expr):= block( [gr, n:fix( (ndim+1)/2), ols, elst, sso:0, sse:0],
+	gr:grade(expr),
+	olst:makelist(2*i-1, i, n),
+	elst:makelist(2*i, i, n),
+	for i in olst do sso:sso+ gr[i],
+	for i in elst do sse:sse+ gr[i],
+	[ sso, sse ]
+);
+
+/*
+moore_penrose_pseudoinverse2(m) := block([mm, z : gensym(), scalarmatrixp : false],
+  mm : m . ctranspose(m),	
+  mm : ctranspose(m) . (mm - z * identfor(mm))^^-1,
+  at(mm, z= 0)
+ );
+ */
+ 
+ ldecompose(expr):=block([gr:expr, v],
+	if not freeof(".", expr) then 
+		gr: expand(expr),
+	if length(%elements)=1 then 
+			%elements:elements(), 
+	gr:map( lambda([v], factorby(v, %elements) ), gr ),
+	gr:grade(gr),
+	map(lambda([v], clicoeff(v, 'lst)),gr)
+);
