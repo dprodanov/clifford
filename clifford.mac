@@ -1289,16 +1289,16 @@ grades(vv):=block([lst, uu, listarith:true],
 /* 
  constructs a vector by indexing a symbol
 */
-cvect(x, [cc]):=block ([ss:0, qq],
+cvect(x, [cc]):=block ([ss:0, _i, qq],
 	if emptyp(cc) then
-		ss:sum (x[i]*asymbol[i], i, 1, ndim)
+		ss:sum (x[_i]*asymbol[_i], _i, 1, ndim)
 	else (
 		cc:cc[1],
-		for i:1 thru length(cc) do 
-			if not emptyp(cc[i]) then (
-				qq:subst(x=cc[i], buildq([x], declare(x, scalar))),
+		for _i:1 thru length(cc) do 
+			if not emptyp(cc[_i]) then (
+				qq:subst(x=cc[_i], buildq([x], declare(x, scalar))),
 				ev(qq, nouns),
-				ss: ss+ x[ cc[i] ]*asymbol[i]
+				ss: ss+ x[ cc[_i] ]*asymbol[_i]
 			)
 		),
 	qq:buildq([x], declare(x, scalar)),
