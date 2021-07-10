@@ -72,6 +72,38 @@ diaglist(M):=block([n],
 );
 
 
+elements([cpl]):=block([c:1, lst:[], u, v],
+	for i:1 thru ndim do c:c.(1+ asymbol[i] ),
+	if emptyp(cpl) then cpl:0
+	else cpl:first(cpl),
+	c:expand(c),
+	lst:inargs(c),
+	if cpl=0 then pop(lst)
+	else if cpl=1 then
+		lst:sublist(lst, lambda([u], maxgrade(u)<2^(ndim/2-1)))
+	else if cpl=2 then
+		lst:sublist(lst, lambda([u], maxgrade(u)>=2^(ndim/2-1))),
+	sort(lst, lambda([u,v], 
+			ordergreatp(u,v) and if not (numberp(u) or numberp(v)) then length(u)< length(v)
+			)
+	)
+);
+
+
+
+climatrep3(vv):=block([q, lst: elements(all), lsta, lstb, nn, le],
+	nn: ceiling(ndim/2),
+	[lsta, lstb]:oppart(lst, lambda([q], maxgrade(q)<nn)),
+	if oddp(length(lstb)) then  (
+		 le:pop(lstb),
+		if vv=le then vv: -%i*clihdual(le),
+		if _debug1=true then
+			display(lsta, lstb, vv),
+		climatrep21(vv, lstb)
+	) else
+		climatrep21(vv, lstb)
+);
+
 
 /*
 computes matrix representation of the algebra;
@@ -86,7 +118,7 @@ climatrep(vv):=block([n, q, AA, lst: elements(all), nn, dd, G, EE],
 	G:diag(AA),
 	ratvars(q),
 	nn:expand(ratnum(vv)), dd:ratdenom(vv),
-	EE:matrixmap(lambda([q],  scalarpart(ratcoeff (nn, q))/dd), AA),
+	EE:matrixmap(lambda([q],  scalarpart(ratcoeff (q, nn))/dd), AA),
 	G.EE
 );
 
@@ -111,10 +143,100 @@ climatrep2(vv, lst):=block([n, q, AA, nn, dd, G, EE],
 	G:diag(AA),
 	ratvars(q),
 	nn:expand(ratnum(vv)), dd:ratdenom(vv),
-	EE:matrixmap(lambda([q],  scalarpart(ratcoeff (nn, q))/dd), AA),
+	display(nn, dd, AA),
+	EE:matrixmap(lambda([q],  scalarpart(ratcoeff (q, nn))/dd), AA),
+	display(EE, G),
 	G.EE
 );
 
+
+climatrep21(vv, lst, [ex]):=block([n, q, AA, nn, dd, G, EE, vi, dcase:1],
+	local(AA, G, EE, q),
+	n:length(lst),
+	/* multiplication table of the algebra */
+	AA:genmatrix( lambda([i,j], dualrep(dotsimpc(lst[i] . lst[j] )) ), n),
+	if not emptyp(ex) then ex:first(ex),
+	
+	if maxgrade(vv)>ndim/2 and vv#ex then
+		vv: dualrep(vv),
+	vi:ratcoeff(vv, %i),
+	
+	if vi#0 then ( 
+		vv:vi, 
+		dcase:-%i, 
+		if _debug1=true then
+		display(vv, vi)
+	),
+	/* signature of the algebra */
+	G:diag(AA),
+	ratvars(q),
+	nn:expand(ratnum(vv)), dd:ratdenom(vv),
+	if _debug1=true then
+		display( nn, dd, AA),
+	EE:matrixmap(lambda([q],   scalarpart(ratcoeff (q, nn))/dd), AA),
+	if _debug1=true then
+		display(EE, G),
+	ratsimp(G.EE*dcase)
+);
+
+climatrep21(vv, lst ):=block([n, q, AA, nn, dd, G, EE, vi, dcase:1],
+	local(AA, G, EE, q),
+	n:length(lst),
+	/* multiplication table of the algebra */
+	AA:genmatrix( lambda([i,j], dualrep(dotsimpc(lst[i] . lst[j] )) ), n),
+  	if maxgrade(vv)>ndim/2   then
+		vv: dualrep(vv),
+	vi:ratcoeff(vv, %i),
+	
+	if vi#0 then ( 
+		vv:vi, 
+		dcase:-%i, 
+		if _debug1=true then
+		display(vv, vi)
+	),
+	/* signature of the algebra */
+	G:diag(AA),
+	ratvars(q),
+	nn:expand(ratnum(vv)), dd:ratdenom(vv),
+	if _debug1=true then
+		display( nn, dd, AA),
+	EE:matrixmap(lambda([q],   scalarpart(ratcoeff (q, nn))/dd), AA),
+	if _debug1=true then
+		display(EE, G),
+	ratsimp(G.EE*dcase)
+); 
+
+dualrep(ee):=block([la, lb, u ],
+	if maxgrade(ee) <ndim/2 then ee 
+	else(
+		if inop(ee)="." then
+			%i*clihdual(ee)
+		elseif inop(ee)="*" then (
+			[la, lb]:subst(nil=1, oppart(ee, lambda([u], freeof(asymbol, u)  ))),
+			la*%i*clihdual(lb)
+		)else (
+			[la, lb]:subst(nil=0, oppart(ee, lambda([u], maxgrade(u)<ndim/2 ))),
+			la+%i*clihdual(lb)
+		)
+	)
+);
+
+/*
+dualrep(ee):=block([la, lb, u ],
+	if maxgrade(ee) <ndim/2 then ee 
+	else(
+		if inop(ee)="." then
+			%i*clihdual(ee)
+		elseif inop(ee)="*" then (
+			[la, lb]:subst(nil=1, oppart(ee, lambda([u], maxgrade(u)<ndim/2  ))),
+			la*%i*clihdual(lb)
+		)else (
+			[la, lb]:subst(nil=0, oppart(ee, lambda([u], maxgrade(u)<ndim/2 ))),
+			la+%i*clihdual(lb)
+		)
+	)
+);
+*/
 
 nelements([cpl]):=block([c:1, lst:[] ],
 	if emptyp(cpl) then ( 
@@ -522,7 +644,7 @@ celemr(x, rng):=block([ee, ss:0, n, cc, qq],
 	ss
 );
 
-put('climatrep, 'v20,'version);
+put('climatrep, 'v21,'version);
 put('climatrep, "Dimiter Prodanov", 'author);
 put('climatrep, "(C) - Dimiter Prodanov, 2016 - 2021", 'copyright);
 
@@ -531,4 +653,4 @@ print("package name: climatrep.mac");
 print("author: ", get('climatrep,'author));
 print("version:", get('climatrep,'version));
 print("Recommended location: share/contrib");
-print("last update: 29 Jan 2021");
+print("last update: 10 Jul 2021");

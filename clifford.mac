@@ -1027,7 +1027,7 @@ dotconjugate(expr):=block([ret],
 constructs all  irreducible elements of the algebra,
 optionally includes 1
 */
-elements([cpl]):=block([c:1, lst:[] ],
+elements([cpl]):=block([c:1, lst:[], u, v ],
 	for i:1 thru ndim do c:c.(1+ asymbol[i] ),
 	if emptyp(cpl) then cpl:true 
 	else cpl:false,
@@ -1394,7 +1394,7 @@ dual(expr):=block([lste:[], lsti:[], r, l],
 
 /**
    clifford dual element
-   hodege dual 
+   Hodge dual 
  */
 clihdual(expr):=block([lste:[], lsti:[], lstj:[], r, l, ss:1, nn, dd, ue:1],
 	if matrixp(expr) then
