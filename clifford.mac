@@ -3,6 +3,9 @@ Clifford algebra in Maxima
 Clifford: a lightweight package for performing Geometric Algebra calculations
 
  @version 
+	2.5.1 Date 16 Jul 2021
+	- bugfix in clihdual
+	
 	2.5.0 Date 29 Jan 2021	
 	- matrix code moved to climatrep
 	- mingrade
@@ -101,7 +104,7 @@ pfeformat: true;
 */
 
 	infix ("xor", 60, 60);
-	"xor" (a, b):= block ([la:[], lb:[]],
+	"xor" (a, b):= block ([la:[], lb:[], u],
 		if listp(a) and listp(b) then (
 			la: sublist (a,  lambda([u], not member(u, b)) ),
 			lb: sublist (b,  lambda([u], not member(u, a)) ),
@@ -168,7 +171,7 @@ pfeformat: true;
 		),
 		grpart(ret, qq)
 	);	
-	texput ("\\", " \\circ ", infix);
+	/*texput ("\\", " \\circ ", infix);*/
   	
 	"alt-Grassman product type";
 	ipdecompalt:false;
@@ -578,6 +581,9 @@ dotinvsimp(ab):=block( [a,b,c,s],
 
 /*
 Clifford inverse
+rewrite in view of the Faddev-Leverier algorithm
+- cinvblade - for blades
+- cinv - general utility for multivectors
 */
 cinv(ab):=block( [s, b, u:1],
 	if atom(ab) or freeof(asymbol, ab) then 
@@ -1397,6 +1403,8 @@ dual(expr):=block([lste:[], lsti:[], r, l],
    Hodge dual 
  */
 clihdual(expr):=block([lste:[], lsti:[], lstj:[], r, l, ss:1, nn, dd, ue:1],
+	if scalarp(expr) then
+		return (expr*%iv),
 	if matrixp(expr) then
 		return(matrixmap(clihdual, expr )),
 	if listp(expr) then
@@ -1404,12 +1412,15 @@ clihdual(expr):=block([lste:[], lsti:[], lstj:[], r, l, ss:1, nn, dd, ue:1],
 	if not mapatom(expr) and op(expr)="/" then (
 		nn:num(expr),
 		dd:denom(expr),
-		return(clihdual(nn)/dd))	
-	elseif not mapatom(expr) and inop(expr)="+" then 
-		return(map(clihdual, expr))
+		return(clihdual(nn)/dd))
+	elseif not mapatom(expr) and op(expr)="*" then (
+		[l, r]:subst('nil=1, oppart(expr, lambda([u], scalarp( u)))),
+		if r#1 and l#1 then
+			return (l* clihdual(r))
+	)elseif not mapatom(expr) and inop(expr)="+" then 
+		return(map(clihdual, (expr)))
 	else (
-		if scalarp(expr) then
-			return (expr*%iv),
+		/*blade case*/			
 		[l, r]:subst('nil=1, oppart(expr, lambda([u], freeof(asymbol, u)))),
 		lste:clv(r),
 		lsti:vectors(),
@@ -1562,4 +1573,4 @@ print("package name: clifford.mac");
 print("author: ", get('clifford,'author));
 print("version:", get('clifford,'version));
 print("Recommended location: share/contrib");
-print("last update: 29 Jan 2021");
+print("last update: 15 Jul 2021");
