@@ -38,32 +38,11 @@ version 	1.1  Date 10 Apr 2016
 	"outer product",
 		infix("&", 135, 134),
 	texput ("&", " \\wedge ", infix)
-	),
-	infix ("xor", 60, 60),
-	"xor" (a, b):= block ([la:[], lb:[] ],
-		if listp(a) and listp(b) then (
-			la: sublist (a,  lambda([u], not member(u, b)) ),
-			lb: sublist (b,  lambda([u], not member(u, a)) ),
-			append(la, lb)
-		) else 
-		(a or b) and not (a and b)
 	)
 );
 
 	
-/* fix the code for compatibility with clifford - asymbol case
-"|"(a, b):= block ([ret], 
-		ret:expand((a.b + binvolve2(b).binvolve2(a))/2),
-		if not freeof(bsymbol, ret) then ret:blmult(ret),
-		ret
-	);
-	
- "&"(a, b):=block ([ret], 
-		ret:expand((a.b - binvolve2(b).binvolve2(a))/2),
-		if not freeof(bsymbol, ret) then ret:blmult(ret),
-		ret
-	);
-*/
+
 
 	"outer product";
 	"&"(a, b):= block ([l, r, u, ret:0],
@@ -130,6 +109,23 @@ version 	1.1  Date 10 Apr 2016
 		),
 		(ret)
 	);	
+	
+	infix ("land", 60, 60);
+	"land" (a, b):= block ([la:[]],
+		if listp(a) and listp(b) then (
+			la: sublist (a,  lambda([u],   member(u, b)) ) 
+		) else 
+		(a and b)  
+	);
+	
+	ord (a, lst):=block([k:1, lstb, u ], 
+		while a#lst[k] and k<length(lst) do 
+			k:k+1, 
+		lstb:sublist (lst, lambda([u], a#u)),
+		if length(lstb)=length(lst) then k:-1,
+		[k,	lstb]
+	);
+	
 
 /*
 blade symbol
@@ -274,8 +270,8 @@ blmult(expr):=block([w:1, r, l:1, ret:1, lst, vv:[], i:1, uu:[], n ],
 	else (
 		[l, r]: oppart(expr, lambda([u], freeof(bsymbol, u))),
 		if l='nil then l:1,
-		if r#'nil then (
-			lst:inargs(r),
+		if r#'nil and not freeof(".", r) then (
+			lst:inargs(r),	
 			for v in lst do vv:append (vv, args(v)),
 			"display(vv)",
 			w:permsign(vv),			 
@@ -292,7 +288,10 @@ blmult(expr):=block([w:1, r, l:1, ret:1, lst, vv:[], i:1, uu:[], n ],
 			uu:reverse(uu),
 			if not emptyp(uu) then ret:arraymake (bsymbol, uu ),
 			ret: w*l*ret
-		) else ret:l
+		) else (
+			r: subst(nil=1, r),
+			ret:l*r
+		)
 	),
 	ret
 );
@@ -346,7 +345,7 @@ blgrade(expr, [gradexpand]):=block([c, sop, k, l, r ],
 			c[k]:c[k] +v 
 		)
 	)else ( "simple expression",
-		[l, r]: oppart(v, lambda([u], freeof(bsymbol, u))),
+		[l, r]: oppart(expr, lambda([u], freeof(bsymbol, u))),
 		if r#'nil then k:length(r) else k:0,
 		c[k]:c[k] +expr 
 	),
@@ -356,10 +355,15 @@ blgrade(expr, [gradexpand]):=block([c, sop, k, l, r ],
 /**
  grade of order k
 */
-blgrpart(v,k):=block([gr, k:k+1],
-	if k>ndim+1 then k:ndim+1,
-	gr:blgrade(v),
-	gr[k]
+blgrpart(v, k):=block([gr  ],
+	if listp(k) then  
+		substinpart("+", map(lambda([u], blgrpart (v, u)), k), 0)  
+	else (
+		k:k+1,
+		if k>ndim+1 then k:ndim+1,
+		gr:blgrade(v),
+		gr[k]
+	)
 );
 
 bmtable2():=block([n, a, lst],
@@ -446,6 +450,25 @@ bmtable1([lst]):=block([n],
 	genmatrix( lambda([i,j], blmult(lst[i].lst[j]) ), n)
 );
 
+
+/*
+declaring dependencies
+*/
+dependsv(F, var):= block([ ee], 
+	if subvarp(var) then var:op(var),
+	if subvarp(F) then F:op(F),
+	ee:buildq([var], declare(var, scalar) ), 
+	ev(ee, nouns),
+	ee:buildq([F], declare(F, scalar) ), 
+	ev(ee, nouns),
+	ee:buildq([var],  if listp(var) then makelist(var[k], k, length(var)) 
+	else var ), 
+	ev(depends(F,ee), nouns)
+);
+
+/*
+blade total differentation
+*/
 btotdiff(f,x):=block( [ret:0, lv],
 	if mapatom(x) then 
 		ret: diff( f, x )
@@ -495,6 +518,7 @@ bvect(x, [cc]):=block ([ss:0, qq],
 	ev(qq, nouns),
 	ss
 );
+
 /*
 matchdeclare([bll ],  listp );
 matchdeclare([baa, bee], lambda([u], not freeof(bsymbol,u)));
@@ -517,10 +541,46 @@ blmaxgrade(expr):=block([lst, r, l],
 	r
 );
 
+blgradesplit(expr):=block([ng:blmaxgrade(expr), l, r , k, nn, cvol, ss, ua ],
+	nn:fix( ng/2),
+	if nn=0 then l:0 else
+		l:makelist(k, k, 1, nn),
+	r:makelist(k, k, nn+1, ng),
+	display(ng, nn, l, r),
+	cvol:arraymake (bsymbol, makelist(k, k, 1, ng) ),
+	ss:blmult( cvol. cvol),
+	ua:expand(cvol. blgrpart(expr, r)),
+	ua: blmult(ua),
+	[ blgrpart(expr, l), ua , ss*cvol]
+);
+
+blgrademat(expr):=block([  l, r , k, nn, cvol, ss, ua, ub ],
+	nn:fix( ndim/2),
+	if nn=0 then l:0 else
+		l:makelist(k, k, 1, nn),
+	r:makelist(k, k, nn+1, ndim),
+	cvol: %ivB,
+	ss:blmult( cvol. cvol),
+	disp(ss),
+	ua:expand(cvol. blgrpart(expr, r)),
+	ua: blmult(ua),
+	ub: blgrpart(expr, l),
+	matrix ([ ub, ua ], 
+		  [ss*ua,  ub ])
+);
+
+countsym3(ab, sym):=block([inflag:true ],
+	if freeof(sym, ab) then return(1),
+	if atom(ab) then  
+		if sym=ab then return(ab),
+	if subvarp(ab) then  
+		if sym=op(ab) then return(ab),
+	xreduce("&", maplist( lambda([i], countsym3(i, sym)), ab))
+ );
  
 put('cliblade, 'v1,'version);
 put('cliblade, "Dimiter Prodanov", 'author);
-put('cliblade, "(C) - Dimiter Prodanov, 2015", 'copyright);
+put('cliblade, "(C) - Dimiter Prodanov, 2015 -2020", 'copyright);
 
 disp("package name: cliblade.mac");
 disp("author: ", get('cliblade,'author));

@@ -4,7 +4,9 @@ a lightweight package for  component-wise Geometric Algebra calculations
 
 Clifford analysis
  
-@version 1.8.8 Date 25 May 2021 
+@version 1.8.9 Date 28 Jul 
+		- chnage in dependsv
+		1.8.8 Date 25 May 2021 
 		- potentiategr - integrates a k-vector
 		1.8.7 Date 25 Apr 2020 
 		- change in cdirdiff
@@ -67,19 +69,19 @@ if get('clifford,'version)=false then (
 	),
 	
 	if emptyp(err) then (
-	infix ("|", 130, 129),
-	infix ("&", 130, 129)
-
+		infix ("|", 130, 129),
+		infix ("&", 130, 129)
 	)
 	
 );
 
+/* move to clifford ?*/
 if get('cliffordan,'version)=false then (
 	remove("@", operator),
 	"inner product",
 	infix ("@", 130, 129),
 	"@"(a, b):=  scprod(a,b),
-	print("warning: redefining  @")
+	print("warning: redefining @")
 
 );
 
@@ -92,16 +94,23 @@ defmatch(%diffpar, %bb*'diff(%ff, %xx, %nn));
 /*
 declaring dependencies
 */
-dependsv(F, var):= block([ ee, u], 
+dependsv(F, var):= block([ ee, u, var2], 
 	if listp(F) then 
 		map (lambda([u], dependsv(u, var)), F)
 	else (
-		if subvarp(var) then var:op(var),
-		if subvarp(F) then F:op(F),
-		ee:buildq([var], declare(var, scalar) ), 
-		ev(ee, nouns),
 		ee:buildq([F], declare(F, scalar) ), 
 		ev(ee, nouns),
+		
+		if subvarp(F) then F:op(F),
+		var2:var,
+		var: if subvarp(var) then  op(var) else var,
+		if listp(var) then
+			var:map(lambda([u], if subvarp(u) then  op(u) else u), var),
+	 	ee:buildq([var], declare(var, scalar) ),  
+
+		ev(ee, nouns),
+		var:var2,
+		
 		ee:buildq([var], if listp(var) then 
 							makelist(var[k], k, length(var)) 
 						 else 
@@ -126,7 +135,7 @@ totdiff(f, x, [lv]):=block( [ret:0, u],
 			lv:listofvars(x)
 		else 
 			lv:lv[1],
-		display(lv),
+		/*display(lv),*/
 		for u in lv do
 			if symbolp(u) then
 				ret: ret + diff(f, u) / diff(x, u)
@@ -181,8 +190,8 @@ diffsubst(deq, dvar, eq):=block([nn, zz, u,   sop, sargs, ret, l, r, dsymb:nouni
 				ret:ev(deq, diff),
 				ret: block([ ff, xx, nn, fu], 
 					subst(dsymb=lambda([ff, xx, nn], 
-					if not mapatom(ff) then
-						(   fu:subst(eq, ff), 
+					if not mapatom(ff) then	(   
+						fu:subst(eq, ff), 
 						'totdiff(fu, zz, dvar)) else 'totdiff(ff, zz, dvar)
 					), ret)
 				),
@@ -210,7 +219,9 @@ diffsubst(deq, dvar, eq):=block([nn, zz, u,   sop, sargs, ret, l, r, dsymb:nouni
 
 /* 
 Clifford-valued
-total differentiation; */
+total differentiation; 
+cinv->cinvblade
+*/
 ctotdiff(f, x):=block( [ret:0, lv],
 	if mapatom(x) then 
 		ret: diff( f, x )
@@ -221,6 +232,8 @@ ctotdiff(f, x):=block( [ret:0, lv],
 	),
 	ret
 );
+
+
 
 /*
  connection-type of derivatives
@@ -310,7 +323,8 @@ cdirdiffi(f, v, x):=block ([ret:0, m, z, p],
 		for u in lv do (
 			qq: diff(x, u),
 			m: qq @ qq,
-			uu: m*(qq | v),
+			if m#0 then m:1/m,
+			uu: (qq | v)*m,
 			ret: ret + uu * subst(".", "*", diff( f, u ))
 			)
 	),
@@ -327,7 +341,7 @@ cdirdualdiff(f, v, x):=block( [ret:0],
 );
 
 /*
-
+@deprecated
 */
 cndirdiff(f, v, x):=block( [ret:0, lv, uu:0, m, qq],
 	if mapatom(x) then 
@@ -337,7 +351,8 @@ cndirdiff(f, v, x):=block( [ret:0, lv, uu:0, m, qq],
 		for u in lv do (
 			qq: diff(x, u),
 			m: qq @ qq,
-			uu: m*(v & qq),
+			if m#0 then m:1/m,
+			uu: (v & qq)*m,
 			/*uu: expand(qq . v) - scprod(qq , v),
 			uu: dotsimpc(uu),*/
 			ret: ret + uu. subst(".", "*", diff( f, u ))
@@ -618,10 +633,12 @@ vvectdiff(f, x, [k] ):=block ([ df],
 	df
 );
 
+/*
 claplacian(f, x):=block([ret], 
 	ret:mvectdiff(f, x),
 	svectdiff(ret, x)
 );
+*/
 
 /*
  Euler-Lagrange equations
@@ -700,13 +717,6 @@ ciELfdiff1(_F, tt, pvars):=block(
 	clifact(eq)
 );
 
-/*
-compdiff( _F, vi, vj, tt):=block([df, dx],
-	df: _F @ vi,
-	dx: tt @ vj,
-	pardiff(df, dx)
-);
-*/
 
  
 /*
