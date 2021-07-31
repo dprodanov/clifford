@@ -4,8 +4,9 @@ a lightweight package for  component-wise Geometric Algebra calculations
 
 Clifford analysis
  
-@version 1.8.9 Date 28 Jul 
-		- chnage in dependsv
+@version 1.8.9 Date 31 Jul 
+		- cinv changed to cinvinblade
+		- bugfix in dependsv
 		1.8.8 Date 25 May 2021 
 		- potentiategr - integrates a k-vector
 		1.8.7 Date 25 Apr 2020 
@@ -91,28 +92,32 @@ if get('cliffordan,'version)=false then (
 matchdeclare([%ff, %xx], symbolp, %nn, integerp, %bb, true);
 defmatch(%diffpar, %bb*'diff(%ff, %xx, %nn));
 
+ 
+%sclardecl:true;
 /*
 declaring dependencies
 */
-dependsv(F, var):= block([ ee, u, var2], 
+dependsv(F, var):= block([ ee, u, var2, _k], 
 	if listp(F) then 
 		map (lambda([u], dependsv(u, var)), F)
 	else (
-		ee:buildq([F], declare(F, scalar) ), 
-		ev(ee, nouns),
+		if %sclardecl= true then(
+			ee:buildq([F], declare(F, scalar) ), 
+			ev(ee, nouns)
+		),
 		
 		if subvarp(F) then F:op(F),
 		var2:var,
 		var: if subvarp(var) then  op(var) else var,
 		if listp(var) then
 			var:map(lambda([u], if subvarp(u) then  op(u) else u), var),
-	 	ee:buildq([var], declare(var, scalar) ),  
+		ee:buildq([var], declare(var, scalar) ),  
 
 		ev(ee, nouns),
 		var:var2,
 		
 		ee:buildq([var], if listp(var) then 
-							makelist(var[k], k, length(var)) 
+							makelist(var[_k], _k, length(var)) 
 						 else 
 							var ), 
 		ev(depends(F,ee), nouns)
@@ -121,8 +126,7 @@ dependsv(F, var):= block([ ee, u, var2],
 
  
 /*
- Analysis functions
-
+ Calculus functions
 */
 
 /* total differentiation; 
@@ -153,13 +157,13 @@ ctotdiffs(f, x):=block( [ret:0, lv, ia],
 		for u in lv do
 			if symbolp(u) then
 				if symbolp(f) then
-					ret: ret + cinv(diff(x, u)). subst(".", "*", diff( f, u ))
+					ret: ret + cinvblade(diff(x, u)). subst(".", "*", diff( f, u ))
 				else (
 					ia:inargs(f),
 					if length(ia)=1 then
-						ret: ret + cinv(diff(x, u)). subst(".", "*", diff(inop(f), u)* diff(first(ia), u))
+						ret: ret + cinvblade(diff(x, u)). subst(".", "*", diff(inop(f), u)* diff(first(ia), u))
 					else
-						ret: ret + cinv(diff(x, u)). subst(".", "*", diff( f, u ))
+						ret: ret + cinvblade(diff(x, u)). subst(".", "*", diff( f, u ))
 				)	
 			
 	),
@@ -222,13 +226,13 @@ Clifford-valued
 total differentiation; 
 cinv->cinvblade
 */
-ctotdiff(f, x):=block( [ret:0, lv],
+ctotdiff(f, x):=block( [ret:0, lv, z],
 	if mapatom(x) then 
 		ret: diff( f, x )
 	else (
 		lv: sublist( listofvars(x), lambda ([z], freeof(asymbol, z))),		
 		for u in lv do 
-			ret: ret + cinv(diff(x, u)). subst(".", "*", diff( f, u ))
+			ret: ret + cinvblade(diff(x, u)). subst(".", "*", diff( f, u ))
 	),
 	ret
 );
@@ -370,7 +374,7 @@ ctotprojdiff(f, v, x):=block( [ret:0, lv, uu:0, qq, gn, ss:0, ipdecomp:true],
 		lv: sublist( listofvars(x), lambda ([z], freeof(asymbol, z))),		
 		gn:maxgrade(v),
 		for u in lv do (
-			qq: cinv(diff(x, u)),
+			qq: cinvblade(diff(x, u)),
 			uu: dotsimpc(expand(v | qq)),
 	 
 			ret: ret + uu. subst(".", "*", diff( f, u ))
@@ -388,7 +392,7 @@ ctotintdiff(f, x):=block( [ret:0, lv],
 	else (
 		lv: sublist( listofvars(x), lambda ([z], freeof(asymbol,z))),
 		for u in lv do 
-			ret: ret + cinv(diff(x, u)) | subst(".", "*", diff( f, u ))
+			ret: ret + cinvblade(diff(x, u)) | subst(".", "*", diff( f, u ))
 	),
 	ret
 );
@@ -399,7 +403,7 @@ ctotextdiff(f, x):=block( [ret:0, lv],
 	else (
 		lv: sublist( listofvars(x), lambda ([z], freeof(asymbol,z))),
 		for u in lv do 
-			ret: ret + cinv(diff(x, u)) & subst(".", "*", diff( f, u ))
+			ret: ret + cinvblade(diff(x, u)) & subst(".", "*", diff( f, u ))
 	),
 	ret
 );
@@ -463,7 +467,7 @@ vectdiff(f, x, [k] ):=block ([s, n:1, m, i ],
 		i:1, s:0,
 		for m in x do (
 			if not emptyp(m) then
-				s: s+ cinv(asymbol[i]). subst(".", "*", pardiff( f, m )),
+				s: s+ cinvblade(asymbol[i]). subst(".", "*", pardiff( f, m )),
 			i:i+1
 		),
 		s:cliffsimpall(s),
@@ -508,7 +512,7 @@ parmvectdirdiff(f, v, x, [k] ):=block ([s, ee, xx,  df, qq,  uu ],
 		s:0,
 		for i:1 thru length(xx) do (			
 			df: expand(pardiff( f, xx[i] )),
-			qq: cinv(ee[i]),
+			qq: cinvblade(ee[i]),
 			uu: scprod(qq , v),
 			/*display(qq, uu, df),*/
 			s: s +  cliffsimpall(uu*subst(".", "*", df ))
@@ -529,7 +533,7 @@ parmvectextdiff(f, x, [k] ):=block ([s, n:1, z, m, i, ee, xx, df, qq, es, ipdeco
 		i:1, s:0,
 		for m in xx do (			
 			df: expand(pardiff( f, m )),
-			qq: cinv(ee[i]),
+			qq: cinvblade(ee[i]),
 			s: s +  cliffsimpall(qq & subst(".", "*", df )),
 			i:i+1
 		),
@@ -555,7 +559,7 @@ parmvectintdiff(f, x, [k] ):=block ([s, n:1, z, m, i, ee, xx, df, qq, es, ipdeco
 		i:1, s:0,
 		for m in xx do (			
 			df: expand(pardiff( f, m )),
-			qq: cinv(ee[i]),
+			qq: cinvblade(ee[i]),
 			s: s +  cliffsimpall(qq | subst(".", "*", df )),
 			i:i+1
 		),
@@ -1016,7 +1020,7 @@ pintegrate(ff, rv, eqs, tvar, [bnd]):=block([dr, ffs, ker, ret],
  ret
 );
 
-put('cliffordan, 'v18,'version);
+put('cliffordan, 'v19,'version);
 put('cliffordan, "Dimiter Prodanov", 'author);
 put('cliffordan, "(C) - Dimiter Prodanov, 2015 - 2021", 'copyright);
 
