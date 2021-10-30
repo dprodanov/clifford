@@ -1,7 +1,7 @@
 {
 	"name": "clifford",
 	"description": "Clifford: a lightweight package for performing Geometric Algebra calculations",
-	"version": "2.4.7",
+	"version": "2.5.1",
 	"main": "clifford.mac",
 	"scripts": {
 		"test": ""
