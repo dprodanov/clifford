@@ -51,6 +51,7 @@ Clifford-based differential forms
 	infix ("~", 130, 129),
 	infix ("<|", 110, 109),
 	infix ("|<", 110, 109),
+	infix (">|", 110, 109),
 	infix ("|>", 110, 109),
 	prefix( "%%", 110)
 );
@@ -113,6 +114,7 @@ dspaces():=block([lst, l, c:[], m:1, n:1, u ],
 %diffvars:[];
 %diffvarslist:[];
 %diffvolel;
+
 
 declare(delsubst, evfun);
 delsubst(dvar):=block([u, sop:inop(dvar)],
@@ -246,6 +248,9 @@ diffspaces(dlist):=block([ee, lst:[]],
 
 diffsym():=sublist(props, lambda( [z], if symbolp(z) then diffvarp(z) and scalarp(z) else false));
 
+clc(expr):=(
+	sublist(listofvars(expr), lambda([u],  freeof(asymbol, u) and   freeof(esymbol, u) ))
+);
 
 /* 
 permutation matrix, scalar product
@@ -416,7 +421,7 @@ fdual(f, [lv]):=block ([omega, ve, dv],
 /*
 Hodge dual
 */
-hdual(f, [lv]):=block ([omega, ve,  dv],
+hdual(f, [lv]):=block ([ ve,  dv],
     if emptyp(lv) then lv:%basevars
     else lv:lv[1],
     dv:makediffvarl(lv),
@@ -424,7 +429,7 @@ hdual(f, [lv]):=block ([omega, ve,  dv],
     ve:clihdual(ve),
     ve:dotsimpc(ve),
 	ve:clifact(ve),
-    omega:clif2forma(ve, lv)
+    clif2forma(ve, lv)
 );
 
 "%%"(f):=hdual(f);
@@ -449,6 +454,7 @@ diffcontract(mvect, diform, [lv]):=block ([inprotype: sym , ipdecomp:true, vi, d
 
 "|<"(mvect, diform):=diffcontract(mvect, diform);
 
+">|"(diform, mvect):=diffcontract(mvect, diform);
 
 /*
 Cartan connection matrices
@@ -474,6 +480,7 @@ cartconn(rr, eqs, [dlv]):=block([ee:vectors(), rs, drs, BM, dBM, iBM, zz, frvect
 
 /*  
 * exterior differential
+invblade
 */
 extdiff(f, x):=block([k, df, lv, dv],	
 	 lv: makelist( (x @ asymbol[i])* (asymbol[i] @ asymbol[i]), i, ndim),
@@ -500,6 +507,7 @@ parextdiff(f, x):=block([k, df, lv, dv],
 
 /*
 * interior differential
+invblade
 */
 intdiff(f, x):=block([k, df, lv, dv],	
 	 lv: makelist( (x @ asymbol[i])* (asymbol[i] @ asymbol[i]), i, ndim),
@@ -543,6 +551,7 @@ laplacian(f, x):=block([ df1, df2, ret],
 	  ratsimp(ret)
 );
 
+/*
 diffcommut1(F,r):=block([q1,q2],
 	q1:hdual(intdiff(F ,r)),
 	q2:extdiff(hdual(F) ,r),
@@ -560,6 +569,7 @@ lapcommut(F,r):=block([q1,q2],
 	q2:laplacian(hdual(F) ,r),
 	first(divide(q1,q2))
 );
+*/
 
 /*  
 * Lie differential
@@ -576,7 +586,7 @@ liediff(f, v, x):=block ( [dd, lv, id, q],
 );
 
 /*
-Lie bracekt (derivative) L_[X,Y] f= L_X (Y f) = [X,Y]f
+Lie bracket (derivative) L_[X,Y] f= L_X (Y f) = [X,Y]f
 */
 liebracket(f, v, u, x):=  block([ dd , id],
     dd: cdirdiff( cdirdiff (f, v, x), u, x)- cdirdiff(cdirdiff (f, u, x), v, x),
@@ -598,39 +608,151 @@ liediff2(f, v, x):=block ( [dd, lv, id],
 %indvar:false;
 /* connection matrix elements*/
 declare(%G, scalar);
-covderivv(ee, z, r):=block([ez, ek, ej, ss:0],
+
+/* covariant derivative of a base vector*/
+covderivv(ee, z, r):=block([ez, ek, ej, duj, ss:0],
 	if freeof(asymbol, ee) then return(diff(ee,z)),
 	if %indvar=true then (
 		ez:z,
-		/*ek: (r @ee) / ee@ee, */
-		ek: diff (r,ee)
+		ek: coeff (r,ee)
 	) else (
 		ez:first(args(diff(r,z))),
 		ek:first(args(ee))
-	),
- 	for i:1 thru ndim do
+	),	
+ 	for i:1 thru ndim do (
 		if %indvar=true then (
-			ej:  diff (r,asymbol[i]),
-			ss:ss+  asymbol[i]* %G([ek],[ej, ez])
+			ej: coeff(r,asymbol[i]),
+			ss:ss + asymbol[i]* %G([ej],[ek, ez])
 		)else
-			ss:ss+  asymbol[i]* %G([ek],[i, ez]) ,
+			ss:ss + asymbol[i]* %G([i ],[ek, ez]) 
+	),
 	ss  
 );
 
 declare(del,outative);
-covderivm(ee, z, x):=block([v,lv, ss:diff(ee), u ],
-	 ss:subst( del=lambda([u], covderivv(u, z, x)),ss),
-	 ss:dotsimpc(expand(ss))
+covderivm(ee, z, x):=block([v,lv, ss:diff(ee), u],
+	 ss:subst(del=lambda([u], covderivv(u, z, x)),ss),
+	 ss:subst(".", "*",ss),
+	 ss:dotsimpc(expand(ss)),
+	 clifact(ss)
 );
+
+
+/* reciprocal basis - transfer to differential forms*/
+esymbol:E;
+
+makerblade(var):=esymbol:parse_string(sinvertcase(string(var)));
+
+makerbasis([var]):= block([ ee], 
+	if emptyp(var) then var: asymbol
+	else var:first(var),
+	esymbol: makerblade(var),
+	ee:buildq([esymbol], declare(esymbol, real)), 
+	ev(ee,nouns),
+	ee:buildq([esymbol], declare(esymbol, mainvar)), 
+	ev(ee,nouns),
+	ee:buildq([esymbol], array(esymbol, ndim)	), 
+	ev(ee,nouns)
+);
+
+declare(rvsubst, evfun);
+
+rvsubst(expr):=block([ret, la, lb, u],
+	if inop(expr)="+" then 
+		return(map(lambda([u], rvsubst(u)), expr)),
+	ret:subst(esymbol=asymbol,expr),
+	ret:invautom(ret),
+ 
+	if mapatom(ret) or freeof (asymbol, ret) then return(ret),
+	if inop(ret)="." then 
+		ret: reverse(ret)
+	else (
+		[la, lb]:subst(nil=1, oppart(ret, lambda([u], freeof(esymbol, u) ))),
+		ret:(subst(esymbol=asymbol,lb)),
+		if not mapatom(ret) then ret:reverse(ret),
+		ret:la.ret
+	),
+	ret
+);
+
+/* covariant derivative of a base co-vector*/
+covderivc(ee, z, r):=block([ez, ek, ej, duj, ss:0],
+	if freeof(esymbol, ee) then return(diff(ee,z)),
+	if %indvar=true then (
+		ez:z,
+		ek: coeff (r,ee)
+	) else (
+		ez:first(args(diff(r,z))),
+		ek:first(args(ee))
+	),	
+ 	for i:1 thru ndim do (
+		if %indvar=true then (
+			ej: coeff(r,esymbol[i]),
+			ss:ss - esymbol[i]* %G([ek],[ej, ez])
+		)else
+			ss:ss - esymbol[i]* %G([ek ],[i, ez]) 
+	),
+	ss  
+);
+
+covderivmr(ee, z, x):=block([v,lv, ss:diff(ee), u ],
+	 ss:subst(del=lambda([u], covderivc(u, z, x)),ss),
+	 ss:(expand(ss))
+);
+
+/* covariant derivative of a differential
+covderivd(dv, z, x):=block([v,lv, duk, ss:0],
+	if not diffvarp(dv) then return(diff(dv,z)),
+	lv: clc(x),
+	v:first(getbasevar(dv)),
+	for vv in lv do
+		ss:ss- makediffvar(vv)*%G([v],[ vv,z]) ,
+	ss  
+);
+
+
+
+covderivf(ee, z, x):=block([v,lv, ss:diff(ee), u, algebraic:true ],
+	 ss:subst(del=lambda([u], covderivd(u, z, x)),ss),
+	 ratsimp(ss)
+);
+*/
+
 
 ctotdiffcov(f, x):=block( [ret:0, lv, vv],
 	if mapatom(x) then 
 		ret: diff( f, x )
 	else (
-		lv: sublist( listofvars(x), lambda ([z], freeof(asymbol, z))),		
+		lv: clc(x),		
 		for u in lv do (
 			vv:cinv(diff(x, u)),
 			ret: ret + vv . subst(".", "*", covderivm( f, u, x))
+			)
+	),
+	ret
+);
+
+ctotdiffcove(f, x):=block( [ret:0, lv, vv],
+	if mapatom(x) then 
+		ret: diff( f, x )
+	else (
+		lv: clc(x),			
+		for u in lv do (
+			vv:cinv(diff(x, u)),
+			ret: ret + vv & subst(".", "*", covderivm( f, u, x))
+			)
+	),
+	ret
+);
+
+ctotdiffcovr(f, x):=block( [ret:0, lv, vv],
+	if mapatom(x) then 
+		ret: diff( f, x )
+	else (
+		lv: clc(x),		
+		for u in lv do (
+			vv:subst( asymbol=esymbol, diff(x, u)),
+			ret: ret + vv . subst(".", "*", covderivmr( f, u, x))
 			)
 	),
 	ret
@@ -651,22 +773,28 @@ mvectdiffcov(f, x, [k] ):=block ([s:0, f1:copy(f), p],
 	s
 );
 
-covderiv1(dv, z, x):=block([v,lv, ss:0],
-	if not diffvarp(dv) then return(0),
-	lv: clc(x),
-	v:first(getbasevar(dv)),
-	for vv in lv do
-		ss:ss-%G([vv],[ v,z])* makediffvar(vv),
-	ss  
+mvectdiffcovr(f, x, [k] ):=block ([s:0, f1:copy(f), p],
+	if emptyp(k) then k:1 else k: k[1],
+	x:expand(x),
+	for p:1 thru k do (
+		s:ctotdiffcovr(f1, x),
+		f1:s
+	),
+	s:rvsubst(expand(s)),
+	s:dotsimpc(expand(s)),
+	if %divsimp=true then (
+		s:trigsimp(s),
+		clifact(s)
+	),
+	s
+);
+
+factorbydiff(expr, fsym, lst):=block([k, dlst], 
+	dlst:makelist( 'diff(fsym, k), l, lst),
+	factorby(expr,	dlst)
 );
 
 
-covderivf(dv, z, x):=block([v,lv, ss:diff(dv), u ],
-	 ss:form2clifa(ss),
-	 ss:subst( del=lambda([u], -covderivv(u, z, x)),ss),
-	 ss:dotsimpc(expand(ss)),
-	 clif2forma(ss)
-);
 
 /* 
 Christoffel symbols based on 
@@ -892,18 +1020,12 @@ potentiate4(expr,  b):=block([vv, ee,  ri, t:gensym("t"), gp, lvc, i:1, li:[], k
 	[ vi |< expr, gp, vi]
 );
 */
-/*
-diffvolel(lv):=block([s:dotsimpc(%iv.%iv)], 
-	s*clif2form(%iv, lv)
-);
-*/
+
 diffvolel(lv):=clif2forma(%iv, lv);
 
 diffsolve(expr, lvars):=block([ cexpr],
  if lfreeof (%diffvars, expr) then 'nil else (
  cexpr:form2clif(expr),
- /* cexpr:clifact(cexpr),
- display(cexpr),*/
  clisolve(cexpr, lvars)
  )
 );

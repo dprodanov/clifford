@@ -82,7 +82,7 @@ ndim:0;
 signature:[];
 "pseudoscalar";
 %iv:1;
-"squre of pseudoscalar";
+"square of the pseudoscalar";
 %ivnorm:1;
 "elements of the algebra";
 %elements:[1];
@@ -203,8 +203,16 @@ pfeformat: true;
 	
 	texput ("&", " \\wedge ", infix);
 	
+	
+	scprod(xx, yy):=block ([ret],
+		ret: dotsimpc(expand(xx.yy)),
+		scalarpart(ret)
+	);
+	
+	
 /*
  various products
+ - move in a special package
 */
 
 	outprod(a, b):= block ([ss:0, ret:0, lva, lvb, z, lvu],
@@ -231,10 +239,7 @@ pfeformat: true;
 		)
 	);
 	
-	scprod(xx, yy):=block ([ret],
-		ret: dotsimpc(expand(xx.yy)),
-		scalarpart(ret)
-	);
+
 	
 	/* change for dimensionality */
 	/*dualcoeff(a):=coeff(dotsimpc(a.a.a.dual(a)), %iv);*/
@@ -542,7 +547,6 @@ cliffsimpall(expr):=block([res, aa, bb, sop, simp:true],
 	) else (
 		res:subst("^"="^^", expr),
 		res:expand(res),
-		/*res:apply1(res, clifsimp3, clifsimp21, clifsimp2),*/
 		res:apply1(res, clifsimp3, clifsimp21),
 		res:apply1(res, clifsimp1, clifsimp10),
 		/*if not freeof(%e, res) then 
@@ -1482,10 +1486,11 @@ invautom(vv):=block( [ee, aa, ei, listarith:true],
 /*
 inverse of a blade
 */
-cinvblade(ab):=block( [dd],
-	dd:dotsimpc(ab.ab),
+cinvblade(ab):=block( [dd:ab.ab],
+	dd:dotsimpc(expand(dd)),
 	if not scalarp(dd) then error(dd, "  not a scalar"),
-	ab/dd
+	if dd#0 then dd:1/dd,
+	ab*dd
 );
 
 /*
