@@ -3,8 +3,13 @@ Clifford algebra in Maxima
 Clifford: a lightweight package for performing Geometric Algebra calculations
 
  @version 
+	2.5.2 Date 5 Dec 2021
+	- norm
+	- multtrace moved to climatrep
+	
 	2.5.1 Date 16 Jul 2021
 	- bugfix in clihdual
+	- bugfix in cinvblade
 	
 	2.5.0 Date 29 Jan 2021	
 	- matrix code moved to climatrep
@@ -748,7 +753,7 @@ alias (countsym, countsymb);
 
 /*  
 counts occurences of a symbol in an expression
-experimental code*/
+*/
 countsymb(ab, sym):=block([inflag:true ],
 	if freeof(sym, ab) then return(0),
 	if atom(ab) then  
@@ -1171,34 +1176,35 @@ commtable(ee):=
 		  );
 
 /**
- norm
+ norm with regard to the Clifford product 
 */
 cliabs(x):=block([u:expand(x)],
 	u:expand(u.cconjugate(u)),
+	u:dotsimpc(u),
 	u:scalarpart(u),
 	u:sqrt(abs(u)),
 	radcan(u)
 );
 
 
-/**
- multiplication table, trace
-*/
-multtrace():=block([s:[1], lst],
-	lst:elements(all),
-	for i:1 thru length(lst) do 
-		s:endcons(dotsimpc(lst[i].lst[i]), s),
-	s
-);
+
 
 cnorm(x):=block([u:expand(x), z, v],
 	u:expand(u | cconjugate(u)),
-	u:cliffsimpall(u),
+	u:dotsimpc(u),
 	u:expand(u),
 	u:scalarpart(u),
 	u:ratsimp(u)
 );
 
+/**
+canonical norm
+*/
+norm (u ):= block([ret:0 ],
+	ret: scprod (u , invautom (u)),
+	ret:ratsimp(ret),
+	sqrt(ret)
+);
 
 /**
 vector predicate

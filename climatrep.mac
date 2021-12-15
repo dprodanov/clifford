@@ -4,7 +4,10 @@ a lightweight package for performing Geometric Algebra calculations
 
 Clifford Algebra Matrix representation code
 
-version 	2.0 29 Jan 2021
+version 	2.1.5 5 Dec 2021
+			- multtrace
+			2.1 10 Jul 2021
+			2.0 29 Jan 2021
 			1.0 11 May 2016
 
 @depends 'clifford
@@ -32,6 +35,15 @@ if get('clifford,'version)=false then (
 	)
 );
 
+/**
+ multiplication table, trace
+*/
+multtrace():=block([s:[1], lst],
+	lst:elements(all),
+	for i:1 thru length(lst) do 
+		s:endcons(dotsimpc(lst[i].lst[i]), s),
+	s
+);
 
 /*
 diagnoal transposition of a matrix
@@ -93,9 +105,10 @@ elements([cpl]):=block([c:1, lst:[], u, v],
 
 climatrep3(vv):=block([q, lst: elements(all), lsta, lstb, nn, le],
 	nn: ceiling(ndim/2),
+ 
 	[lsta, lstb]:oppart(lst, lambda([q], maxgrade(q)<nn)),
 	if oddp(length(lstb)) then  (
-		 le:pop(lstb),
+		le:pop(lstb),
 		if vv=le then vv: -%i*clihdual(le),
 		if _debug1=true then
 			display(lsta, lstb, vv),
@@ -122,18 +135,6 @@ climatrep(vv):=block([n, q, AA, lst: elements(all), nn, dd, G, EE],
 	G.EE
 );
 
-/*
-mattrace(a) := block([ret : 0, i],
-  if not matrixp(a) then return ('mattrace(a))
-  else (
-    i : lmin(matrix_size(a)),
-    while i > 0 do (
-      ret : ret + inpart(a,i,i),
-      i : i - 1)
-	),
-   ret
- );
- */
 climatrep2(vv, lst):=block([n, q, AA, nn, dd, G, EE],
 	local(AA, G, EE, q),
 	n:length(lst),
@@ -179,7 +180,7 @@ climatrep21(vv, lst, [ex]):=block([n, q, AA, nn, dd, G, EE, vi, dcase:1],
 	ratsimp(G.EE*dcase)
 );
 
-climatrep21(vv, lst ):=block([n, q, AA, nn, dd, G, EE, vi, dcase:1],
+climatrep21(vv, lst ):=block([n, q, AA, nn, dd, G, EE, vi, l, r, dcase:1],
 	local(AA, G, EE, q),
 	n:length(lst),
 	/* multiplication table of the algebra */
@@ -194,22 +195,25 @@ climatrep21(vv, lst ):=block([n, q, AA, nn, dd, G, EE, vi, dcase:1],
 		if _debug1=true then
 		display(vv, vi)
 	),
+	[l, r]: subst(nil=1, oppart(vv, lambda([u], freeof(asymbol, u)))),
 	/* signature of the algebra */
 	G:diag(AA),
 	ratvars(q),
-	nn:expand(ratnum(vv)), dd:ratdenom(vv),
+	nn:expand(ratnum(r)), dd:ratdenom(r),
 	if _debug1=true then
 		display( nn, dd, AA),
-	EE:matrixmap(lambda([q],   scalarpart(ratcoeff (q, nn))/dd), AA),
+	EE:matrixmap(lambda([q],   scalarpart(ratcoeff ( q, nn))/dd), AA),
 	if _debug1=true then
 		display(EE, G),
-	ratsimp(G.EE*dcase)
+	ratsimp(l*G.EE*dcase)
 ); 
 
 dualrep(ee):=block([la, lb, u ],
 	if maxgrade(ee) <ndim/2 then ee 
 	else(
-		if inop(ee)="." then
+		if listp(ee) then
+			map(dualrep, ee)
+		elseif inop(ee)="." then
 			%i*clihdual(ee)
 		elseif inop(ee)="*" then (
 			[la, lb]:subst(nil=1, oppart(ee, lambda([u], freeof(asymbol, u)  ))),
@@ -221,22 +225,6 @@ dualrep(ee):=block([la, lb, u ],
 	)
 );
 
-/*
-dualrep(ee):=block([la, lb, u ],
-	if maxgrade(ee) <ndim/2 then ee 
-	else(
-		if inop(ee)="." then
-			%i*clihdual(ee)
-		elseif inop(ee)="*" then (
-			[la, lb]:subst(nil=1, oppart(ee, lambda([u], maxgrade(u)<ndim/2  ))),
-			la*%i*clihdual(lb)
-		)else (
-			[la, lb]:subst(nil=0, oppart(ee, lambda([u], maxgrade(u)<ndim/2 ))),
-			la+%i*clihdual(lb)
-		)
-	)
-);
-*/
 
 nelements([cpl]):=block([c:1, lst:[] ],
 	if emptyp(cpl) then ( 
@@ -473,6 +461,16 @@ elem2mat(expr, [ulst] ):=block(
 		map(climatrep, expr)
 );
 
+elem2mat3(expr, [ulst] ):=block(
+	if emptyp(ulst) then ulst:false 
+	else ulst:true,
+	if mapatom(expr) then return(climatrep3(expr)),
+	if ulst=true then
+		maplist(climatrep3, expr)
+	else
+		map(climatrep3, expr)
+);
+
 coeffmap(vv):=block([n, AA, lst, EE],
 	local(AA,  EE),
 	lst: elements(all),
@@ -653,4 +651,4 @@ print("package name: climatrep.mac");
 print("author: ", get('climatrep,'author));
 print("version:", get('climatrep,'version));
 print("Recommended location: share/contrib");
-print("last update: 10 Jul 2021");
+print("last update: 13 Jul 2021");
