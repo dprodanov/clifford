@@ -4,6 +4,8 @@ Clifford: a lightweight package for performing Geometric Algebra calculations
 
  @version 
 	2.5.2 Date 5 Dec 2021
+	-bugfix in dotreverse
+	- bugfix in bdecompose
 	- norm
 	- multtrace moved to climatrep
 	
@@ -720,6 +722,8 @@ constructs the  bi-vectors of the algebra
 bivectors():=grelem(2);
 
 grelem(k):=block([u],
+	if k=0 then [0]
+	else 
 	sublist(%elements, lambda([u],  countsymb(u, asymbol)=k))
 );
 
@@ -922,22 +926,25 @@ clicoeff(expr, smat):=block([u, ee:[], z:[], cc:[], qq ],
 	if smat='list then 
 		[ee, cc]
 	else if smat='mat and not emptyp(cc) then  
-		[ee, transpose(matrix(cc))] else [ ]
+		[ transpose(matrix(ee)), transpose(matrix(cc))] else [ ]
 		
 );
 
 /*
 computes the blade decomposition
 */
-bdecompose(expr):=block([gr:expr, v],
+bdecompose(expr):=block([gr:expr, v, zz, lst],
 	if not freeof(".", expr) then 
 		gr: expand(expr),
 	if length(%elements)=1 then 
 			%elements:elements(), 
-	gr:map( lambda([v], factorby(v, %elements) ), gr ),
-	gr:grade(gr),
-	map(lambda([v], clicoeff(v, 'mat)),gr)
+	if gr#0 then
+		gr:map( lambda([v], factorby(v, %elements) ), gr ),
+	gr:grade(gr),  
+	lst:map(lambda([v], if v#0 then clicoeff(v, 'mat) else 0), gr), 
+	lst:sublist(lst, lambda([zz],  zz#0))
 );
+
 
 /*
 solves for a list of vairables in clifford-valued equation
@@ -976,6 +983,8 @@ dotreverse(expr):=block ( [ret, l, r],
 	else ret:expr,
 	if matrixp(expr) then
 		return(matrixmap(dotreverse, expr )),
+	if freeof(asymbol, expr) then
+		return(expr),
 	if inop(ret)="+" or listp(ret) then 
 		map(dotreverse, ret )
 	elseif inop(ret)="^" then (
@@ -1335,6 +1344,9 @@ lvect(lst ):=block ([ss:0, qq, n],
 cmvect(x, k, [cc]):=block ([ss:0, qq, n, elst:grelem(k)],
 	n: length(elst),
 	if emptyp(cc) then
+	if freeof(asymbol, elst) then 
+		ss: x[0]
+	else
 		ss:sum (x[i]*elst[i], i, 1, n)
 	else (
 		cc:cc[1],
