@@ -33,6 +33,15 @@ if get('clifford,'version)=false then (
 	)
 );
 
+/* move to clifford ?*/
+if get('clifforlin,'version)=false then (
+	remove("@", operator),
+	"inner product",
+	infix ("@", 130, 129),
+	"@"(a, b):=  scprod(a,b),
+	print("warning: redefining @")
+
+);
  
  /*
 Linear algebra functions
@@ -41,21 +50,14 @@ Linear algebra functions
 colvect(n):=transpose(matrix(n));
 
 /*
-vect2mat(vlist):=block([a, n],
-	local(a),
-	n:min(length(vlist), ndim),
-	a[i,j]:= dotsimpc(expand( vlist[i] | asymbol[j])),
-	genmatrix(a,n)
-);
-*/
-
 vect2mat(vlist):=block([ n],
 	n:min(length(vlist), ndim),
 	genmatrix( lambda([i,j],  scprod( vlist[i] ,  asymbol[j])), n)
 );
+*/
 
 vect2mat(vlist, slist):=block(
-	genmatrix( lambda([i,j],  scprod( vlist[i] ,  slist[j])), length(vlist), length(slist))
+	genmatrix( lambda([i,j],  ( vlist[i] @  slist[j])), length(vlist), length(slist))
 );
 
 mat2vect(M):=block([ velem:vectors(), Mt, qq:[], dd, listarith:true, n],
@@ -97,18 +99,8 @@ prepsyst(eqs, lvs):=block([ M, qq:[], L, R, mm ],
 	[M, qq]
 );
 
-/*
- computes a unit  element
 
-uvect(vv):=block( [qq],
-	qq:cnorm2(vv),
-	if %divsimp=true then (
-		qq:trigsimp(qq),
-		qq:ratsimp(qq)
-	),
-	vv/sqrt(qq)
-);
-*/
+
 
 /*
 determinants
@@ -153,12 +145,78 @@ clisyst(M, B):=block([   Mt, MP, qq:[], dd, ss, n,v ],
 	reverse(qq)
 );
 
+cnorm2 (u ):= block([ret:0 ],
+	ret:u @ u,
+	ret:ratsimp(ret),
+	sqrt(ret)
+);
 
+uelem(vv):=block( [qq],
+	qq:norm(vv),
+	if qq=0 then return(vv),
+	if %divsimp=true then (
+		qq:trigsimp(qq),
+		qq:ratsimp(qq)
+	),
+	vv/(qq)
+);
+
+
+/**
+valid for vectors
+*/
+vangle(u,v):= block([ret:0],
+	ret: (u@v) / cnorm2 (u )/cnorm2 (v),
+	ret:ratsimp(ret),
+	acos(ret)
+);
+
+/**
+valid for multivectors
+see:  Hitzer, E.; Simos, T. E.; Psihoyios, G. & Tsitouras, C.
+Angles Between Subspaces Computed in Clifford Algebra 
+AIP, 2010 
+ https://arxiv.org/pdf/1306.1629.pdf
+*/
+mangle(u, v):= block([ret:0],
+	ret: (u @ invautom(v)) / norm (u )/norm (v),
+	ret:ratsimp(ret),
+	acos(ret)
+);
+
+
+orientation(u, v, ref):= block([ret:0],
+	ret:( v&u),
+	display(ret),
+	if ret =0 then (
+		ret: u @ invautom(v),
+		ret:radcan(ret/norm(ret))
+	)else (
+		ret:radcan(ret/norm(ret)),
+		display(ret),
+		ret:(ret @  invautom(ref))
+	),
+	ret
+);
+
+
+/*
+ computes a unit  element
+*/
+uvect(vv):=block( [qq],
+	qq:cnorm2(vv),
+	if qq=0 then return(vv),
+	if %divsimp=true then (
+		qq:trigsimp(qq),
+		qq:ratsimp(qq)
+	),
+	vv/(qq)
+);
 
 /* computes the absolute projection */
 proj(v, u):=block([w],
 	w: cinv(u),
-	w: expand( scprod(v, w)  . u ),
+	w: expand( (v @ w)  * u ),
 	w:dotsimpc(w),
 	clifact(w)
 );
@@ -166,7 +224,7 @@ proj(v, u):=block([w],
 /* computes the absolute rejection */
 rej(v, u):=block([w ],
 	w: cinv(u),
-	w: expand( v - scprod(v, w)  . u ),
+	w: expand( v - (v @ w)  * u ),
 	w:dotsimpc(w),
 	clifact(w)
 );
@@ -191,12 +249,12 @@ rejection-based
 */
 gramsmidt2(vlist):=block([dd:[], n, u ],
 	n:length(vlist),
-	push( vlist[1],  dd),
+	push( uvect(vlist[1]),  dd),
 	for k:2 thru n do (
 		u: rej( vlist[k], dd[1]),
 		for j:1 thru k-1 do 
 			u: rej( u, dd[j]),
-		push(u, dd)
+		push(uvect(u), dd)
 		),
 	reverse(dd)
 );
@@ -220,9 +278,10 @@ Ts(a, mm):=block([v, l, b, s, m],
 	if inop(a)="+" then 
 		map(lambda([z], Ts(z, mm)), a)
 	else (	
+	/*b -vector*/
 		[l, b]:mm,
-		m: (b | b),
-		s: l*(a | b)/m,
+		m: (b @ b),
+		s: l*(a @ b)/m,
 		/*display(a, m,  s),*/
 		expand( s . b)
 	)
@@ -239,7 +298,7 @@ mtable2sv(vlist):=block([n, a, m, lst],
 	lst: elements(all),
 	n:length(lst),
 	m:length(vlist),
-	genmatrix( lambda([i,j], scprod(lst[i] , vlist[j])), n, m)
+	genmatrix( lambda([i,j], (lst[i] @ vlist[j])), n, m)
 );
 
 idemps():=block([n, ee, ilst, rilst, iilst, ret],
@@ -261,9 +320,13 @@ idemps2():=block([n, ee, ilst],
 );
 
 idemp(aa):=block([uu: expand(aa. aa)],
-	uu:dotsimpc(uu) -aa,
-	uu:ratsimp(uu),
-	if uu=0 then true else false
+	if listp(aa) then 
+		map(idemp, aa) 
+	else (
+		uu:dotsimpc(uu) -aa,
+		uu:ratsimp(uu),
+		if uu=0 then true else false
+	)
 );
 
 cliodeven(expr):= block( [gr, n:fix( (ndim+1)/2), ols, elst, sso:0, sse:0],
@@ -290,5 +353,15 @@ moore_penrose_pseudoinverse2(m) := block([mm, z : gensym(), scalarmatrixp : fals
 			%elements:elements(), 
 	gr:map( lambda([v], factorby(v, %elements) ), gr ),
 	gr:grade(gr),
-	map(lambda([v], clicoeff(v, 'lst)),gr)
+	map(lambda([v], clicoeff(v, 'list)),gr)
 );
+
+put('cliffordlin, 'v1,'version);
+put('cliffordlin, "Dimiter Prodanov", 'author);
+put('cliffordlin, "(C) - Dimiter Prodanov, 2015 - 2021", 'copyright);
+
+print("package name: cliffordlin.mac");
+print("author: ", get('cliffordlin,'author));
+print("version:", get('cliffordlin,'version));
+print("Recommended location: share/contrib");
+print("last update: 4 Dec 2021");

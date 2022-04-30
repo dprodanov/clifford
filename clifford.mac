@@ -3,8 +3,13 @@ Clifford algebra in Maxima
 Clifford: a lightweight package for performing Geometric Algebra calculations
 
  @version 
+	2.5.3 Date 30 Apr 2022
+	- bladep
+	- cspan - constructs a vector v spanning a full subspace mv: v & mv =0;
+	
 	2.5.2 Date 5 Dec 2021
-	-bugfix in dotreverse
+	- nclv
+	- bugfix in dotreverse
 	- bugfix in bdecompose
 	- norm
 	- multtrace moved to climatrep
@@ -392,6 +397,8 @@ returns  variables excluding clifford symbols
 clivarsq(expr):= block([ z], 
 	sublist(listofvars(expr), lambda([z], freeof(asymbol, z )  ))
 );
+alias (nclv, clivarsq); 
+
 
 /*
 returns cliffod symbols
@@ -431,6 +438,9 @@ list of clifford variables
 clv(expr):=(
 	sublist(listofvars(expr), lambda([u], not freeof(asymbol, u)))
 );
+
+
+
 
 /*
 simplification of dot-products
@@ -954,7 +964,9 @@ clisolve(expr, lst):=block([ee, al, u, ret:expr, maperror:false, sol, solveexpli
 		ret:expand(lhs(expr)-rhs(expr)),
 	[ee, al]:clicoeff(ret,'list),
 	sol:map(lambda( [v], map(lambda( [u], solve(factor(v), u)), lst)), al),
-	flatten(sol)
+	sol:flatten(sol),
+	sol:setify(sol),
+	listify(sol)
 );
 
 /*
@@ -1065,7 +1077,7 @@ elements([cpl]):=block([c:1, lst:[], u, v ],
 );
 
 /**
- multiplication table, all elements,
+ multiplication (Cayley) table, all elements,
  it also has a debugging functionality
 */ 
 mtable2():=block([n, a, lst],
@@ -1079,7 +1091,7 @@ mtable2():=block([n, a, lst],
 );
 
 /**
- inner product table, all elements
+ inner product (Cayley) table, all elements
 */ 
 mtable2i():=block([n,   lst],
 	lst: elements(all),
@@ -1088,7 +1100,7 @@ mtable2i():=block([n,   lst],
 );
 
 /**
- outer product table, all elements
+ outer product (Cayley) table, all elements
 */ 
 mtable2o():=block([n, a, lst],
 	lst: elements(all),
@@ -1097,7 +1109,7 @@ mtable2o():=block([n, a, lst],
 );
 
 /**
- regressive product table, all elements
+ regressive product (Cayley) table, all elements
 */ 
 mtable2r():=block([n, a, lst],
 	lst: elements(all),
@@ -1106,7 +1118,7 @@ mtable2r():=block([n, a, lst],
 );
 
 /**
- scalar product table, all elements
+ scalar product (Cayley) table, all elements
 */ 
 mtable2s():=block([n, lst],
 	lst: elements(all),
@@ -1330,6 +1342,28 @@ cvect(x, [cc]):=block ([ss:0, _i, qq],
 	ev(qq, nouns),
 	ss
 );
+
+
+cspan(x, mv):=block([lst, ss:0, qq, _i],
+if not bladep(mv) then error (mv, " not a blade"),
+	if inop(mv)="." then
+		lst:args(mv)
+	else lst:[mv],
+	ss:sum (x[_i]*lst[_i], _i, 1, length(lst) ),
+	qq:buildq([x], declare(x, scalar)),
+	ev(qq, nouns),
+	ss
+);
+
+bladep(ee):=block([ret:false],
+	ret:not freeof(asymbol,ee),
+	if not ret then return(false),
+	if not mapatom(ee) then 
+		ret and inop(ee)="."
+	else 
+		ret and op(ee)=asymbol
+);
+
 
 /* 
  constructs a vector from a given list
