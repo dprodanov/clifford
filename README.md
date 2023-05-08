@@ -11,6 +11,18 @@ setup_autoload ("clifford.mac", clifford);
 
 Changelog
 
+	2.5.3 Date 30 Apr 2022
+	- fix in lvect
+	- bladep
+	- cspan - constructs a vector v spanning a full subspace mv: v & mv =0;
+	
+	2.5.2 Date 5 Dec 2021
+	- nclv
+	- bugfix in dotreverse
+	- bugfix in bdecompose
+	- norm
+	- multtrace moved to climatrep
+	
         2.5.1 Date 16 Jul 2021
 	- bugfix in clihdual
 	- bugfix in cinvblade
