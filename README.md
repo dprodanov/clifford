@@ -7,6 +7,8 @@ file_search_demo: append (file_search_demo,["/path/to/folder/$$$.{dem,wxm}"]);
 
 file_search_maxima: append (file_search_maxima,["/path/to/folder/$$$.{mac,wxm}"]);
 
+setup_autoload ("clifford.mac", clifford);
+
 Changelog
 
         2.5.1 Date 16 Jul 2021
