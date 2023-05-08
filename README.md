@@ -9,7 +9,7 @@ file_search_maxima: append (file_search_maxima,["/path/to/folder/$$$.{mac,wxm}"]
 
 setup_autoload ("clifford.mac", clifford);
 
-Changelog
+**Changelog**
 
 	2.5.3 Date 30 Apr 2022
 	- fix in lvect
