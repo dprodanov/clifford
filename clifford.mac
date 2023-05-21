@@ -3,7 +3,13 @@ Clifford algebra in Maxima
 Clifford: a lightweight package for performing Geometric Algebra calculations
 
  @version 
+	2.5.4 Date 9 May 2023
+	- FV algorithm added
+	- listofclivars fix
+	- permsign fix
+	
 	2.5.3 Date 30 Apr 2022
+	- fix in lvect
 	- bladep
 	- cspan - constructs a vector v spanning a full subspace mv: v & mv =0;
 	
@@ -440,8 +446,6 @@ clv(expr):=(
 );
 
 
-
-
 /*
 simplification of dot-products
 */
@@ -479,7 +483,8 @@ dotsimpc(ab):=block([ba, c:1, v, w:1, q, r, l, z, sop],
 /*
 internal function: parity of permutation calculation
 */
-permsign(arr):=block([k:0, len, ret:0 ] ,
+permsign(arr):=block([k:0, len, ret:0, nil ] ,
+	local(arr),
 	mode_declare([k, len], fixnum),
 	if not listp(arr) then return (false),
 	len:length(arr),
@@ -902,7 +907,7 @@ simpfact(expr, z):=block([ret:expr, u, maperror:false, mapprint:false],
 );
 
 
-listofclivars(expr):=(
+listofclivars(expr):=block([u],
 	if length(%elements)=1 then %elements:elements(),
 	sublist(%elements, lambda ([u], not freeof(u, expr)))
 );
@@ -1368,11 +1373,11 @@ bladep(ee):=block([ret:false],
 /* 
  constructs a vector from a given list
 */
-lvect(lst ):=block ([ss:0, qq, n],
+lvect(lst ):=block ([ss:0, qq, n, i:gensym("i")],
 	if not listp(lst) then error("list expected",lst),
 	n: length(lst),
 	if n>ndim then error("dimension mismatch",lst),
-	sum (lst[i]*asymbol[i], i, 1, n)
+	apply("+",makelist(lst[i]*asymbol[i], i, n))
 );
 
 cmvect(x, k, [cc]):=block ([ss:0, qq, n, elst:grelem(k)],
@@ -1619,8 +1624,37 @@ evdecomp(vv):=cdgrade(vv, lambda([u, v ],  if oddp(v) then 1 else 2));
 /*  Shirokov quaternion  type  grading */
 qgrade(vv):=cdgrade(vv, lambda([u,v ],  qclass(u)+1));
 
+/**
+Faddev-Leverier reduced algorithm
+todo: add float option
+*/
+fadlevicg2cp(A, v):=block([ M:1, K, i:1, n, k: maxgrade(A), cq, c, ss],
+	"n: 2^min(ceiling(ndim/2), k)",
+	n: 2^(ceiling(k/2)),
+	if _debug1=true then print("n=",n),
+	array(c,n+1), 
+	for r:0 thru n+1 do c[r]:1,
+	A:rat(A),
+	ss:c[1]*v^^n,
+	while i<n and K#0 do (
+		K: dotsimpc(expand (A.M)),
+		cq: -n/i* scalarpart(K),
+		if _debug1=true then print(i, " ", cq),
+		if K#0 then
+			M: rat(K + cq), 
+		c[i+1]: cq,
+		ss:ss+c[i+1]*v^^(n-i),
+		i:i+1
+	), 
+	K: dotsimpc(expand(A.M)),
+	cq: -n/i* scalarpart(K),
+	ss:ss+cq,
+	if cq=0 then cq:1,
+	M:factor(-(M)/cq),
+	[M, ss]
+);
 
-put('clifford, 'v24,'version);
+put('clifford, 'v25,'version);
 put('clifford, "Dimiter Prodanov", 'author);
 put('clifford, "(C) - Dimiter Prodanov, 2015 - 2021", 'copyright);
 
@@ -1630,4 +1664,4 @@ print("package name: clifford.mac");
 print("author: ", get('clifford,'author));
 print("version:", get('clifford,'version));
 print("Recommended location: share/contrib");
-print("last update: 15 Jul 2021");
+print("last update: 9 May 2023");
