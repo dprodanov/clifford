@@ -1,4 +1,7 @@
-Clifford:
+![Clifford](./clifford.svg)
+
+**Clifford**
+
 a lightweight package for performing Geometric and Clifford Algebra calculations
 
 To run the package clone the repository and add the folder to Maxima by executing commands
