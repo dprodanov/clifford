@@ -4,7 +4,12 @@ a lightweight package for  component-wise Geometric Algebra calculations
 
 Clifford analysis
  
-@version 1.8.9 Date 31 Jul 
+@version 2.0 Date 8 Jul 2023
+		- gradbasis 
+		- assume_pos option 
+		1.9 Date 18 Dec 2021 
+		- constrained Lagrangians
+		1.8.9 Date 31 Jul 2021
 		- cinv changed to cinvinblade
 		- bugfix in dependsv
 		1.8.8 Date 25 May 2021 
@@ -114,12 +119,14 @@ dependsv(F, var):= block([ ee, u, var2, _k],
 		ee:buildq([var], declare(var, scalar) ),  
 
 		ev(ee, nouns),
-		var:var2,
 		
+		var:var2,
+	/*	display(var),*/
 		ee:buildq([var], if listp(var) then 
 							makelist(var[_k], _k, length(var)) 
 						 else 
 							var ), 
+		display(ev(ee, nouns)),
 		ev(depends(F,ee), nouns)
 	)
 );
@@ -226,7 +233,7 @@ Clifford-valued
 total differentiation; 
 cinv->cinvblade
 */
-ctotdiff(f, x):=block( [ret:0, lv, z],
+ctotdiff(f, x):=block( [ret:0, lv, u, z],
 	if mapatom(x) then 
 		ret: diff( f, x )
 	else (
@@ -234,6 +241,8 @@ ctotdiff(f, x):=block( [ret:0, lv, z],
 		for u in lv do 
 			ret: ret + cinvblade(diff(x, u)). subst(".", "*", diff( f, u ))
 	),
+	if assume_pos=true then 
+		ret:subst(abs=lambda([u], u),ret),
 	ret
 );
 
@@ -269,7 +278,7 @@ metrics(x, lst):=block([n, ek],
  Clifford-valued
  directional derivative
  */
-cdirdiff(f, v, x):=block( [ret:0, lv, m, z, uu:0, qq],
+cdirdiff(f, v, x):=block( [ret:0, u, lv, m, z, uu:0, qq],
 	if mapatom(x) then 
 		ret: scalarpart(v)*diff( f, x )
 	else (
@@ -283,6 +292,8 @@ cdirdiff(f, v, x):=block( [ret:0, lv, m, z, uu:0, qq],
 			)
 	),
 	ret:dotsimpc(ret),
+	if assume_pos=true then 
+		ret:subst(abs=lambda([u], u),ret),
 	ret:clifact(ret)
 );
 
@@ -356,11 +367,9 @@ cndirdiff(f, v, x):=block( [ret:0, lv, uu:0, m, qq],
 			qq: diff(x, u),
 			m: qq @ qq,
 			if m#0 then m:1/m,
-			uu: (v & qq)*m,
-			/*uu: expand(qq . v) - scprod(qq , v),
-			uu: dotsimpc(uu),*/
+			uu: ( qq. v)*m,
 			ret: ret + uu. subst(".", "*", diff( f, u ))
-			)
+		)
 	),
 	ret:expand(ret),
 	ret:dotsimpc(ret),
@@ -489,7 +498,7 @@ parmvectdiff(f, x, [k] ):=block ([s, z, m, i, ee, xx, df, qq, es ],
 		i:1, s:0,
 		for m in xx do (			
 			df: expand(pardiff( f, m )),
-			qq: cinv(ee[i]),
+			qq: cinvblade(ee[i]),
 			s: s +  cliffsimpall(qq . subst(".", "*", df )),
 			i:i+1
 		),
@@ -513,7 +522,7 @@ parmvectdirdiff(f, v, x, [k] ):=block ([s, ee, xx,  df, qq,  uu ],
 		for i:1 thru length(xx) do (			
 			df: expand(pardiff( f, xx[i] )),
 			qq: cinvblade(ee[i]),
-			uu: scprod(qq , v),
+			uu: qq @ v,
 			/*display(qq, uu, df),*/
 			s: s +  cliffsimpall(uu*subst(".", "*", df ))
 		),
@@ -636,13 +645,28 @@ vvectdiff(f, x, [k] ):=block ([ df],
 			df:clifact(df),
 	df
 );
+ 
+
 
 /*
-claplacian(f, x):=block([ret], 
-	ret:mvectdiff(f, x),
-	svectdiff(ret, x)
-);
+convective derivative
 */
+convderiv(f, t, xx, [vs]):=block([ez, es, lv, tt:gensym("t"), ret:0, pv, 
+			aa:[], inprotype:ic, u, opsubst:true, derivsubst:true],			
+	if not emptyp(vs) then  (
+		ret:parmvectdirdiff(f, vs[1], xx )
+	) else (
+		xx:expand(xx),
+		lv:listofvars(xx),
+		ez:sublist( lv, lambda ([u], freeof(asymbol, u))),
+		es:sublist( lv, lambda ([u], not freeof(asymbol, u))),
+		depends (ez, t),
+		pv:diff(xx,t),
+		apply ('remove, [ez, 'dependency]),
+		ret:parmvectdirdiff(f, pv, xx )
+	),
+	ret:diff(f,t)+ret	
+);
 
 /*
  Euler-Lagrange equations
@@ -650,17 +674,17 @@ claplacian(f, x):=block([ret],
 
 /*
 EL  field Lagrangians
+actually, a functional derivative 
 */
 
-ciELfdiff(_F, tt, pvars):=block(
+ciELfdiff(_F, rr, pvars):=block(
 [eq:0, p, pv, ee, qq, ss:[], zz:[],  vv, lv ],
 	[p, pv]:pvars,
 	if %clverbose=true then
 		display(p, pv),	 
-	[ee, vv]:clicoeff2(pv, 'list),
-	lv: sublist( listofvars(tt), lambda ([z],  freeof(asymbol, z) )),	
-	if not mapatom(vv) then
-		vv: substinpart("[",vv, 0)
+	[ee, vv]:clicoeff(pv, 'list),
+	lv: sublist( listofvars(rr), lambda ([z],  freeof(asymbol, z) )),	
+	if not mapatom(vv) then vv: substinpart("[",vv, 0)
 	else vv:[vv],
 	for j:1 thru length(vv) do (
 		for i:1 thru length(lv) do ( 
@@ -675,23 +699,22 @@ ciELfdiff(_F, tt, pvars):=block(
 	if %clverbose=true then
 		display(qq),
 	qq:psubst(ss, qq),
-	eq:parmvectdiff(_F, p)-psubst(zz, mvectdiff(qq , tt)),
+	eq:parmvectdiff(_F, p)-psubst(zz, mvectdiff(qq , rr)),
 	clifact(eq)
 );
 
 /**/
-alias (EuLagEq2, ciELfdiff); 
+alias (EuLagEq2, ciELfdiff);
 
-
-ciELfdiff1(_F, tt, pvars):=block(
-[eq:0, p, pv, ee, qq, ss:[], zz:[],  vv, lv, u, ei, mm, vi, tc, qd:0, ec, j:1],
-	[p, pv]:pvars,
+/*Energy-momentum equation*/
+ciELfdiff3(_F, rr, pvars) :=block(
+[eq:0, p, pv, ee, qq, ss:[], zz:[],  vv, lv, dq],
+[p, pv]:pvars,
 	if %clverbose=true then
 		display(p, pv),	 
-	[ee, vv]:clicoeff2(pv, 'list),
-	lv: sublist( listofvars(tt), lambda ([z],  freeof(asymbol, z) )),	
-	if not mapatom(vv) then
-		vv: substinpart("[",vv, 0)
+	[ee, vv]:clicoeff(pv, 'list),
+	lv: sublist( listofvars(rr), lambda ([z],  freeof(asymbol, z) )),	
+	if not mapatom(vv) then vv: substinpart("[",vv, 0)
 	else vv:[vv],
 	for j:1 thru length(vv) do (
 		for i:1 thru length(lv) do ( 
@@ -700,68 +723,60 @@ ciELfdiff1(_F, tt, pvars):=block(
 				push(vv[j](lv[i])=vv[j], zz)
 			)
 		)
-	),	
- 
-	eq:parmvectdiff(_F, p),
-	[ee, lv]:clicoeff2(tt, 'list),
-	ei: map(cinv, ee),
-	tc: dotconjugate(tt),
-	for u in lv do (
-		vi: totdiff(p, u),
-		qq: ee[j] .parmvectdiff(_F, vi),
-		/*qd: qd + (ee[j]. vi) ,
-		display(  vi),*/
-		qq:psubst(ss, qq),
-		mm:  psubst(zz, totdiff(qq , tc @ei[j])).ei[j] ,
-		if %clverbose=true then 
-			display(qq, mm),
-		eq:-dotsimpc(expand(mm))+eq ,
-		j:j+1
 	),
-	clifact(eq)
+	/*display(ss, zz),*/
+	qq:parmvectdiff(_F, pv),
+	if %clverbose=true then 
+		display(vv, qq),
+	qq: psubst(ss, qq),
+	eq: psubst(zz, pv @ qq),
+	eq -_F
 );
 
+/* constrained EL equation,
+anholonomic constraints
+*/
+ciELfdiff1(_F, rr, pvars, cvars):=block(
+[eq:0, p, pv, ee, qq, ss:[], zz:[],  vv, lv, cm, _cfr, qm:0 ],
+	[p, pv]:pvars,
+	[cm, _cfr, lv]:cvars,  
+	if %clverbose1=true then
+		display( _cfr, cm ,lv),
+	eq:ciELfdiff(_F, rr, pvars),
+	 
+	qm:parmvectdiff(_cfr, p), 
+	/* getting the anholonomic constraints*/
+	qq: parmvectdiff(_cfr, cm), 
+	if %clverbose1=true then
+		display(qm, qq),
+	/* solving for the constraints*/
+	ss:clisolve(qq, lv),
+	eq:eq + qm,
+	/* subsituting the constraints*/
+	eq:subst(ss, eq),
+	eq:ev(eq, diff),
+	[eq, ss]
+);
+ 
 
  
 /*
  EL particle lagrangians
 */
 
-/*
-convective derivative
-*/
-convderiv(f, t, xx, [vs]):=block([ez, es, lv, tt:gensym("t"), ret, pv, 
-			aa:[], inprotype:ic, u, opsubst:true, derivsubst:true],
-	xx:expand(xx),
-	lv:listofvars(xx),
-	ez:sublist( lv, lambda ([u], freeof(asymbol, u))),
-	es:sublist( lv, lambda ([u], not freeof(asymbol, u))),
-	depends (ez, tt),
-	/*ret:[diff(ez,tt), es, diff(xx,tt)],*/
-	if not emptyp(vs) then vs:vs[1],
-	if listp(vs) then
-		aa:makelist(diff(ez[i],tt)=vs[i], i, length(vs)),
-	pv:(diff(xx,tt)),
-	apply ('remove, [ez, 'dependency]),
-	ret: pv | parmvectdiff(f, xx),
-	if listp(vs) then
-		ret:psubst(aa, ret),
-	ret:subst(tt=t,ret),
-	ret:diff(f,t) + ret
-);
 
 /*
 Euler - Lagrange equation derivation
 */
 
-ciEL1(_F, tt, pvars, smat):=block([eq, p, pv, qq, ee, aa:[], bb:[], es:[], ez:[], qp, qq2, cc:[], dd:[] ],
+ciEL1(_F, tt, pvars, smat):=block([eq, p, pv, qq, ee, aa:[], bb:[], es:[], ez:[], qp, qq2, cc:[], dd:[], z ],
 	if not listp(pvars) then error("list required"),
 	[p, pv]:pvars,
 	eq:parmvectdiff(_F, p),
  	es: sublist( listofvars(p), lambda ([z],  freeof(asymbol, z))),	 
 	ez: sublist( listofvars(pv), lambda ([z],  freeof(asymbol, z))),	
 	/*display(es, ez), */
-	if %clverbose=true then
+	if %clverbose1=true then
 		display(pv, eq),
 	 for j:1 thru length(ez) do (
 		push(ez[j]='diff(es[j], tt, 1), aa),
@@ -772,16 +787,16 @@ ciEL1(_F, tt, pvars, smat):=block([eq, p, pv, qq, ee, aa:[], bb:[], es:[], ez:[]
 
 	qq2: parmvectdiff(_F, pv),
 	qq2: subst(cc, qq2),
-	if %clverbose=true then
-	display(es, qq2),
 
-	qp: convderiv(qq2, tt, p),
-	/* display(qq, qp, ratsimp(qq-qp)), 	*/
+	/*qp: convderiv(qq2, tt, p, pv),*/
+	qp: convderiv(qq2, tt, p, pv),
+	if %clverbose1=true then
+	display(es, qq2, qp),
 	eq:eq - qp,
-	eq: psubst(dd, eq),	
-	eq: psubst(bb, eq),	
+	eq: subst(dd, eq),	
+	/*eq: subst(bb, eq),*/	
 	if smat='list then (
-		eq:subst(aa, eq),
+		/*eq:subst(aa, eq),*/
 		eq: clifact(eq)
 	)else if smat='mat then (  		
 		eq:bdecompose(eq),
@@ -790,43 +805,68 @@ ciEL1(_F, tt, pvars, smat):=block([eq, p, pv, qq, ee, aa:[], bb:[], es:[], ez:[]
 	eq
 );
  
-ciEL(_F, tt, pvars, smat):=block([eq, p, pv, qq, ee, aa:[], bb:[], es:[], ez:[] ],
+ciEL(_F, tt, pvars, smat):=block([eq, p, pv, qq, ee, aa:[], bb:[], es:[], ez:[], ad1, ad2 ],
 	if not listp(pvars) then error("list required"),
 	[p, pv]:pvars,
 	eq:parmvectdiff(_F, p),
  	es: sublist( listofvars(p), lambda ([z],  freeof(asymbol, z))),	 
 	ez: sublist( listofvars(pv), lambda ([z],  freeof(asymbol, z))),	
 	/*display(es, ez), */
-	if %clverbose=true then
-	 display(pv, eq),
-	 for j:1 thru length(ez) do (
-		push(ez[j]='diff(es[j], tt, 1), aa),
-		push('diff(es[j], tt, 1)=ez[j] , bb)
+	if %clverbose1=true then
+	display(pv, eq, ez, es),
+	for j:1 thru length(ez) do (
+		if 'diff(es[j], tt, 1)#1 then (
+			push(ez[j]='diff(es[j], tt, 1), aa),
+			push('diff(es[j], tt, 1)=ez[j] , bb)
+		)
 	),
 	aa:reverse(aa),
 	bb:reverse(bb),
-	/*display (aa, bb)
-	depends(es, tt),*/
+	if %clverbose1=true then
+		display (aa, bb),
+	/*depends(es, tt),*/
 	
 	qq: parmvectdiff(_F, pv),
 	qq: diff(qq, tt),
 	eq:eq - qq,
-	if %clverbose=true then
+	if %clverbose1=true then
+		display(qq,eq),
+	eq: subst(bb, eq),
+	if %clverbose1=true then
 		display(qq),
-	eq: psubst(bb, eq),
-	/*
-	ee:buildq([es], remove(es, dependency)), 
-	ev(ee, nouns),
-	*/
 	if smat='list then (
-		eq:subst(aa, eq),
 		eq: clifact(eq)
 	)else if smat='mat then (  		
 		eq:bdecompose(eq),
 		eq:factorby(eq, ez)
 	),
+ 
 	eq
 );
+
+
+ciEL2(_F, tt, pvars, cvars):=block(
+[eq:0, p, pv, ee, qq, ss:[], zz:[],  vv, lv, cm, _cfr, qm:0 ],
+	[p, pv]:pvars,
+	[cm, _cfr, lv]:cvars,  
+	display( _cfr, cm ,lv),
+	eq:ciEL(_F, tt, pvars, 'list),
+	display(eq),
+	qm:parmvectdiff(_cfr, p), 
+	/* getting the anholonomic constraints*/
+	qq: parmvectdiff(_cfr, cm), 
+	display(qm, qq),
+	/* solving for the constraints*/
+	ss:clisolve(qq, lv),
+	eq:eq + qm,
+	/* subsituting the constraints*/
+	eq:subst(ss, eq),
+	eq:ev(eq, diff),
+	[eq, ss]
+);
+
+
+ 
 
 EL(_F, q, pvars):=block ([eq:0, p, pv, qq, rr, len, ret:[]],
 	if not listp(pvars) then error("list required"),
@@ -837,7 +877,6 @@ EL(_F, q, pvars):=block ([eq:0, p, pv, qq, rr, len, ret:[]],
 		for i:2 thru len do (
 			pv:pvars[i],
 			qq: subst('pv(q), pv, pardiff(_F, pv)),
-			/*qq: pardiff(_F, pv),*/
 			display(qq),
 			for j:1 thru i-1 do (
 				rr:- convderiv(qq, q, p),				
@@ -873,7 +912,7 @@ eq
 /*
 coordinate substitution
 */
-coordsubst(rr, eqs):=block( [lv, ret:rr, qq],
+coordsubst(rr, eqs):=block( [lv, ret:rr, qq, z],
 	lv: sublist( listofvars(rr), lambda ([z], freeof(asymbol,z))),
 	if not listp(eqs) then eqs:[eqs],
 	for i:1 thru length(eqs) do (
@@ -890,7 +929,13 @@ coordsubst(rr, eqs):=block( [lv, ret:rr, qq],
 	ret
 );
 
-
+gradbasis(rr, lv):=block([ret],
+	if not listp(lv) then  error(lv, "not a list"),
+	ret : maplist(lambda([u], diff(rr, u)), lv),
+	ret:trigsimp(ret),
+	ret:ratsimp(ret),
+	ret
+);
 
 /*
 volume element
@@ -986,22 +1031,127 @@ clc(expr):=(
 	sublist(listofvars(expr), lambda([u],  freeof(asymbol, u)))
 );
 
+/* 
+https://arxiv.org/pdf/2009.08542.pdf 
+integration on a star-shaped domain
+*/
+potentiategr(expr, r0, r):=block([vv, ee, k, ri, t:gensym("t"), gp, lvc, ker, ret, u],
+	 
+	ee:buildq([t], declare(t, scalar) ), 
+	ev(ee, nouns),
+	ri:invautom(r-r0),
+ 	gp:expand(expr),
+	lvc:clc(r),
+	for vv in lvc do
+		gp:subst(vv=r0+t*(vv-r0),gp),
+	ker: ri | gp, 
+	if rat(ker)=0 then ker: ri & gp,
+	/* the dual vectors are the diffential elements, 
+	t is the measure */
+	ker: subst(asymbol=lambda ([u], t*asymbol[u]), ker),
+	display( ker),
+	ret:integrate(ker, t, 0, 1),
+	ker:mvectdiff(ret, r),
+	first(divide(expr,ker))*ret
+);
 
-potentiategr(expr,  r):=block([vv, ee, k, ri, t:gensym("t"), gp, lvc, dr, ker],
+potentiategr2(expr, r0, r):=block([vv, ee, k, ri, t:gensym("t"), gp, lvc, ker, ret, u],
+	 
+	ee:buildq([t], declare(t, scalar) ), 
+	ev(ee, nouns),
+	ri:invautom(r-r0),
+ 	gp:expand(expr),
+	lvc:clc(r),
+	for vv in lvc do
+		gp:subst(vv=r0+exp(t)*(vv-r0),gp),
+	ker: ri | gp, 
+	if rat(ker)=0 then ker: ri & gp,
+	/* the dual vectors are the diffential elements, 
+	t is the measure */
+	ker: subst(asymbol=lambda ([u], exp(t)*asymbol[u]), ker),	
+	ret:'integrate(ker, t, minf, 1),
+	display( ret),
+	ker:mvectdiff(ret, r),
+	first(divide(expr,ker))*ret
+);
+
+/* pole at 0 
+potentiategi(expr, r0, r):=block([vv, ee, k, ri, t:gensym("t"), gp, lvc, dr, ker, ret],
 	k:maxgrade(expr),
 	ee:buildq([t], declare(t, scalar) ), 
 	ev(ee, nouns),
-	ri:invautom(r),
+	ri:invautom(r-r0),
  	gp:grpart(expr, k),
 	lvc:clc(r),
-	/* we can also use a exponential substitution*/
 	for vv in lvc do
-		gp:subst(vv=vv*t,gp),
-	ker:ri | gp,
+		gp:subst(vv=r0+t*(vv-r0),gp),
+	ker: expand(ri . gp), 
+	ker:clifact(dotsimpc(ker)),
 	display(gp, ker),
-	integrate(ker*t^(k-1), t, 0, 1)
+	ret:-integrate(ker*t^(k-1), t,  1, inf),
+	ker:mvectdiff(ret, r),
+	first(divide(expr,ker))*ret
+);
+*/
+potentiategi(expr, r0, r):=block([vv, ee, k, ri, t:gensym("t"), gp, lvc,  ker, u, ret],
+	 
+	ee:buildq([t], declare(t, scalar) ), 
+	ev(ee, nouns),
+	ri:invautom(r-r0),
+ 	gp:expand(expr),
+	lvc:clc(r),
+	/* we can also use an exponential substitution*/
+	for vv in lvc do
+		gp:subst(vv=r0+t*(vv-r0),gp),
+	ker: ri | gp, 
+	if rat(ker)=0 then ker: ri & gp,
+	ker: subst(asymbol=lambda ([u], t*asymbol[u]), ker),
+	display(gp, ker),
+	ret:-integrate(ker, t,  1, inf),
+	ker:mvectdiff(ret, r),
+	first(divide(expr,ker))*ret
 );
 
+potentiategi2(expr, r0, r):=block([vv, ee, k, ri, t:gensym("t"), gp, lvc,  ker, u, ret],
+	 
+	ee:buildq([t], declare(t, scalar) ), 
+	ev(ee, nouns),
+	ri:invautom(r-r0),
+ 	gp:expand(expr),
+	lvc:clc(r),
+	/* we can also use an exponential substitution*/
+	for vv in lvc do
+		gp:subst(vv=r0+exp(t)*(vv-r0),gp),
+	ker: ri | gp, 
+	if rat(ker)=0 then ker: ri & gp,
+	ker: subst(asymbol=lambda ([u], exp(t)*asymbol[u]), ker),
+	ker:factor(ker),
+	ret:-integrate(ker, t,  1, inf), display(ret),
+	ker:mvectdiff(ret, r),
+	first(divide(expr,ker))*ret
+);
+
+/* logarithmic pole at 0 */
+potentiategl(expr, r0, r):=block([vv, ee, k, ri, t:gensym("t"), gp, lvc, ker, ret, u, aa],
+	 
+	ee:buildq([t], declare(t, scalar) ), 
+	ev(ee, nouns),
+	ri:invautom(r-r0),
+ 	gp:expand(expr),
+	lvc:clc(r),
+	for vv in lvc do
+		gp:subst(vv=r0+t*(vv-r0),gp),
+	ker:ri | gp,
+	if rat(ker)=0 then ker: ri & gp,
+	ker: subst(asymbol=lambda ([u], t*asymbol[u]), ker),
+	display(gp, ker),
+	aa: sqrt(-cnorm(r-r0)),
+	assume(aa>1),
+	ret:-integrate(ker, t,  1, aa),
+	ker:mvectdiff(ret, r),
+	ret:first(divide(expr,ker))*ret,
+	logcontract(ret)
+);
 
 
 
