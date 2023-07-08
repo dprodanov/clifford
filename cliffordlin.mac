@@ -4,7 +4,12 @@ a lightweight package for performing Geometric Algebra calculations
 
 Clifford Linear algebra functions
 
-version 	1.0 11 May 2016
+version 	
+			1.2 8 Jul 2023
+			- changes in uvect
+			1.1 Date 4 Dec 2021 
+			- angles between subspaces
+			1.0 11 May 2016
 
 @depends 'clifford
 
@@ -203,9 +208,11 @@ orientation(u, v, ref):= block([ret:0],
 /*
  computes a unit  element
 */
-uvect(vv):=block( [qq],
-	qq:cnorm2(vv),
+uvect(vv):=block( [qq, u],
+	qq:cnorm2(vv),		
 	if qq=0 then return(vv),
+	if assume_pos=true then 
+		qq:subst(abs=lambda([u], u),qq),
 	if %divsimp=true then (
 		qq:trigsimp(qq),
 		qq:ratsimp(qq)
@@ -238,7 +245,7 @@ gramsmidt(vlist):=block([dd:[], n, v, u ],
 	for k:2 thru n do (
 		u: vlist[k] - proj( vlist[k], dd[1]),
 		for j:1 thru k-1 do 
-			u: u - proj( u, dd[j]),
+			u: ratsimp(u - proj( u, dd[j])),
 		push(u, dd)
 		),
 	reverse(dd)
