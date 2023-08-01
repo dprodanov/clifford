@@ -14,6 +14,11 @@ setup_autoload ("clifford.mac", clifford);
 
 **Changelog**
 
+	2.5.4 Date 9 May 2023
+	- FV algorithm added
+	- listofclivars fix
+	- permsign fix
+ 
 	2.5.3 Date 30 Apr 2022
 	- fix in lvect
 	- bladep
