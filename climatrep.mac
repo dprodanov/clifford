@@ -2,7 +2,7 @@
 Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
-Clifford Algebra Matrix representation code
+Clifford Algebra Matrix representation code + FVS inverse algorithm
 
 version 	
 			2.5.7. 3 Jun 2023
@@ -133,22 +133,6 @@ climatrep3(vv):=block([q, lst: elements(all), lsta, lstb, nn, le],
 		climatrep21(vv, lstb)
 );
 
-/*
-climatrep3(vv):=block([q, lst: elements(all), lsta, lstb, nn, le],
-	nn: 2^(ndim-1),
- 
-	lsta: makelist (lst[i], i, 1, nn/2),
-	lstb: makelist (lst[i], i, nn/2+1, nn),
-			display(lsta, lstb, vv),
-	if oddp(length(lstb)) then  (
-		le:pop(lstb),
-		if vv=le then vv: -%i*clihdual(le),
-
-		climatrep21(vv, lstb)
-	) else
-		climatrep21(vv, lstb)
-);
-*/
 
 /*
 computes matrix representation of the algebra;
@@ -305,29 +289,8 @@ climatrep1(vv):=block([n, AA, lst, EE, l,r, q, opsubst :false, gs:gensym(string(
 	subst( gs=1,l*MM)
 );
 
-/*
-fadlevi(A):=block([n, m, c, M, K, I, i, cq],
-	if not matrixp(A) then error ("not a matrix ", A),
-	[n,m]:matrix_size(A),
-	if n#m then error ("not a square matrix"),
-	c: makelist(1,n+1),
-	M:ident(n),
-	I:ident(n),
-	A:rat(A),
-	for i:1 thru n do (
-		K: rat(A.M),
-		c[i+1]: -1/i* mtrace(K),
-		if i<n then  
-			M:(K + c[i+1]*I)
-	), 
-	c:factor((c)),
-	cq:last(c),
-	if cq=0 then cq:1,
-	M:rat(-M/cq),
-	[ M, c]
-);
-*/
 
+/* matrix FVS algorithm */
 fadlevi(A):=block([n, m, c, M, K, I, i, cq, Ai],
 	if not matrixp(A) then error ("not a matrix ", A),
 	[n,m]:matrix_size(A),
@@ -352,7 +315,7 @@ fadlevi(A):=block([n, m, c, M, K, I, i, cq, Ai],
 
 /*
 Generalized inverse
-reference implementation
+naive implementation full  dimensions
 */
 fadlevic(A):=block([c, M:1, K, i, n:2^ndim, cq],
 	local(c),
@@ -371,6 +334,10 @@ fadlevic(A):=block([c, M:1, K, i, n:2^ndim, cq],
 );	
 
 
+/*
+Generalized inverse + characteristic polynomial
+ maximal grade  dimensions
+*/
 fadlevicg(A, v):=block([c, M:1, K, i, n, cq, ss:0],
 	local(c),
 	n: 2^maxgrade(A),
@@ -401,26 +368,11 @@ fadlevicg(A, v):=block([c, M:1, K, i, n, cq, ss:0],
 	[M, ss]
 );
 
-/*
-fadlevicg1(A):=block([  M:1, K, i, n, cq:1],
-	n: 2^maxgrade(A),
-	display(n),
-  	A:rat(A),
-	for i:1 thru n do (
-		K: dotsimpc(expand(A.M)),
-		cq: -n/i* scalarpart(K),
-		if _debug then
-			print(i, " ", cq, " ", K),
-		if i<n then  
-			M:K + cq
-	), 
-	cq:factor(cq),
-	if cq=0 then cq:1,
-	M:factor(-(M)/cq)
-);
-*/
 
-/* pseudoinverse : for n idempotent it returns the complement zero divisor */
+
+/* 
+pseudoinverse : for n idempotent it returns the complement zero divisor 
+*/
 fadlevicg1(A):=block([ M:1, K, i:1, n, k: maxgrade(A), cq],
 	n: 2^k,
 	if _debug1=true then print("n=",n),
@@ -444,41 +396,44 @@ fadlevicg1(A):=block([ M:1, K, i:1, n, k: maxgrade(A), cq],
 	
 );
 
-
+/*
+minimal polynomial of the multivector
+*/
 minpoly(P, x):=block([dP:P, md:0, %a, Q, Q1, n, k, cc:[], sol,  m, qq],
-local(%a),
-n:hipow(P,x),
-while gcd(dP, P)#1 do (
-	dP:diff(dP,x),
-	md:md+1
-),
-if md=1 then (
- print (P, "is minimal"),
- return(P)
-),
-if _debug1=all then  display (md, n),
-m: n/md,
-if not integerp (m) then return (false),
-Q:sum(%a[i]*v^i,i,0, m),
-
-Q1:expand(P-Q^(md)),
- 
-for k:n thru 1 step -1 do (
-	qq:ratcoeff(Q1, x, k),
-	qq: subst(cc, qq),
-	sol:solve(qq, %a[m]),
-	if _debug1=all then display(qq, k, m, sol),
-	if listp(sol) then
-			cc: push(last(sol), cc)
-	else return( [ subst(cc,Q), cc] ),
-	m:m-1,
-	if m <0 then return( [ subst(cc,Q), cc] )
+	local(%a),
+	n:hipow(P,x),
+	while gcd(dP, P)#1 do (
+		dP:diff(dP,x),
+		md:md+1
 	),
-[ subst(cc, Q), cc] 
+	if md=1 then (
+	 print (P, "is minimal"),
+	 return(P)
+	),
+	if _debug1=all then  display (md, n),
+	m: n/md,
+	if not integerp (m) then return (false),
+	Q:sum(%a[i]*v^i,i,0, m),
+
+	Q1:expand(P-Q^(md)),
+	 
+	for k:n thru 1 step -1 do (
+		qq:ratcoeff(Q1, x, k),
+		qq: subst(cc, qq),
+		sol:solve(qq, %a[m]),
+		if _debug1=all then display(qq, k, m, sol),
+		if listp(sol) then
+				cc: push(last(sol), cc)
+		else return( [ subst(cc,Q), cc] ),
+		m:m-1,
+		if m <0 then return( [ subst(cc,Q), cc] )
+		),
+	[ subst(cc, Q), cc] 
 );
 
 /*
- 
+Generalized inverse 
+ full grade dimensions
 */
 fadlevicg2(A):=block([ M:1, K, i:1, n, sc:1, cq],
 	n: 2^ceiling(ndim/2),
@@ -503,26 +458,11 @@ fadlevicg2(A):=block([ M:1, K, i:1, n, sc:1, cq],
 	M:factor(-(M)/cq)
 );
 
-/*
-fadlev(A, v):=block([n, m, c, M, K, I, i],
-	if not matrixp(A) then error ("not a matrix ", A),
-	[n,m]:matrix_size(A),
-	if n#m then error ("not a square matrix"),
-	c: makelist(1,n+1),
-	M:ident(n),
-	I:ident(n),
-	for i:1 thru n do (
-		K: (ratsimp(A.M)),
-		c[i+1]: -1/i* mattrace(K),
-		M:ratsimp(K + c[i+1]*I)
-	),
-	c:factor(expand(c)),
-	c:reverse(c),
-	[sum(c[i]*v^i,i,1, n+1) , M]
-);
-*/
 
-/* characteristic polynomial Faddeev -Le Verrier */
+/* 
+matrix version
+characteristic polynomial Faddeev -Le Verrier- Sourieau 
+*/
 fadlevcp(A, v):=block([n, m, c, M, K, I, ss:0], 
 	local(c),
 	if not matrixp(A) then error ("not a matrix ", A),
@@ -545,7 +485,7 @@ fadlevcp(A, v):=block([n, m, c, M, K, I, ss:0],
 	factor(ss)
 );
 
-/* inverse, characteristic polynomial*/
+/* inverse +  characteristic polynomial  FVS */
 fadlevicg1cp(A, v):=block([ M:1, K, i:1, n, k: maxgrade(A), cq, c, ss],
 	n: 2^k,
 	if _debug1=true then print("n=",n),
@@ -574,18 +514,12 @@ fadlevicg1cp(A, v):=block([ M:1, K, i:1, n, k: maxgrade(A), cq, c, ss],
 	[M, ss]
 );
 
-/*
-diffpoly(expr, t, lst):=block ([ss:0, aa],
-	local(aa, t, lst),
-	for aa in  lst do (
-		ss: diff(ss,t) +aa*expr
-	),
-	ss
-);
-*/
 
+/*
+Generalized inverse + characteristic polynomial
+ reduced grade dimensions
+*/
 fadlevicg2cp(A, v):=block([ M:1, K, i:1, n, k: maxgrade(A), cq, c, ss],
-	"n: 2^min(ceiling(ndim/2), k)",
 	n: 2^(ceiling(k/2)),
 	if _debug1=all then print("n=",n),
 	array(c,n+1), 
@@ -613,8 +547,12 @@ fadlevicg2cp(A, v):=block([ M:1, K, i:1, n, k: maxgrade(A), cq, c, ss],
 	[M, ss]
 );
 
-fadlevicg2f(A):=block([ M:1, K, i:1, n, sc:1, cq],
-	n: 2^ceiling(ndim/2),
+/*
+Generalized inverse  float
+ reduced grade dimensions
+*/
+fadlevicg2f(A):=block([ M:1, K, i:1, n, k: maxgrade(A), sc:1, cq],
+	n: 2^ceiling(k/2),
 	if _debug1=all then disp(n),
 	if _debug1=true then print("n=",n),
 	A:float(A),
@@ -637,6 +575,8 @@ fadlevicg2f(A):=block([ M:1, K, i:1, n, sc:1, cq],
 	M:factor(-(M)/cq)
 	
 );
+
+
 /*
 elem2mat(expr, [ulst] ):=block(
 	if emptyp(ulst) then ulst:false 
@@ -648,6 +588,8 @@ elem2mat(expr, [ulst] ):=block(
 		map(climatrep, expr)
 );
 */
+
+
 elem2mat3(expr, [ulst] ):=block(
 	if emptyp(ulst) then ulst:false 
 	else ulst:true,
@@ -829,13 +771,13 @@ celemr( rng):=block([ee, ss:0, n, cc, qq],
 	ss
 );
 
-put('climatrep, 'v21,'version);
+put('climatrep, 'v25,'version);
 put('climatrep, "Dimiter Prodanov", 'author);
-put('climatrep, "(C) - Dimiter Prodanov, 2016 - 2021", 'copyright);
+put('climatrep, "(C) - Dimiter Prodanov, 2016 - 2023", 'copyright);
 
 
 print("package name: climatrep.mac");
 print("author: ", get('climatrep,'author));
 print("version:", get('climatrep,'version));
 print("Recommended location: share/contrib");
-print("last update: 13 Jul 2021");
+print("last update: 01 Aug 2023");
