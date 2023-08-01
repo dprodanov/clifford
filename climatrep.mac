@@ -4,7 +4,13 @@ a lightweight package for performing Geometric Algebra calculations
 
 Clifford Algebra Matrix representation code
 
-version 	2.1.5 5 Dec 2021
+version 	
+			2.5.7. 3 Jun 2023
+			- fadlevicg2cp
+			- fadlevicg1cp
+			2.5.6 10 May 2022
+			- print formatting
+			2.1.5 5 Dec 2021
 			- multtrace
 			2.1 10 Jul 2021
 			2.0 29 Jan 2021
@@ -33,6 +39,16 @@ if get('clifford,'version)=false then (
 	err:errcatch(
 		load("clifford.mac")
 	)
+);
+
+/* move to clifford ?*/
+if get('climatrep,'version)=false then (
+	remove("@", operator),
+	"inner product",
+	infix ("@", 130, 129),
+	"@"(a, b):=  scprod(a,b),
+	print("warning: redefining @")
+
 );
 
 /**
@@ -117,6 +133,22 @@ climatrep3(vv):=block([q, lst: elements(all), lsta, lstb, nn, le],
 		climatrep21(vv, lstb)
 );
 
+/*
+climatrep3(vv):=block([q, lst: elements(all), lsta, lstb, nn, le],
+	nn: 2^(ndim-1),
+ 
+	lsta: makelist (lst[i], i, 1, nn/2),
+	lstb: makelist (lst[i], i, nn/2+1, nn),
+			display(lsta, lstb, vv),
+	if oddp(length(lstb)) then  (
+		le:pop(lstb),
+		if vv=le then vv: -%i*clihdual(le),
+
+		climatrep21(vv, lstb)
+	) else
+		climatrep21(vv, lstb)
+);
+*/
 
 /*
 computes matrix representation of the algebra;
@@ -131,7 +163,11 @@ climatrep(vv):=block([n, q, AA, lst: elements(all), nn, dd, G, EE],
 	G:diag(AA),
 	ratvars(q),
 	nn:expand(ratnum(vv)), dd:ratdenom(vv),
-	EE:matrixmap(lambda([q],  scalarpart(ratcoeff (q, nn))/dd), AA),
+	display(nn, dd),
+	if dd #1 then
+		EE:matrixmap(lambda([q],  scalarpart(ratcoeff (q, nn))/dd), AA)
+	else 
+		EE:matrixmap(lambda([q],  scalarpart(ratcoeff (q, nn))), AA),
 	G.EE
 );
 
@@ -269,7 +305,7 @@ climatrep1(vv):=block([n, AA, lst, EE, l,r, q, opsubst :false, gs:gensym(string(
 	subst( gs=1,l*MM)
 );
 
-
+/*
 fadlevi(A):=block([n, m, c, M, K, I, i, cq],
 	if not matrixp(A) then error ("not a matrix ", A),
 	[n,m]:matrix_size(A),
@@ -277,19 +313,42 @@ fadlevi(A):=block([n, m, c, M, K, I, i, cq],
 	c: makelist(1,n+1),
 	M:ident(n),
 	I:ident(n),
+	A:rat(A),
 	for i:1 thru n do (
-		K: (ratsimp(A.M)),
+		K: rat(A.M),
 		c[i+1]: -1/i* mtrace(K),
 		if i<n then  
-			M:ratsimp(K + c[i+1]*I)
+			M:(K + c[i+1]*I)
 	), 
 	c:factor((c)),
 	cq:last(c),
 	if cq=0 then cq:1,
-	M:ratsimp(-M/cq),
+	M:rat(-M/cq),
 	[ M, c]
 );
+*/
 
+fadlevi(A):=block([n, m, c, M, K, I, i, cq, Ai],
+	if not matrixp(A) then error ("not a matrix ", A),
+	[n,m]:matrix_size(A),
+	if n#m then error ("not a square matrix"),
+	c: makelist(1,n+1),
+	M:ident(n),
+	I:ident(n),
+	A:rat(A),
+	for i:1 thru n do (
+		K: rat(A.M),
+		c[i+1]: -1/i* mtrace(K),
+		M:(K + c[i+1]*I),
+		if i=n-1 then  Ai:M
+	), 
+	c:factor(c),
+	cq:last(c),
+	if cq=0 then cq:1,
+	display(M),
+	M:rat(-Ai/cq),
+	[ M, c]
+);
 
 /*
 Generalized inverse
@@ -370,14 +429,15 @@ fadlevicg1(A):=block([ M:1, K, i:1, n, k: maxgrade(A), cq],
 		K: dotsimpc(expand (A.M)),
 		cq: -n/i* scalarpart(K),
 		if _debug1=true then print(i, " ", cq),
-		if _debug1=all then print("t[",i,"]=", cq, " m[",i,"]=", K),
+		if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", K, "\\\\"),
 		if K#0 then
 			M: rat(K + cq), 
 		i:i+1
 	), 
-	 
+	/*print(i, " ", M)"*/
 	K: dotsimpc(expand(A.M)),
 	cq: -n/i* scalarpart(K),
+	if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", K, "\\\\"),
 	cq:factor(cq),
 	if cq=0 then cq:1,
 	M:factor(-(M)/cq)
@@ -385,9 +445,44 @@ fadlevicg1(A):=block([ M:1, K, i:1, n, k: maxgrade(A), cq],
 );
 
 
+minpoly(P, x):=block([dP:P, md:0, %a, Q, Q1, n, k, cc:[], sol,  m, qq],
+local(%a),
+n:hipow(P,x),
+while gcd(dP, P)#1 do (
+	dP:diff(dP,x),
+	md:md+1
+),
+if md=1 then (
+ print (P, "is minimal"),
+ return(P)
+),
+if _debug1=all then  display (md, n),
+m: n/md,
+if not integerp (m) then return (false),
+Q:sum(%a[i]*v^i,i,0, m),
+
+Q1:expand(P-Q^(md)),
+ 
+for k:n thru 1 step -1 do (
+	qq:ratcoeff(Q1, x, k),
+	qq: subst(cc, qq),
+	sol:solve(qq, %a[m]),
+	if _debug1=all then display(qq, k, m, sol),
+	if listp(sol) then
+			cc: push(last(sol), cc)
+	else return( [ subst(cc,Q), cc] ),
+	m:m-1,
+	if m <0 then return( [ subst(cc,Q), cc] )
+	),
+[ subst(cc, Q), cc] 
+);
+
+/*
+ 
+*/
 fadlevicg2(A):=block([ M:1, K, i:1, n, sc:1, cq],
-	n: ndim,
-	if _debug1=true then print("n=",n),
+	n: 2^ceiling(ndim/2),
+	if _debug1=all then print("n=",n),
 	A:rat(A),
 	while i<n and K#0 do (
 		K: dotsimpc(expand (A.M)),
@@ -403,10 +498,9 @@ fadlevicg2(A):=block([ M:1, K, i:1, n, sc:1, cq],
 	 
 	K: dotsimpc(expand(A.M)),
 	cq: -n/i* scalarpart(K),
-	cq:factor(cq),
+	if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", K, "\\\\"),
 	if cq=0 then cq:1,
 	M:factor(-(M)/cq)
-	
 );
 
 /*
@@ -451,6 +545,99 @@ fadlevcp(A, v):=block([n, m, c, M, K, I, ss:0],
 	factor(ss)
 );
 
+/* inverse, characteristic polynomial*/
+fadlevicg1cp(A, v):=block([ M:1, K, i:1, n, k: maxgrade(A), cq, c, ss],
+	n: 2^k,
+	if _debug1=true then print("n=",n),
+	array(c,n+1), 
+	for r:0 thru n+1 do c[r]:1,
+	A:rat(A),
+	ss:c[1]*v^^n,
+	while i<n and K#0 do (
+		K: dotsimpc(expand (A.M)),
+		cq: -n/i* scalarpart(K),
+		if _debug1=true then print(i, " ", cq),
+		if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", K, "\\\\"),
+		if K#0 then
+			M: rat(K + cq), 
+		c[i+1]: cq,
+		ss:ss+c[i+1]*v^^(n-i),
+		i:i+1
+	), 
+	 
+	K: dotsimpc(expand(A.M)),
+	cq: -n/i* scalarpart(K),
+	if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", K, "\\\\"),
+	ss:ss+cq,
+	if cq=0 then cq:1,
+	M:factor(-(M)/cq),
+	[M, ss]
+);
+
+/*
+diffpoly(expr, t, lst):=block ([ss:0, aa],
+	local(aa, t, lst),
+	for aa in  lst do (
+		ss: diff(ss,t) +aa*expr
+	),
+	ss
+);
+*/
+
+fadlevicg2cp(A, v):=block([ M:1, K, i:1, n, k: maxgrade(A), cq, c, ss],
+	"n: 2^min(ceiling(ndim/2), k)",
+	n: 2^(ceiling(k/2)),
+	if _debug1=all then print("n=",n),
+	array(c,n+1), 
+	for r:0 thru n+1 do c[r]:1,
+	A:rat(A),
+	ss:c[1]*v^^n,
+	while i<n and K#0 do (
+		K: dotsimpc(expand (A.M)),
+		cq: -n/i* scalarpart(K),
+		if _debug1=true then print(i, " ", cq),
+		if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", K, "\\\\"),
+		if K#0 then
+			M: rat(K + cq), 
+		c[i+1]: cq,
+		ss:ss+c[i+1]*v^^(n-i),
+		i:i+1
+	), 
+	 
+	K: dotsimpc(expand(A.M)),
+	cq: -n/i* scalarpart(K),
+	if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", K, "\\\\"),
+	ss:ss+cq,
+	if cq=0 then cq:1,
+	M:factor(-(M)/cq),
+	[M, ss]
+);
+
+fadlevicg2f(A):=block([ M:1, K, i:1, n, sc:1, cq],
+	n: 2^ceiling(ndim/2),
+	if _debug1=all then disp(n),
+	if _debug1=true then print("n=",n),
+	A:float(A),
+	while i<n and K#0 do (
+		K: dotsimpc(expand (A.M)),
+		cq: n/i* scalarpart(K),
+		if _debug1=true then
+			print(i, " ", cq),
+		if _debug1=all then
+			print("t[",i,"]=", cq, " m[",i,"]=", K),
+		if K#0 then
+			M: float(K - cq), 
+		i:i+1
+	), 
+	 
+	K: dotsimpc(expand(A.M)),
+	cq: -n/i* scalarpart(K),
+	if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", K, "\\\\"),
+	if cq=0 then cq:1,
+	M:factor(-(M)/cq)
+	
+);
+/*
 elem2mat(expr, [ulst] ):=block(
 	if emptyp(ulst) then ulst:false 
 	else ulst:true,
@@ -460,7 +647,7 @@ elem2mat(expr, [ulst] ):=block(
 	else
 		map(climatrep, expr)
 );
-
+*/
 elem2mat3(expr, [ulst] ):=block(
 	if emptyp(ulst) then ulst:false 
 	else ulst:true,
@@ -633,7 +820,7 @@ rancelem(m):=block([n:2^ndim, lst],
  celem(lst)
 );
 
-celemr(x, rng):=block([ee, ss:0, n, cc, qq],
+celemr( rng):=block([ee, ss:0, n, cc, qq],
 	if not numberp(rng) then return (false),
 	ee:elements(all),
 	n:length(ee),
