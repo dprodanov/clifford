@@ -334,9 +334,36 @@ fadlevic(A):=block([c, M:1, K, i, n:2^ndim, cq],
 );	
 
 
+
+/* 
+matrix version
+characteristic polynomial Faddeev -Le Verrier- Sourieau 
+*/
+fadlevcp(A, v):=block([n, m, c, M, K, I, ss:0], 
+	local(c),
+	if not matrixp(A) then error ("not a matrix ", A),
+	[n,m]:matrix_size(A),
+	if n#m then error ("not a square matrix"),
+	array(c,n+1), 
+	for r:0 thru n+1 do c[r]:1,
+	ratvars(v),
+	A:rat(A),
+	M:ident(n),
+	I:ident(n),
+	ss:c[1]*v^n,
+	for i:1 thru n do (
+		K: A.M,
+		c[i+1]: -1/i* mtrace(K),
+		M:(K + c[i+1]*I),
+		ss:ss+c[i+1]*v^(n-i)
+	),
+	/*[ ss , M]*/
+	factor(ss)
+);
+
 /*
 Generalized inverse + characteristic polynomial
- maximal grade  dimensions
+ full grade  dimensions
 */
 fadlevicg(A, v):=block([c, M:1, K, i, n, cq, ss:0],
 	local(c),
@@ -368,10 +395,37 @@ fadlevicg(A, v):=block([c, M:1, K, i, n, cq, ss:0],
 	[M, ss]
 );
 
+/*
+Generalized inverse 
+ reduced dimensions
+*/
+fadlevicg2(A):=block([ M:1, K, i:1, n, sc:1, cq],
+	n: 2^ceiling(ndim/2),
+	if _debug1=all then print("n=",n),
+	A:rat(A),
+	while i<n and K#0 do (
+		K: dotsimpc(expand (A.M)),
+		cq: n/i* scalarpart(K),
+		if _debug1=true then
+			print(i, " ", cq),
+		if _debug1=all then
+			print("t[",i,"]=", cq, " m[",i,"]=", K),
+		if K#0 then
+			M: rat(K - cq), 
+		i:i+1
+	), 
+	 
+	K: dotsimpc(expand(A.M)),
+	cq: -n/i* scalarpart(K),
+	if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", K, "\\\\"),
+	if cq=0 then cq:1,
+	M:factor(-(M)/cq)
+);
 
 
 /* 
 pseudoinverse : for n idempotent it returns the complement zero divisor 
+full grade dimensions
 */
 fadlevicg1(A):=block([ M:1, K, i:1, n, k: maxgrade(A), cq],
 	n: 2^k,
@@ -386,7 +440,6 @@ fadlevicg1(A):=block([ M:1, K, i:1, n, k: maxgrade(A), cq],
 			M: rat(K + cq), 
 		i:i+1
 	), 
-	/*print(i, " ", M)"*/
 	K: dotsimpc(expand(A.M)),
 	cq: -n/i* scalarpart(K),
 	if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", K, "\\\\"),
@@ -394,6 +447,36 @@ fadlevicg1(A):=block([ M:1, K, i:1, n, k: maxgrade(A), cq],
 	if cq=0 then cq:1,
 	M:factor(-(M)/cq)
 	
+);
+
+
+/* inverse +  characteristic polynomial  FVS */
+fadlevicg1cp(A, v):=block([ M:1, K, i:1, n, k: maxgrade(A), cq, c, ss],
+	n: 2^k,
+	if _debug1=true then print("n=",n),
+	array(c,n+1), 
+	for r:0 thru n+1 do c[r]:1,
+	A:rat(A),
+	ss:c[1]*v^^n,
+	while i<n and K#0 do (
+		K: dotsimpc(expand (A.M)),
+		cq: -n/i* scalarpart(K),
+		if _debug1=true then print(i, " ", cq),
+		if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", K, "\\\\"),
+		if K#0 then
+			M: rat(K + cq), 
+		c[i+1]: cq,
+		ss:ss+c[i+1]*v^^(n-i),
+		i:i+1
+	), 
+	 
+	K: dotsimpc(expand(A.M)),
+	cq: -n/i* scalarpart(K),
+	if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", K, "\\\\"),
+	ss:ss+cq,
+	if cq=0 then cq:1,
+	M:factor(-(M)/cq),
+	[M, ss]
 );
 
 /*
@@ -429,89 +512,6 @@ minpoly(P, x):=block([dP:P, md:0, %a, Q, Q1, n, k, cc:[], sol,  m, qq],
 		if m <0 then return( [ subst(cc,Q), cc] )
 		),
 	[ subst(cc, Q), cc] 
-);
-
-/*
-Generalized inverse 
- full grade dimensions
-*/
-fadlevicg2(A):=block([ M:1, K, i:1, n, sc:1, cq],
-	n: 2^ceiling(ndim/2),
-	if _debug1=all then print("n=",n),
-	A:rat(A),
-	while i<n and K#0 do (
-		K: dotsimpc(expand (A.M)),
-		cq: n/i* scalarpart(K),
-		if _debug1=true then
-			print(i, " ", cq),
-		if _debug1=all then
-			print("t[",i,"]=", cq, " m[",i,"]=", K),
-		if K#0 then
-			M: rat(K - cq), 
-		i:i+1
-	), 
-	 
-	K: dotsimpc(expand(A.M)),
-	cq: -n/i* scalarpart(K),
-	if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", K, "\\\\"),
-	if cq=0 then cq:1,
-	M:factor(-(M)/cq)
-);
-
-
-/* 
-matrix version
-characteristic polynomial Faddeev -Le Verrier- Sourieau 
-*/
-fadlevcp(A, v):=block([n, m, c, M, K, I, ss:0], 
-	local(c),
-	if not matrixp(A) then error ("not a matrix ", A),
-	[n,m]:matrix_size(A),
-	if n#m then error ("not a square matrix"),
-	array(c,n+1), 
-	for r:0 thru n+1 do c[r]:1,
-	ratvars(v),
-	A:rat(A),
-	M:ident(n),
-	I:ident(n),
-	ss:c[1]*v^n,
-	for i:1 thru n do (
-		K: A.M,
-		c[i+1]: -1/i* mtrace(K),
-		M:(K + c[i+1]*I),
-		ss:ss+c[i+1]*v^(n-i)
-	),
-	/*[ ss , M]*/
-	factor(ss)
-);
-
-/* inverse +  characteristic polynomial  FVS */
-fadlevicg1cp(A, v):=block([ M:1, K, i:1, n, k: maxgrade(A), cq, c, ss],
-	n: 2^k,
-	if _debug1=true then print("n=",n),
-	array(c,n+1), 
-	for r:0 thru n+1 do c[r]:1,
-	A:rat(A),
-	ss:c[1]*v^^n,
-	while i<n and K#0 do (
-		K: dotsimpc(expand (A.M)),
-		cq: -n/i* scalarpart(K),
-		if _debug1=true then print(i, " ", cq),
-		if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", K, "\\\\"),
-		if K#0 then
-			M: rat(K + cq), 
-		c[i+1]: cq,
-		ss:ss+c[i+1]*v^^(n-i),
-		i:i+1
-	), 
-	 
-	K: dotsimpc(expand(A.M)),
-	cq: -n/i* scalarpart(K),
-	if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", K, "\\\\"),
-	ss:ss+cq,
-	if cq=0 then cq:1,
-	M:factor(-(M)/cq),
-	[M, ss]
 );
 
 
