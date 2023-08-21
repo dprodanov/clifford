@@ -1,0 +1,136 @@
+
+ stringdisp :true;
+ declare(trigsimp, evfun);
+ 
+if get('clifford,'version)=false then (
+	
+	err:errcatch(
+		load("clifford.mac"),
+		load("cliffordan.mac"),
+		load("climoivre.mac")
+	),
+	
+	if emptyp(err) then (
+	infix ("|", 130, 129),
+	infix("&", 130, 129)
+	)
+	
+);
+
+if get('cliapps,'version)=false then (
+	remove("@", operator),
+	"inner product",
+	infix ("@", 130, 129),
+	"@"(a, b):=  scprod(a,b),
+	print("warning: redefining  @")
+);
+
+
+/*
+ coordinate functions - 3D
+*/
+
+sph_vect(vv):=block([r, theta, phi],
+	 if length(vv) <3 or not listp(vv) then error("list with 3 symbols required"),
+	 [r, theta, phi]:vv,
+	 for i:1 thru length(vv) do 
+			if not emptyp(vv[i]) then (
+				qq:subst(x=vv[i], buildq([x], declare(x, scalar))),
+				ev(qq, nouns)
+			),
+	 asymbol[1]*r* sin(theta)*cos(phi)+asymbol[2]*r* sin(theta)*sin(phi)+ asymbol[3]*r* cos(theta)
+);
+
+cyl_vect(vv):=block([r, phi, z],
+	 if length(vv) <3 or not listp(vv) then error("list with 3 symbols required"),
+	 [r, theta, z]:vv,
+	 for i:1 thru length(vv) do 
+		if not emptyp(vv[i]) then (
+			qq:subst(x=vv[i], buildq([x], declare(x, scalar))),
+			ev(qq, nouns)
+		),
+	 asymbol[1]*r* cos(phi)+asymbol[2]*r* sin(phi)+ asymbol[3]*z
+);
+
+pol_vect(vv):=block([r, phi],
+	 if length(vv) <2 or not listp(vv) then error("list with 2 symbols required"),
+	 [r, theta]:vv,
+	 for i:1 thru length(vv) do 
+		if not emptyp(vv[i]) then (
+			qq:subst(x=vv[i], buildq([x], declare(x, scalar))),
+			ev(qq, nouns)
+		),
+	 asymbol[1]*r* cos(phi)+asymbol[2]*r* sin(phi)
+);
+
+
+/*   substitution in differnetial equations*/
+eqsubst(deq, yv, rr, eqs):=block([rs, qs, ret, lv],
+	rs:coordsubst(rr, eqs),
+	/*disp(rs),*/
+	
+	/* dependent variable*/
+	ret:rs @ mvectdiff(yv, rr),
+	ret:trigsimp(ret),
+	ret:ratsimp(ret),
+	
+	qs:cdirdiff(yv, rr, rs),
+	qs:subst(eqs, qs),	
+	qs:trigsimp(qs),
+	qs:ratsimp(qs),
+	
+	lv:listofvars(maplist(rhs, eqs)),
+	/*disp(lv),*/
+	lv:solve(eqs, lv),
+	ret:subst(lv, ret),
+	rs: ratsubst( qs, ret, deq),
+	[rs, ret=qs, lv]
+); 
+
+ /*diffsubst(deq, dvar, eq):=block([nn, zz, sop, sargs, u, ret, l, r, dsymb:nounify('derivative) ],
+	if numberp(deq) then return(deq),
+
+	sop:inop(deq),
+	if op(eq)="=" then zz:rhs(eq) else error("provide explicit equation"),
+	if inop(deq)="+" then 
+		ret:map(lambda([u],  diffsubst(u, dvar, eq)), deq)
+	else 
+		if diffp(deq) then (
+			sargs:inargs(deq),
+			nn:sargs[3],
+
+			if lhs(eq)=sargs[2] then (
+				ret:subst(dsymb=lambda([ff, xx, nn],  'totdiff(ff, zz, [dvar])), deq),
+				ret:ev(ret, nouns),
+				if nn>1 then 
+					for k:1 thru nn-1 do ret:totdiff(ret, zz, [dvar])			
+			) else ret:deq
+		) else (
+			[l, r]: oppart(deq, lambda([u], freeof(dsymb, u))),
+	
+			if r#nil then
+				r: diffsubst(r, dvar, eq)
+			else r:1,
+			l: subst(eq, l),
+			ret:l*r
+		),
+	ret
+);
+*/
+	/*
+	simp:false,
+	tellsimpafter(asymbol[kk] * asymbol[mm], if kk#mm then 0 else signature[kk]),
+	tellsimpafter(asymbol[kk] * asymbol[mm] *bb, if kk#mm then 0 else signature[kk]*bb),
+	tellsimpafter(aa[kk]^nn, if oddp(nn) then 0 else  signature[kk] ), 
+	simp:true
+	*/
+ 
+put('cliapps, 'v1,'version);
+put('cliapps, "Dimiter Prodanov", 'author);
+put('cliapps, "(C) - Dimiter Prodanov, 2015- 2017", 'copyright);
+
+print("package name: cliffordan.mac");
+print("author: ", get('cliapps,'author));
+print("version:", get('cliapps,'version));
+print("Recommended location: share/contrib");
+print("last update: 14 Aug 2017");
