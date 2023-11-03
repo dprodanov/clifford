@@ -15,3 +15,13 @@
 *.PDF	 diff=astextplain
 *.rtf	 diff=astextplain
 *.RTF	 diff=astextplain
+
+*.wxmx text
+*.mac text
+*.wxm text
+*.wxmx diff=astextplain
+*.mac diff=astextplain
+*.wxm diff=astextplain
+*.wxm linguist-language=maxima-session
+*.wxmx linguist-language=maxima-session
+*.mac linguist-language=maxima-session
