@@ -778,13 +778,14 @@ alias (countsym, countsymb);
 /*  
 counts occurences of a symbol in an expression
 */
-countsymb(ab, sym):=block([inflag:true ],
+countsymb(ab, sym):=block([inflag:true, i],
+	if not symbolp(sym) then error("symbol expected"),
 	if freeof(sym, ab) then return(0),
 	if atom(ab) then  
 		if sym=ab then return(1),
 	if subvarp(ab) then  
 		if sym=op(ab) then return(1),
-	xreduce("+", maplist( lambda([i], countsymb(i, sym)), ab))
+	xreduce("+", maplist( lambda([i],   countsymb(i, sym)), ab))
  );
 
 /*
