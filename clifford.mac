@@ -143,7 +143,7 @@ pfeformat: true;
 	ipdecomp:false;	
 	
 	declare("|", additive);
-	"|"(a, b):= block ([l,r, qq, ret:0],
+	"|"(a, b):= block ([l,r, qq, ret:0, u],
 		if ndim=0 then return ( buildq([a,b], "|"(a, b))),
 		if scalarp(a) or scalarp(b) then (
 			if inprotype='lc then 
@@ -152,10 +152,12 @@ pfeformat: true;
 				if scalarp(b) then ret: a*b else ret:0
 			elseif inprotype='sym then ret:a.b,
 			if ipdecomp=true and  (scalarp(a) or  scalarp(b)) then return(0),
+			ret:expand(ret),
 			return(ret)
 		),
 		if not mapatom(a) then a:expand(a),
 		if not mapatom(b) then b:expand(b),
+		/*display(  inop(a), inop(b)),*/
 		if inop(a)="+" then return (map( lambda ([u],  u | b), a)),
 		if inop(b)="+" then return (map( lambda ([u],  a | u), b)),	
 		if wedgesimp then (
@@ -167,27 +169,30 @@ pfeformat: true;
 		l:maxgrade(a),
 		r:maxgrade(b),
 		qq: l-r,
-		/*display(l, r, qq),*/
+		ret:expand(a.b),
+		/*display(l, r, qq, ret),*/
 		if inprotype='rc then 
 			if qq<0 then return(0)
 			elseif qq<= l+r then 
-				ret:cliffsimp1(a.b),
+				ret:cliffsimp1(ret),
 		if inprotype='lc then 
 			if qq>0 then return(0)
 			else (
 				qq:-qq,
 				if qq<= l+r then 
-				ret:cliffsimp1(a.b)
+				ret:cliffsimp1(ret)
 		),
 		if inprotype='sym then (
 			qq:abs(qq),
-			ret:cliffsimp1(a.b)
+			ret:cliffsimp1(ret)
 		),
 		if inprotype='ic then (
 			qq:abs(qq),
-			ret:cliffsimp1(a. (b))
+			ret:cliffsimp1(ret)
 		),
-		grpart(ret, qq)
+		/*display(ret, qq),*/
+		ret:grpart(ret, qq),
+		ret:ratsimp(ret)
 	);	
 	/*texput ("\\", " \\circ ", infix);*/
   	
@@ -592,16 +597,16 @@ cliffsimp1(expr):=block([res],
  simplification of inverses
 */
 declare (dotinvsimp, evfun);
-dotinvsimp(ab):=block( [a,b,c,s],
- mode_declare([a,b,s], any),
- if mapatom(ab) or freeof(asymbol, ab) or op(ab)#"/" then return(ab),
-  a:part(ab,1),
-  b:part(ab,2),
-  c:dotconjugate(b),
-  s: expand(c.b),
-  if _debug=true then display(a,b,s),
-  if not freeof(asymbol, s) then  s:cliffsimp1(s),
-  if s#0 and scalarp(s) then a.c/s else ab 
+dotinvsimp(ab):=block( [a,b,c,s:ab],
+ if mapatom(ab) or freeof(asymbol, ab)  then return(ab),
+ if inop(ab)="+" then 
+	s: map(dotinvsimp, ab)
+ elseif  op(ab)="/" then (
+	  a:part(ab,1),
+	  b:part(ab,2),
+	  s:a*cinv(b)
+  ),
+  s
 );
 
 
@@ -1025,7 +1030,7 @@ dotreverse(expr):=block ( [ret, l, r],
 
 
 /*  
-Clifford involution of expressions
+Involution of expressions
 */
 declare(cinvolve, linear);
 

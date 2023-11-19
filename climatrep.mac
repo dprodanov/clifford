@@ -291,7 +291,7 @@ climatrep1(vv):=block([n, AA, lst, EE, l,r, q, opsubst :false, gs:gensym(string(
 
 
 /* matrix FVS algorithm */
-fadlevi(A):=block([n, m, c, M, K, I, i, cq, Ai],
+fadlevim(A):=block([n, m, c, M, K, I, i, cq, Ai],
 	if not matrixp(A) then error ("not a matrix ", A),
 	[n,m]:matrix_size(A),
 	if n#m then error ("not a square matrix"),
@@ -313,33 +313,11 @@ fadlevi(A):=block([n, m, c, M, K, I, i, cq, Ai],
 	[ M, c]
 );
 
-/*
-Generalized inverse
-naive implementation full  dimensions
-*/
-fadlevic(A):=block([c, M:1, K, i, n:2^ndim, cq],
-	local(c),
-	c: makelist(1,n+1),
-	for i:1 thru n do (
-		K: dotsimpc(expand(A.M)),
-		c[i+1]: -n/i* scalarpart(K),
-		if i<n then  
-			M:ratsimp(K + c[i+1])
-	), 
-	c:factor(c),
-	cq:last(c),
-	if cq=0 then cq:1,
-	M:ratsimp(-(M)/cq),
-   [M, c]
-);	
-
-
-
 /* 
 matrix version
 characteristic polynomial Faddeev -Le Verrier- Sourieau 
 */
-fadlevcp(A, v):=block([n, m, c, M, K, I, ss:0], 
+fadlevcpm(A, v):=block([n, m, c, M, K, I, ss:0], 
 	local(c),
 	if not matrixp(A) then error ("not a matrix ", A),
 	[n,m]:matrix_size(A),
@@ -362,14 +340,31 @@ fadlevcp(A, v):=block([n, m, c, M, K, I, ss:0],
 );
 
 /*
+Generalized inverse
+naive implementation full  dimensions
+*/
+fadlevic(A):=block([c, M:1, K, i, n:2^ndim, cq],
+	c: makelist(1,n+1),
+	for i:1 thru n do (
+		K: dotsimpc(expand(A.M)),
+		c[i+1]: -n/i* scalarpart(K),
+		if i<n then  
+			M:ratsimp(K + c[i+1])
+	), 
+	c:factor(c),
+	cq:last(c),
+	if cq=0 then cq:1,
+	M:ratsimp(-(M)/cq),
+   [M, c]
+);	
+
+
+/*
 Generalized inverse + characteristic polynomial
  full grade  dimensions
 */
-fadlevicg(A, v):=block([c, M:1, K, i, n, cq, ss:0],
-	local(c),
-	n: 2^maxgrade(A),
-	if _debug1=true then
-		display(n),
+fadlevicg(A, v):=block([c, M:1, K, i, n, cq,  n: 2^ndim, ss:0],
+	if _debug1=true then display(n),
 	array(c,n), 
 	c[0]:1,
 	A:rat(A),
@@ -395,6 +390,34 @@ fadlevicg(A, v):=block([c, M:1, K, i, n, cq, ss:0],
 	[M, ss]
 );
 
+fadlevicp(A, v):=block([ M:1, K, i:1, n, k, cq, c, ss],
+	n: 2^ceiling(ndim/2),
+	if _debug1=true then print("n=",n),
+	array(c,n+1), 
+	for r:0 thru n+1 do c[r]:1,
+	A:rat(A),
+	ss:c[1]*v^^n,
+	while i<n and K#0 do (
+		K: dotsimpc(expand (A.M)),
+		cq: -n/i* scalarpart(K),
+		if _debug1=true then print(i, " ", cq),
+		if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", (K+cq), "\\\\"),
+		if K#0 then
+			M: rat(K + cq), 
+		c[i+1]: cq,
+		ss:ss+c[i+1]*v^^(n-i),
+		i:i+1
+	), 
+	 
+	K: dotsimpc(expand(A.M)),
+	cq: -n/i* scalarpart(K),
+	if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", (K+cq), "\\\\"),
+	ss:ss+cq,
+	if cq=0 then cq:1,
+	M:factor(-(M)/cq),
+	[M, ss]
+);
+
 /*
 Generalized inverse 
  reduced dimensions
@@ -417,7 +440,7 @@ fadlevicg2(A):=block([ M:1, K, i:1, n, sc:1, cq],
 	 
 	K: dotsimpc(expand(A.M)),
 	cq: -n/i* scalarpart(K),
-	if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", K, "\\\\"),
+	if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", (K-cq), "\\\\"),
 	if cq=0 then cq:1,
 	M:factor(-(M)/cq)
 );
@@ -427,7 +450,7 @@ fadlevicg2(A):=block([ M:1, K, i:1, n, sc:1, cq],
 pseudoinverse : for n idempotent it returns the complement zero divisor 
 full grade dimensions
 */
-fadlevicg1(A):=block([ M:1, K, i:1, n, k: maxgrade(A), cq],
+fadlevicg1(A):=block([ M:1, K, i:1, n,  k: length(clv(A)),  cq],
 	n: 2^k,
 	if _debug1=true then print("n=",n),
 	A:rat(A),
@@ -442,7 +465,7 @@ fadlevicg1(A):=block([ M:1, K, i:1, n, k: maxgrade(A), cq],
 	), 
 	K: dotsimpc(expand(A.M)),
 	cq: -n/i* scalarpart(K),
-	if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", K, "\\\\"),
+	if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", (K+cq), "\\\\"),
 	cq:factor(cq),
 	if cq=0 then cq:1,
 	M:factor(-(M)/cq)
@@ -450,8 +473,8 @@ fadlevicg1(A):=block([ M:1, K, i:1, n, k: maxgrade(A), cq],
 );
 
 
-/* inverse +  characteristic polynomial  FVS */
-fadlevicg1cp(A, v):=block([ M:1, K, i:1, n, k: maxgrade(A), cq, c, ss],
+/* inverse +  full grade, characteristic polynomial  FVS */
+fadlevicg1cp(A, v):=block([ M:1, K, i:1, n, k: length(clv(A)),  cq, c, ss],
 	n: 2^k,
 	if _debug1=true then print("n=",n),
 	array(c,n+1), 
@@ -462,7 +485,7 @@ fadlevicg1cp(A, v):=block([ M:1, K, i:1, n, k: maxgrade(A), cq, c, ss],
 		K: dotsimpc(expand (A.M)),
 		cq: -n/i* scalarpart(K),
 		if _debug1=true then print(i, " ", cq),
-		if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", K, "\\\\"),
+		if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", (K+cq), "\\\\"),
 		if K#0 then
 			M: rat(K + cq), 
 		c[i+1]: cq,
@@ -472,7 +495,7 @@ fadlevicg1cp(A, v):=block([ M:1, K, i:1, n, k: maxgrade(A), cq, c, ss],
 	 
 	K: dotsimpc(expand(A.M)),
 	cq: -n/i* scalarpart(K),
-	if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", K, "\\\\"),
+	if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", (K+cq), "\\\\"),
 	ss:ss+cq,
 	if cq=0 then cq:1,
 	M:factor(-(M)/cq),
@@ -482,10 +505,11 @@ fadlevicg1cp(A, v):=block([ M:1, K, i:1, n, k: maxgrade(A), cq, c, ss],
 /*
 minimal polynomial of the multivector
 */
-minpoly(P, x):=block([dP:P, md:0, %a, Q, Q1, n, k, cc:[], sol,  m, qq],
+minpoly(P, x):=block([dP:rat(P), md:0, %a, Q, Q1, n, k, cc:[], sol,  m, qq],
 	local(%a),
 	n:hipow(P,x),
-	while gcd(dP, P)#1 do (
+	if _debug1=all then  display ( n),
+	while gcd(dP, rat(P))#1 do (
 		dP:diff(dP,x),
 		md:md+1
 	),
@@ -493,7 +517,7 @@ minpoly(P, x):=block([dP:P, md:0, %a, Q, Q1, n, k, cc:[], sol,  m, qq],
 	 print (P, "is minimal"),
 	 return(P)
 	),
-	if _debug1=all then  display (md, n),
+	if _debug1=all then  display (md),
 	m: n/md,
 	if not integerp (m) then return (false),
 	Q:sum(%a[i]*v^i,i,0, m),
@@ -519,8 +543,8 @@ minpoly(P, x):=block([dP:P, md:0, %a, Q, Q1, n, k, cc:[], sol,  m, qq],
 Generalized inverse + characteristic polynomial
  reduced grade dimensions
 */
-fadlevicg2cp(A, v):=block([ M:1, K, i:1, n, k: maxgrade(A), cq, c, ss],
-	n: 2^(ceiling(k/2)),
+fadlevicg2cp(A, v):=block([ M:1, K, i:1, n, k: length(clv(A)),  cq, c, ss],
+	n: 2^ ceiling( k/2),
 	if _debug1=all then print("n=",n),
 	array(c,n+1), 
 	for r:0 thru n+1 do c[r]:1,
@@ -540,7 +564,34 @@ fadlevicg2cp(A, v):=block([ M:1, K, i:1, n, k: maxgrade(A), cq, c, ss],
 	 
 	K: dotsimpc(expand(A.M)),
 	cq: -n/i* scalarpart(K),
-	if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", K, "\\\\"),
+	if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", (K+cq), "\\\\"),
+	ss:ss+cq,
+	if cq=0 then cq:1,
+	M:factor(-(M)/cq),
+	[M, ss]
+);
+
+fadlevicg3cp(A, v, n):=block([ M:1, K, i:1,   cq, c, ss],
+	if not integerp(n) then error("n is not integer ", n),
+	array(c,n+1), 
+	for r:0 thru n+1 do c[r]:1,
+	A:rat(A),
+	ss:c[1]*v^^n,
+	while i<n and K#0 do (
+		K: dotsimpc(expand (A.M)),
+		cq: -n/i* scalarpart(K),
+		if _debug1=true then print(i, " ", cq),
+		if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", K, "\\\\"),
+		if K#0 then
+			M: rat(K + cq), 
+		c[i+1]: cq,
+		ss:ss+c[i+1]*v^^(n-i),
+		i:i+1
+	), 
+	 
+	K: dotsimpc(expand(A.M)),
+	cq: -n/i* scalarpart(K),
+	if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", (K+cq), "\\\\"),
 	ss:ss+cq,
 	if cq=0 then cq:1,
 	M:factor(-(M)/cq),
@@ -548,13 +599,77 @@ fadlevicg2cp(A, v):=block([ M:1, K, i:1, n, k: maxgrade(A), cq, c, ss],
 );
 
 /*
+guessgrade(A):=block([ A2:A, k:1, ipdecomp:true],
+	while A2#0 do (
+		A2: A2 | A2,
+		display(A2),
+		k:k*2
+	),
+	k/2
+);
+*/
+
+/* maximal rank*/
+mgr(A):= block([k:length(clv(A))],
+	2^ceiling(k/2)
+);
+
+mpowers(A):=block([powers:[], m: mgr(A), i:0, Ai:1],
+	while i<= m  do (
+		push(Ai,powers),
+		Ai:dotsimpc(expand( Ai . A)), 
+		i:i+1
+	),
+	reverse(powers)
+);
+
+guessgrade2(A):=block([M, Ls:[], u],
+	Ls: mpowers(A),
+	/*Ls: map(lambda([u], list_matrix_entries(elem2matr(u))) ,Ls),  */
+	Ls: map(lambda([u], elem2lst(u)), Ls),  
+    M: apply(matrix, Ls),
+	display(M),
+	rank(M)
+);
+
+
+trimzerocols(M):=block([MT: transpose(M), L:[], m,n, i:1, Z],
+	[m,n]:matrix_size(M),
+	Z:zeromatrix(1,m),
+	while i<=n do (
+		if row(MT,i)#Z then
+			L:cons( list_matrix_entries(row(MT,i)), L),
+		i:i+1
+	),
+	L:reverse(L),
+	transpose(apply(matrix, L))
+);
+
+guessgrade21(A):=block([M, Ls:[], u, L],
+	Ls: mpowers(A),
+	Ls: map(lambda([u], list_matrix_entries(elem2matr(u))) ,Ls),  
+    M: apply(matrix, Ls),
+	M:trimzerocols(M),
+	display(M),
+	rank(M)
+);
+
+guessgrade22(A):=block([M, Ls:[], u, L],
+	Ls: mpowers(A),
+	Ls: map(lambda([u], elem2lst(u)) ,Ls),  
+    M: apply(matrix, Ls),
+	M:trimzerocols(M),
+	display(M),
+	rank(M)
+);
+
+/*
 Generalized inverse  float
  reduced grade dimensions
 */
-fadlevicg2f(A):=block([ M:1, K, i:1, n, k: maxgrade(A), sc:1, cq],
-	n: 2^ceiling(k/2),
-	if _debug1=all then disp(n),
-	if _debug1=true then print("n=",n),
+fadlevicg2f(A):=block([ M:1, K, i:1, n, k: length(clv(A)), sc:1, cq],
+	n: 2^ ceiling( k/2),
+	if _debug1=all then print("n=",n),
 	A:float(A),
 	while i<n and K#0 do (
 		K: dotsimpc(expand (A.M)),
@@ -570,24 +685,13 @@ fadlevicg2f(A):=block([ M:1, K, i:1, n, k: maxgrade(A), sc:1, cq],
 	 
 	K: dotsimpc(expand(A.M)),
 	cq: -n/i* scalarpart(K),
-	if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", K, "\\\\"),
+	if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", (K+cq), "\\\\"),
 	if cq=0 then cq:1,
 	M:factor(-(M)/cq)
 	
 );
 
 
-/*
-elem2mat(expr, [ulst] ):=block(
-	if emptyp(ulst) then ulst:false 
-	else ulst:true,
-	if mapatom(expr) then return(climatrep(expr)),
-	if ulst=true then
-		maplist(climatrep, expr)
-	else
-		map(climatrep, expr)
-);
-*/
 
 
 elem2mat3(expr, [ulst] ):=block(
@@ -701,18 +805,46 @@ elem2mat(expr):=block([L:[], ei, ret, E:[], qq],
 );
 */
 
-elem2mat(expr):=block([L:[], ei, ret, E:[], qq],
+elementsr(A):=block([c:1, lst:clv(A), u, v, n ],
+	n: length(lst),
+	for i:1 thru n do c:c.(1+ lst[i] ),
+	c:expand(c),
+	lst:inargs(c),
+	sort(lst, lambda([u,v], 
+			ordergreatp(u,v) and if not (numberp(u) or numberp(v)) then length(u)< length(v)
+			)
+	)
+);
+
+elem2mat(expr):=block([L:[], ei, ret, E:[], u, qq],
 	if emptyp(%elements) then E:elements(all)
-	elseif %elements[1] #1 then E: cons(1, %elements) else E: %elements,
-	
+	elseif %elements[1] #1 then E: cons(1, %elements) else E: %elements,	
 	ret:expand(expr),
 	ei:maplist(lambda([u],  dotsimpc(u.u).u  ), E),
 	L:map(lambda([u], 
 		qq: u.expr, dotsimpc(expand(qq)) 
 		), E),
-	genmatrix( lambda([i,j],  scprod( L[i] ,  ei[j])), length(L))
+	genmatrix( lambda([i,j],  L[i] @ ei[j] ), length(L))
 );
 
+
+/* computes only the 1st row*/
+elem2matr(expr):=block([L:[], ei, ret, E:[], u, qq],
+	E:elementsr(A), 
+	ret:expand(expr),
+	ei:maplist(lambda([u],  dotsimpc(u.u).u  ), E),
+	L:map(lambda([u], 
+		qq: u.expr, dotsimpc(expand(qq)) 
+		), E),
+	genmatrix( lambda([i,j],   L[i] @ ei[j] ), 1, length(L))
+);
+
+elem2lst(expr):=block([L:[], ei, ret, E:[], u, qq],
+	E:elementsr(A), 
+	ret:expand(expr),
+	ei:maplist(lambda([u],  dotsimpc(u.u).u  ), E),
+	 makelist(  expr @ ei[j], j, 1, length(E))
+);
 
 
 permatrixsym(lsta, lstb):= block([n,m],
@@ -757,8 +889,17 @@ lrandomrat(n, m):=block([rs, rn, rd],
  (if oddp(rs) then -1 else 1))*rn/rd, n) 
 );
 
+
+lrandomrats(n, m):=block([rs, rn, rd],
+ makelist( (rs:random(3)-1, rn:random(m), rd:subst(0=1,random(m)),  
+ (if oddp(rn) then 0 else 1)*rs*rn/rd), n) 
+);
+
+/*
+sparse random multivector
+*/
 rancelem(m):=block([n:2^ndim, lst],
- lst:lrandomrat(n, m),
+ lst:lrandomrats(n, m),
  celem(lst)
 );
 

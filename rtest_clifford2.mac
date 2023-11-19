@@ -3,7 +3,7 @@ Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
 tests for version
- v 2.0
+ v 2.5
  
 usage:
 file_search_maxima: append (file_search_maxima,["/path/to/clifford.mac"]);
@@ -34,7 +34,7 @@ batch("rtest_clifford", test);
   'done);
 'done$
 get('clifford,'version);
-v20$
+v25$
 block(
 	"init clifford complex",
 	clifford(e,0,1,0),
@@ -72,12 +72,12 @@ e[2] . e[1] . e[1] . e[2], dotsimpc;
 -e[2]$
 1/e[1] . e[2], dotinvsimp;
 -e[1] . e[2]$
-1/(1+e[1]),cliffsimpall,expand;
-1/2-e[1]/2$
+1/(1+e[1]),dotinvsimp;
+(1-e[1])/2$
 (e[1]- e[2])^^2,expand;
 -2$
 (e[1]- e[2])^2,expand;
--2$
+e[1]^2-2*e[1]*e[2]+e[2]^2$
 block(
 	"init clifford geom/pauli",
 	clifford(e,3),
@@ -106,15 +106,13 @@ e[1]| ( (e[2]&e[3]));
 0$
 e[2]. (e[1]|e[3])+e[3]. (e[1]|e[2]);
 0$
--(%iv.e[1]) & (-%iv. e[2]&e[3]),dotsimpc;
+-(%iv. e[1]) & (- %iv. (e[2] & e[3])),dotsimpc;
 -e[1] . e[2] . e[3]$
--dotsimpc(%iv.e[1]) ~ (-%iv. e[2]~e[3]),dotsimpc;
--e[1] . e[2] . e[3]$
-dual(e[1] &e[2]),dotsimpc;
+clihdual(e[1] &e[2]),dotsimpc;
 e[3]$
-dual(e[3] &e[1]),dotsimpc;
+clihdual(e[3] &e[1]),dotsimpc;
 e[2]$
-dual(e[2] &e[3]),dotsimpc;
+clihdual(e[2] &e[3]),dotsimpc;
 e[1]$
 block(
 	jacobprod(a,b,c):= ( a & b & c + b & c & a + c & a & b),
