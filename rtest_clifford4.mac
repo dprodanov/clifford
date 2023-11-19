@@ -3,7 +3,7 @@ Clifford algebra
 a lightweight package for performing Geometric Algebra calculations
 
 tests for version
- v 20
+ v 25
  
 usage:
 file_search_maxima: append (file_search_maxima,["/path/to/clifford.mac"]);
@@ -34,9 +34,9 @@ batch("rtest_clifford", test);
   'done);
 'done$
 get('clifford,'version);
-v20$
+v25$
 /*a | b + a & b;
-a.b$*/
+a.b$
 (A1: a & b &c + b & c & a + c& a &b, 
 ratsimp(A1+(- a . b . c - a . c . 'cinvolve(b)+a . 'cinvolve(c) . 'cinvolve(b)+
 'cinvolve(a) . 'cinvolve(b) . 'cinvolve(c)- b . a . 'cinvolve(c)+b . 'cinvolve(a)
@@ -44,6 +44,7 @@ ratsimp(A1+(- a . b . c - a . c . 'cinvolve(b)+a . 'cinvolve(c) . 'cinvolve(b)+
 c . b . 'cinvolve(a)+c . 'cinvolve(b) . 'cinvolve(a)+'cinvolve(c) . 'cinvolve(a)
  . 'cinvolve(b))/4));
  0$
+ */
 clifford(e,3);
 [1,1,1]$
 celem(A,[t,x,y,z]);
@@ -69,7 +70,7 @@ R1: cos(phi/2)+ g[2].g[3]*sin(phi/2),
 R2: dotreverse(R1)
 );
 cos(phi/2)-(g[2] . g[3])*sin(phi/2)$
-rot:R1.rr.R2,cliffsimpall;
+rot:R1.rr.R2,expand, dotsimpc;
 (g[1]*cos(phi/2)^2+g[1]*sin(phi/2)^2)*t+(g[2]*cos(phi/2)^2+2*g[3]*cos(phi/2)*sin(phi/2)-g[2]*sin(phi/2)^2)*x+
 (g[3]*cos(phi/2)^2-2*g[2]*cos(phi/2)*sin(phi/2)-g[3]*sin(phi/2)^2)*y+(g[4]*cos(phi/2)^2+g[4]*sin(phi/2)^2)*z$
 trigreduce(rot);
