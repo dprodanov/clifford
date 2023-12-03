@@ -1,3 +1,7 @@
+	
+	2.4.3 Date 23 Aug 2017
+	- bugfixes in map usage
+
 	2.4.2 Date 17 July 2017
 	- bugfix in explodeop
 	- change in oppart
