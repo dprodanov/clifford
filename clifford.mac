@@ -3,6 +3,13 @@ Clifford algebra in Maxima
 Clifford: a lightweight package for performing Geometric Algebra calculations
 
  @version 
+	2.5.5 Date 19 Jan 2025
+	- changes in scalarpart
+	
+	2.5.5 Date 19 Nov 2023
+	- countsymb fix
+	- dotinvsimp change
+	
 	2.5.4 Date 9 May 2023
 	- FV algorithm added
 	- listofclivars fix
@@ -57,19 +64,8 @@ Clifford: a lightweight package for performing Geometric Algebra calculations
 	- fix in dual
 	- grades function
 	- countsym depreciation
+
 	
-	2.4.3 Date 23 Aug 2017
-	- bugfixes in map usage
-	
-	2.4.2 Date 17 July 2017
-	-bugfix in explodeop
-	- change in oppart
-	- dotexpand
-	
-	2.4.1 Date 17 Jun 2017
-	- simplification of Clifford exponents
-	- trigsimp inncorporated in cliffsimpall
-	- solving 
 	
 	older log: changelog.txt
 	
@@ -205,7 +201,7 @@ pfeformat: true;
 	declare("&", additive);
 	
 	"&"(a, b):= block ([l,r, ret:0],
-		if ndim=0 then return ( buildq([a,b], "&"(a, b))),
+		if ndim=0 then return ( buildq([a, b], "&"(a, b))),
 		if ipdecompalt=true and (scalarp(a) or scalarp(b)) then return(0), 
 		if not mapatom(a) then a:expand(a),
 		if not mapatom(b) then b:expand(b),
@@ -1253,17 +1249,20 @@ vectorp(v):= (
 /*
  scalar part
 */
+declare(scalarpart, evfun);
 scalarpart(v):=block([ r, l, sop ],
 	if freeof(asymbol, v) then return (v),
-	if not freeof(".", v) then v:expand(v),
-	sop: inop(v),
-	if sop="+" then (
-		[r,l]: oppart(v, lambda([u], freeof(asymbol, u))),
-		r:subst('nil=0, r)
-	) else 
-		if freeof(asymbol, v) then  r:v 
-		else r:0,
-	r
+	if not freeof(".", v) then v:expand(v), 
+	if matrixp(v) then matrixmap(scalarpart, v) 
+	else(
+		sop: inop(v), 
+		if sop="+" then (
+			[r,l]: oppart(v, lambda([u], freeof(asymbol, u))),
+			r:subst('nil=0, r)
+		) else 
+			if freeof(asymbol, v) then  r:v 
+			else r:0,
+	r)
 );
 
 /*
@@ -1587,7 +1586,9 @@ sautom(vv):=predautom(vv, lambda([u,v], not scalarp(u)));
 
 psautom(vv):=predautom(vv, lambda([u,v], maxgrade(u)=ndim));
 
-/*  Shirokov quaternion  type classification */
+/*  Shirokov quaternion  type classification 
+to be moved to climatrep
+*/
 qclass (vv) :=block ( [ar, ai, as, br, bi, bc],
 	ar:dotreverse(vv),
 	ai:cinvolve(vv),	
@@ -1627,7 +1628,9 @@ even-odd decomposition
 */
 evdecomp(vv):=cdgrade(vv, lambda([u, v ],  if oddp(v) then 1 else 2));
 
-/*  Shirokov quaternion  type  grading */
+/*  Shirokov quaternion  type  grading 
+to be moved to climatrep
+*/
 qgrade(vv):=cdgrade(vv, lambda([u,v ],  qclass(u)+1));
 
 /**
@@ -1635,7 +1638,6 @@ Faddev-Leverier reduced algorithm
 todo: add float option
 */
 fadlevicg2cp(A, v):=block([ M:1, K, i:1, n, k: maxgrade(A), cq, c, ss],
-	"n: 2^min(ceiling(ndim/2), k)",
 	n: 2^(ceiling(k/2)),
 	if _debug1=true then print("n=",n),
 	array(c,n+1), 
@@ -1662,7 +1664,7 @@ fadlevicg2cp(A, v):=block([ M:1, K, i:1, n, k: maxgrade(A), cq, c, ss],
 
 put('clifford, 'v25,'version);
 put('clifford, "Dimiter Prodanov", 'author);
-put('clifford, "(C) - Dimiter Prodanov, 2015 - 2021", 'copyright);
+put('clifford, "(C) - Dimiter Prodanov, 2015 - 2025", 'copyright);
 
 ttyoff:false;
 
@@ -1670,4 +1672,4 @@ print("package name: clifford.mac");
 print("author: ", get('clifford,'author));
 print("version:", get('clifford,'version));
 print("Recommended location: share/contrib");
-print("last update: 9 May 2023");
+print("last update: 19 Jan 2025");
