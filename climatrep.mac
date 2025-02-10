@@ -51,10 +51,35 @@ if get('climatrep,'version)=false then (
 
 );
 
+declare (blade, evfun);
+blade(expr):=block([r, l, aa, ret:1, lst:[]],
+	if inop(expr)="/" then error("non canonical expression"),
+	if matrixp(expr) then
+		return(matrixmap(blade, expr )),
+	if inop(expr)="+" or listp(expr) then 
+		map(blade, expr )
+	else (
+		[l, r]: oppart(expr, lambda([u], freeof(asymbol, u))),
+		if l='nil then l:1,
+		if r#'nil then (
+			if mapatom(r) then 
+				lst:[first(args(r))]
+			else (
+				for m in r do 
+					push(first(args(m)), lst),
+				lst:reverse(lst)
+			),
+			ret:arraymake (asymbol, lst)
+		),
+		l*ret
+	)
+)$
+ 
+
 /**
  multiplication table, trace
 */
-multtrace():=block([s:[1], lst],
+multtrace():=block([s:[], lst],
 	lst:elements(all),
 	for i:1 thru length(lst) do 
 		s:endcons(dotsimpc(lst[i].lst[i]), s),
@@ -292,6 +317,7 @@ climatrep1(vv):=block([n, AA, lst, EE, l,r, q, opsubst :false, gs:gensym(string(
 
 /* matrix FVS algorithm */
 fadlevim(A):=block([n, m, c, M, K, I, i, cq, Ai],
+	local(c),
 	if not matrixp(A) then error ("not a matrix ", A),
 	[n,m]:matrix_size(A),
 	if n#m then error ("not a square matrix"),
@@ -308,7 +334,7 @@ fadlevim(A):=block([n, m, c, M, K, I, i, cq, Ai],
 	c:factor(c),
 	cq:last(c),
 	if cq=0 then cq:1,
-	display(M),
+	/*display(M),*/
 	M:rat(-Ai/cq),
 	[ M, c]
 );
@@ -317,7 +343,7 @@ fadlevim(A):=block([n, m, c, M, K, I, i, cq, Ai],
 matrix version
 characteristic polynomial Faddeev -Le Verrier- Sourieau 
 */
-fadlevcpm(A, v):=block([n, m, c, M, K, I, ss:0], 
+fadlevcpm(A, v):=block([n, m, c, M, K, I, ss:0, matrix_element_mult:"*"], 
 	local(c),
 	if not matrixp(A) then error ("not a matrix ", A),
 	[n,m]:matrix_size(A),
@@ -344,6 +370,7 @@ Generalized inverse
 naive implementation full  dimensions
 */
 fadlevic(A):=block([c, M:1, K, i, n:2^ndim, cq],
+	local(c),
 	c: makelist(1,n+1),
 	for i:1 thru n do (
 		K: dotsimpc(expand(A.M)),
@@ -365,6 +392,7 @@ Generalized inverse + characteristic polynomial
 */
 fadlevicg(A, v):=block([c, M:1, K, i, n, cq,  n: 2^ndim, ss:0],
 	if _debug1=true then display(n),
+	local(c),
 	array(c,n), 
 	c[0]:1,
 	A:rat(A),
@@ -393,6 +421,7 @@ fadlevicg(A, v):=block([c, M:1, K, i, n, cq,  n: 2^ndim, ss:0],
 fadlevicp(A, v):=block([ M:1, K, i:1, n, k, cq, c, ss],
 	n: 2^ceiling(ndim/2),
 	if _debug1=true then print("n=",n),
+	local(c),
 	array(c,n+1), 
 	for r:0 thru n+1 do c[r]:1,
 	A:rat(A),
@@ -404,7 +433,7 @@ fadlevicp(A, v):=block([ M:1, K, i:1, n, k, cq, c, ss],
 		if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", (K+cq), "\\\\"),
 		if K#0 then
 			M: rat(K + cq), 
-		c[i+1]: cq,
+		c[i+1]: rat(cq),
 		ss:ss+c[i+1]*v^^(n-i),
 		i:i+1
 	), 
@@ -473,10 +502,12 @@ fadlevicg1(A):=block([ M:1, K, i:1, n,  k: length(clv(A)),  cq],
 );
 
 
-/* inverse +  full grade, characteristic polynomial  FVS */
+/* inverse +  full grade, 
+characteristic polynomial  FVS */
 fadlevicg1cp(A, v):=block([ M:1, K, i:1, n, k: length(clv(A)),  cq, c, ss],
 	n: 2^k,
 	if _debug1=true then print("n=",n),
+	local(c),
 	array(c,n+1), 
 	for r:0 thru n+1 do c[r]:1,
 	A:rat(A),
@@ -502,26 +533,59 @@ fadlevicg1cp(A, v):=block([ M:1, K, i:1, n, k: length(clv(A)),  cq, c, ss],
 	[M, ss]
 );
 
+swapgen(expr, i,j ):=block([ret, ei, ej],
+	ret:subst([e[i]='ei, e[j]='ej] ,expr),
+	ret:subst([ej=e[i], ei=e[j]], ret),
+	dotsimpc(ret)
+);
+
+cpdecomp(chp, mp, v, q):=block([dp: diff(mp, v), apol: chp, cc:[], n, qq],
+	n: hipow(expand(chp), v),
+	m: hipow (expand(mp),v),
+	display(n,m),
+	for k:1 thru fix(n/m) do (
+		apol:diff(apol,v)/dp/k,
+		qq: ratsimp(at(apol, v=q)),
+		push( qq*mp^k,cc)
+	),
+	apply("+", cc)
+);
+
+
+cpdecomp1(chp, mp, v, q):=block([dp: diff(mp/v, v), apol: chp, cc:[], n, qq],
+	n: hipow(expand(chp), v),
+	m: hipow (expand(mp),v)-1,
+	display(n,m),
+	for k:1 thru fix(n/m) do (
+		apol:diff(apol,v)/(dp)/k,
+		qq: ratsimp(at(apol, v=q)),
+		push( qq*(mp/v)^k,cc)
+	),
+	apply("+", cc)
+);
+
+
 /*
-minimal polynomial of the multivector
+minimal polynomial of a multivector
 */
 minpoly(P, x):=block([dP:rat(P), md:0, %a, Q, Q1, n, k, cc:[], sol,  m, qq],
-	local(%a),
+	local(%a, cc),
+	P:expand(P),
+	P:rat(P),
 	n:hipow(P,x),
 	if _debug1=all then  display ( n),
-	while gcd(dP, rat(P))#1 do (
+	while (gcd(dP, P))#1 do (
 		dP:diff(dP,x),
 		md:md+1
-	),
+	), 
 	if md=1 then (
 	 print (P, "is minimal"),
 	 return(P)
 	),
-	if _debug1=all then  display (md),
-	m: n/md,
+	m: n/md, 
+	if _debug1=all then  display (md, m),
 	if not integerp (m) then return (false),
-	Q:sum(%a[i]*v^i,i,0, m),
-
+	Q:sum(%a[i]*x^i,i,0, m),
 	Q1:expand(P-Q^(md)),
 	 
 	for k:n thru 1 step -1 do (
@@ -535,9 +599,14 @@ minpoly(P, x):=block([dP:rat(P), md:0, %a, Q, Q1, n, k, cc:[], sol,  m, qq],
 		m:m-1,
 		if m <0 then return( [ subst(cc,Q), cc] )
 		),
+		Q1:	subst(cc, Q1),
+		Q1:rat(Q1),
+		display(Q1),
+		if Q1#0 then return (false),
 	[ subst(cc, Q), cc] 
 );
 
+npt(x):=block([k:0], while x>1 do (x:x/2, k:k+1), 2^k );
 
 /*
 Generalized inverse + characteristic polynomial
@@ -546,6 +615,7 @@ Generalized inverse + characteristic polynomial
 fadlevicg2cp(A, v):=block([ M:1, K, i:1, n, k: length(clv(A)),  cq, c, ss],
 	n: 2^ ceiling( k/2),
 	if _debug1=all then print("n=",n),
+	local(c),
 	array(c,n+1), 
 	for r:0 thru n+1 do c[r]:1,
 	A:rat(A),
@@ -554,7 +624,7 @@ fadlevicg2cp(A, v):=block([ M:1, K, i:1, n, k: length(clv(A)),  cq, c, ss],
 		K: dotsimpc(expand (A.M)),
 		cq: -n/i* scalarpart(K),
 		if _debug1=true then print(i, " ", cq),
-		if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", K, "\\\\"),
+		if _debug1=all then  (print("t_{",i,"}=",  blade(cq), " m_{",i,"}=",  blade(K), "\\\\")),
 		if K#0 then
 			M: rat(K + cq), 
 		c[i+1]: cq,
@@ -564,15 +634,16 @@ fadlevicg2cp(A, v):=block([ M:1, K, i:1, n, k: length(clv(A)),  cq, c, ss],
 	 
 	K: dotsimpc(expand(A.M)),
 	cq: -n/i* scalarpart(K),
-	if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", (K+cq), "\\\\"),
+	if _debug1=all then  (print("t_{",i,"}=",  blade(cq), " m_{",i,"}=",  blade(K+cq), "\\\\")),
 	ss:ss+cq,
 	if cq=0 then cq:1,
 	M:factor(-(M)/cq),
-	[M, ss]
+	[M, rat(ss)]
 );
 
 fadlevicg3cp(A, v, n):=block([ M:1, K, i:1,   cq, c, ss],
 	if not integerp(n) then error("n is not integer ", n),
+	local(c),
 	array(c,n+1), 
 	for r:0 thru n+1 do c[r]:1,
 	A:rat(A),
@@ -581,41 +652,42 @@ fadlevicg3cp(A, v, n):=block([ M:1, K, i:1,   cq, c, ss],
 		K: dotsimpc(expand (A.M)),
 		cq: -n/i* scalarpart(K),
 		if _debug1=true then print(i, " ", cq),
-		if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", K, "\\\\"),
+		if _debug1=all then print("t_{",i,"}=",  (cq), " m_{",i,"}=",  (K), "\\\\"),
 		if K#0 then
 			M: rat(K + cq), 
-		c[i+1]: cq,
+		c[i+1]: rat(cq),
 		ss:ss+c[i+1]*v^^(n-i),
 		i:i+1
 	), 
 	 
 	K: dotsimpc(expand(A.M)),
 	cq: -n/i* scalarpart(K),
-	if _debug1=all then print("t_{",i,"}=", cq, " m_{",i,"}=", (K+cq), "\\\\"),
+	if _debug1=all then print("t_{",i,"}=",  (cq), " m_{",i,"}=",  (K+cq), "\\\\"),
 	ss:ss+cq,
 	if cq=0 then cq:1,
 	M:factor(-(M)/cq),
 	[M, ss]
 );
 
-/*
-guessgrade(A):=block([ A2:A, k:1, ipdecomp:true],
-	while A2#0 do (
-		A2: A2 | A2,
-		display(A2),
-		k:k*2
-	),
-	k/2
-);
-*/
-
+ cliffseq( p, q) :=block([n],
+	if p<0 then p:0,
+	if q<0 then q:0,
+	n:p+q,
+	if n>0 then (
+		print("p=",p, " q=",q),
+		cliffseq( q-1, p-1)
+	)
+ );
+ 
 /* maximal rank*/
 mgr(A):= block([k:length(clv(A))],
 	2^ceiling(k/2)
 );
 
-mpowers(A):=block([powers:[], m: mgr(A), i:0, Ai:1],
-	while i<= m  do (
+mpowers(A,[m]):=block([powers:[],  i:0, Ai:1],
+if emptyp(m) then m: mgr(A)
+else m:first (m),
+	while i<=m  do (
 		push(Ai,powers),
 		Ai:dotsimpc(expand( Ai . A)), 
 		i:i+1
@@ -623,13 +695,17 @@ mpowers(A):=block([powers:[], m: mgr(A), i:0, Ai:1],
 	reverse(powers)
 );
 
-guessgrade2(A):=block([M, Ls:[], u],
+
+guessgrade2(A):=block([M, Ls:[], u, rnk, Ls2, E],
 	Ls: mpowers(A),
-	/*Ls: map(lambda([u], list_matrix_entries(elem2matr(u))) ,Ls),  */
-	Ls: map(lambda([u], elem2lst(u)), Ls),  
-    M: apply(matrix, Ls),
-	display(M),
-	rank(M)
+	local(c),
+	L1: makelist(c[i],i, length(Ls)),
+	Ls:Ls.L1,
+	disp(Ls),
+	E:elementsr(A), 
+    M: apply(matrix, maplist(lambda([u],   elem2lst(u, E)), Ls)  ),
+	rnk:rank(M),
+	[(rnk), M]
 );
 
 
@@ -645,23 +721,181 @@ trimzerocols(M):=block([MT: transpose(M), L:[], m,n, i:1, Z],
 	transpose(apply(matrix, L))
 );
 
-guessgrade21(A):=block([M, Ls:[], u, L],
-	Ls: mpowers(A),
-	Ls: map(lambda([u], list_matrix_entries(elem2matr(u))) ,Ls),  
-    M: apply(matrix, Ls),
-	M:trimzerocols(M),
-	display(M),
-	rank(M)
+trimzerorows(M):=block([ L:[], m,n, i:1, Z],
+	[m,n]:matrix_size(M),
+	Z:zeromatrix(1,n),
+	while i<=m do (
+		if row(M,i)#Z then
+			L:cons( list_matrix_entries(row(M,i)), L),
+		i:i+1
+	),
+	L:reverse(L),
+	(apply(matrix, L))
 );
 
-guessgrade22(A):=block([M, Ls:[], u, L],
+guessgrade21(A):=block([M, Ls:[], u, E, L],
 	Ls: mpowers(A),
-	Ls: map(lambda([u], elem2lst(u)) ,Ls),  
+	E:elementsr(A), 
+	Ls: map(lambda([u], list_matrix_entries(elem2matr(u, E))) ,Ls),  
     M: apply(matrix, Ls),
 	M:trimzerocols(M),
-	display(M),
-	rank(M)
+	rnk:rank(M),
+	[rnk, M]
 );
+
+guessgrade22(A):=block([M, Ls:[], u, L, E, rnk],
+	Ls: mpowers(A),
+	E:elementsr(A), 
+	Ls: map(lambda([u], elem2lst(u, E)) ,Ls),  
+    M: apply(matrix, Ls),
+	M:trimzerocols(M),
+	rnk:rank(M),
+	[rnk, M]
+);
+
+
+ 
+
+/*
+
+cntnum(lst, z):=block([u], apply("+", map(lambda([u], if u=z then 0 else 1), lst)));
+*/
+cntnum(lst, z):=block([u], apply("+", map(lambda([u], if u=z then  1 else 0), lst)));
+
+guessgrade3(A):=block([Ls:[], L1, u, rnk, U, E],
+	local(c),
+	Ls: mpowers(A),
+	E:elementsr(A), 
+	L1: makelist(c[i],i, length(Ls)),
+	Ls:Ls.L1,
+	disp(Ls),
+	U:makelist(Ls @E[i],i, length( E)),
+	rnk: length(U)- cntnum(U, 0),
+	[rnk, U]
+);
+
+cntnum1(lst, z):=block([u], apply("+", map(lambda([u], if u=z then  0 else 1), lst)));
+
+guessgrade31(A):=block([Ls:[], L1, u, rnk, U, Un, E, W, Wt, rr],
+	local(c),
+	Ls: mpowers(A),
+	E:elementsr(A), 
+	L1: makelist(c[i],i, length(Ls)),
+	Ls:expand(Ls.L1),
+	disp(Ls),
+	U:makelist(Ls @E[i],i, length( E)),
+	Un:sublist(U, lambda([u], u#0)),
+	W: coefmatrix(Un,L1),
+	disp(W),
+	Wt: triangularize(W),
+	rr: rank(W),
+	rnk: cntnum1(Wt[rr], 0),
+	[rnk, U, Wt]
+);
+
+guessgrade4(A):=block([Ls:[], L1, u, rnk, U, Un, E, W, Wt, rr, %rnum:0, c],
+	local(c),
+	Ls: mpowers(A),
+	E:elementsr(A), 
+	E: maplist(lambda([u],  dotsimpc(u.u).u  ), E),
+	L1: makelist(c[i],i, length(Ls)),
+	Ls:expand(Ls.L1),
+	disp(Ls),
+	U:makelist(Ls @E[i],i, length( E)),
+	Un:sublist(U, lambda([u], u# 0)),
+	W: coefmatrix(Un,L1),
+	Wt: linsolve(Un, L1),
+	rr:ratsimp(subst(Wt,Ls)),
+	rnk:fix(rank(W)/2)*2 ,
+	display(rr),
+	[rnk, Un, W, Wt]
+);
+
+minpoly1(A, v, [m]):=block([Ls:[], L1, u, rnk, U, Un, E, W, Wt, %rnum:0, c, cp, listarith:true],
+	local(c),
+	declare(c, scalar),
+	if emptyp(m) then m:mgr(A)
+	else m:first(m),
+	Ls: mpowers(A,m),
+	E:elementsr(A), 
+	E: ei:maplist(lambda([u],  dotsimpc(u.u).u  ), E),
+	L1:  makelist(c[i],i, length(Ls)),
+	Ls:Ls.L1,
+
+	disp(Ls),
+	U:makelist(Ls @E[i] =0,i, length( E)),
+	Un:sublist(U, lambda([u], u# (0=0))),
+	W: coefmatrix(Un,L1),	
+	rnk:fix(rank(W)/2)*2 ,
+
+ 
+	Wt: linsolve(Un, makelist(L1[i], i, rnk+1)),
+	Wt: subst(makelist(L1[i]=0, i, rnk+2, length(Ls)) , Wt),
+	Wt: map(rhs, Wt),
+	Wt:Wt/last(Wt),
+	cp: makelist(v^^i,i, 0, rnk), 
+	[rnk,   Wt.cp]
+);
+
+
+
+guessgrade41(A,[m]):=block([Ls:1, L1:0, u, rnk, U, Un, E, W, Wt:[], i:1, cp:[], c],
+	local(c),
+	declare(c, scalar),
+	if emptyp(m) then m:mgr(A)
+	else m:first(m),
+	E:elementsr(A), 
+	E: ei:maplist(lambda([u],  dotsimpc(u.u).u  ), E),
+	
+	while i<=m+1 and emptyp(Wt) do (	
+		L1:L1 + Ls * c[i], 
+		cp:endcons(c[i], cp),   
+		Ls:dotsimpc(expand(A.Ls)),
+		U:makelist(L1 @E[i] =0,i, length( E)),
+		Un: sublist(U, lambda([u], u# (0=0))),  
+		W: coefmatrix(Un, cp ),  
+		Wt:args(nullspace(W)),
+		i:i+1
+	),
+	Wt:transpose(first(Wt)),
+	[u,rnk]:matrix_size(Wt),
+	Wt:Wt/Wt[1,rnk],
+	[rnk-1, Wt]
+);
+
+minpoly2(A,  v, [m] ):=block([Ls:1, L1:0, u, rnk, U, Un, E, W, Wt:[], i:1, cp:[], c, listarith:true],
+    local(c),
+    declare(c, scalar),
+    if emptyp(m) then m:mgr(A)
+    else m:first(m), 
+    E:elementsr(A), 
+    E: ei:maplist(lambda([u],  dotsimpc(u.u).u  ), E),
+    
+    while i<=m+1 and emptyp(Wt) do (    
+        L1: L1+ Ls * c[i], 
+        cp:endcons(c[i], cp),   
+        Ls: dotsimpc(expand(A.Ls)),  
+        U:makelist(L1 @E[i] =0,i, length( E)),
+        Un: sublist(U, lambda([u], u# (0=0))),  
+        W: coefmatrix(Un, cp ),  
+        Wt:args(nullspace(W)),
+        i:i+1
+    ), 
+    Wt:transpose(first(Wt)),
+    [u, rnk]:matrix_size(Wt), 
+    Wt:Wt/Wt[1,rnk],
+    cp: makelist(v^^i,i, 0, rnk-1), 
+    [rnk-1, Wt.cp]
+);
+
+
+polysubst(P, v, PL):=block([ Q:copy(P)],
+	for k :1 thru length(PL) do
+		Q:subst (v^^k=PL[k],Q),
+	ratsimp(Q)
+); 
+
+
 
 /*
 Generalized inverse  float
@@ -722,6 +956,7 @@ matelem(MM):=block([LL],
 	if not matrixp(MM) then error("matrix required"),
 	LL:matrix(elements(all)),
 	LL:MM.LL,
+	/*display(LL),*/
 	LL[1,1]
 );
 
@@ -829,8 +1064,7 @@ elem2mat(expr):=block([L:[], ei, ret, E:[], u, qq],
 
 
 /* computes only the 1st row*/
-elem2matr(expr):=block([L:[], ei, ret, E:[], u, qq],
-	E:elementsr(A), 
+elem2matr(expr, E):=block([L:[], ei, ret,   u, qq],
 	ret:expand(expr),
 	ei:maplist(lambda([u],  dotsimpc(u.u).u  ), E),
 	L:map(lambda([u], 
@@ -839,11 +1073,10 @@ elem2matr(expr):=block([L:[], ei, ret, E:[], u, qq],
 	genmatrix( lambda([i,j],   L[i] @ ei[j] ), 1, length(L))
 );
 
-elem2lst(expr):=block([L:[], ei, ret, E:[], u, qq],
-	E:elementsr(A), 
+elem2lst(expr, E):=block([L:[], ei, ret, j,  u],
 	ret:expand(expr),
 	ei:maplist(lambda([u],  dotsimpc(u.u).u  ), E),
-	 makelist(  expr @ ei[j], j, 1, length(E))
+	 makelist(  ret @ ei[j], j, 1, length(E))
 );
 
 
@@ -853,6 +1086,9 @@ permatrixsym(lsta, lstb):= block([n,m],
 	genmatrix( lambda([i,j], coeff(lsta[i], lstb[j] )), n, m)
 );
 
+/**
+Computes a permutation matrix lsta <- lstb
+*/
 permatrixnum(lsta, lstb):= block([n,m, MM, ss:0],
 	if not (listp(lsta) or listp(lstb)) then error("list required"),
 	n:length(lsta), m:length(lstb),
@@ -921,4 +1157,4 @@ print("package name: climatrep.mac");
 print("author: ", get('climatrep,'author));
 print("version:", get('climatrep,'version));
 print("Recommended location: share/contrib");
-print("last update: 01 Aug 2023");
+print("last update: 15 Jan 2025");
