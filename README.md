@@ -4,7 +4,7 @@
 
 a lightweight package for performing Geometric and Clifford Algebra calculations
 
-To run the package clone the repository and add the folder to Maxima by executing commands
+To run the package, clone the repository and add the folder to Maxima by executing the commands
 
 file_search_demo: append (file_search_demo,["/path/to/folder/$$$.{dem,wxm}"]);
 
