@@ -13,6 +13,12 @@ file_search_maxima: append (file_search_maxima,["/path/to/folder/$$$.{mac,wxm}"]
 setup_autoload ("clifford.mac", clifford);
 
 **Changelog**
+	2.5.5 Date 19 Jan 2025
+	- changes in scalarpart
+	
+	2.5.5 Date 19 Nov 2023
+	- countsymb fix
+	- dotinvsimp change
 
 	2.5.4 Date 9 May 2023
 	- FV algorithm added
