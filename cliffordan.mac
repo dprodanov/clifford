@@ -2,11 +2,14 @@
 Clifford algebra
 a lightweight package for  component-wise Geometric Algebra calculations
 
-Clifford analysis
+Clifford analysis; geometric calculs
  
-@version 2.0 Date 8 Jul 2023
+@version 2.1 Date 23 Nov 2024
+		- fix in EL
+		2.0 Date 8 Jul 2023
 		- gradbasis 
 		- assume_pos option 
+		- changes in cndirdiff, ctotprojdiff
 		1.9 Date 18 Dec 2021 
 		- constrained Lagrangians
 		1.8.9 Date 31 Jul 2021
@@ -40,11 +43,11 @@ Clifford analysis
 		- bug fixes
 		1.7 Date 12 Dec 2016
 		- projection derivatives
-		1.6.5 Date 13 Jun 2016
-		1.6 Date 10 Apr 2016
-		1.5 Date 20 Feb 2016
-		1.2 Date 22 Jan 2016
-		1.1 Date 16 Dec 2015
+		1.6 Date 13 Jun 2016
+		1.5 Date 10 Apr 2016
+		1.2-4 Date 20 Feb 2016
+		1.1 Date 22 Jan 2016
+		1.0 Date 16 Dec 2015
 
 @depends 'clifford
 
@@ -314,7 +317,7 @@ cdirdiffa(f, v, x):=block( [ret:0, qq, pp, ee, kv, %k:gensym("k"), ipdecomp:true
 	else (
 		 kv:cvect(%k),
 		 lv: invautom( clv(v)),
-		 ret:mvectdiff( kv | f, x),
+		 ret: mvectdiff( kv | f, x),
 		 display(ret),
 		 for ee in lv do (
 		   qq: ee @ v,
@@ -332,18 +335,18 @@ cdirdiffa(f, v, x):=block( [ret:0, qq, pp, ee, kv, %k:gensym("k"), ipdecomp:true
  */
 cdirdiffi(f, v, x):=block ([ret:0, m, z, p],
 	if mapatom(x) then 
-		ret: scalarpart(v)*diff( f, x )
+		ret: v|  diff( f, x )
 	else (
 		lv: sublist( listofvars(x), lambda ([z], freeof(asymbol, z))),		
 		for u in lv do (
 			qq: diff(x, u),
 			m: qq @ qq,
 			if m#0 then m:1/m,
-			uu: (qq | v)*m,
-			ret: ret + uu * subst(".", "*", diff( f, u ))
+			uu: (v | qq )*m, 
+			ret: ret + uu . subst(".", "*", diff( f, u ))
 			)
 	),
-	ret:dotsimpc(ret),
+	ret:dotsimpc(expand(ret)),
 	ret:clifact(ret)
 );
 
@@ -356,7 +359,7 @@ cdirdualdiff(f, v, x):=block( [ret:0],
 );
 
 /*
-@deprecated
+rejective derivative
 */
 cndirdiff(f, v, x):=block( [ret:0, lv, uu:0, m, qq],
 	if mapatom(x) then 
@@ -367,7 +370,7 @@ cndirdiff(f, v, x):=block( [ret:0, lv, uu:0, m, qq],
 			qq: diff(x, u),
 			m: qq @ qq,
 			if m#0 then m:1/m,
-			uu: ( qq. v)*m,
+			uu: ( qq & v)*m,
 			ret: ret + uu. subst(".", "*", diff( f, u ))
 		)
 	),
@@ -376,6 +379,9 @@ cndirdiff(f, v, x):=block( [ret:0, lv, uu:0, m, qq],
 	ret:clifact(ret)
 );
 
+/**
+projective derivative
+*/
 ctotprojdiff(f, v, x):=block( [ret:0, lv, uu:0, qq, gn, ss:0, ipdecomp:true],
 	if mapatom(x) then 
 		ret: scalarpart(v)*diff( f, x )
@@ -386,7 +392,7 @@ ctotprojdiff(f, v, x):=block( [ret:0, lv, uu:0, qq, gn, ss:0, ipdecomp:true],
 			qq: cinvblade(diff(x, u)),
 			uu: dotsimpc(expand(v | qq)),
 	 
-			ret: ret + uu. subst(".", "*", diff( f, u ))
+			ret: ret + uu & subst(".", "*", diff( f, u ))
 			)
 	),
 	ret:expand(ret),
@@ -868,30 +874,25 @@ ciEL2(_F, tt, pvars, cvars):=block(
 
  
 
-EL(_F, q, pvars):=block ([eq:0, p, pv, qq, rr, len, ret:[]],
-	if not listp(pvars) then error("list required"),
-	 len:length(pvars),
-	 p:pvars[1],
-	 eq:pardiff(_F, p),
-	 if len>1 then (
-		for i:2 thru len do (
-			pv:pvars[i],
-			qq: subst('pv(q), pv, pardiff(_F, pv)),
-			display(qq),
-			for j:1 thru i-1 do (
-				rr:- convderiv(qq, q, p),				
-				rr: subst('diff(p, q)='pv(q), rr),
-				display(q, p, pv,  rr),
-				eq:eq + subst( pv, 'pv(q), rr  ),
-				/*eq:eq+ rr,*/
-				qq:rr
-			),
-			push(pv='diff(pvars[1], q, i-1), ret)
-		),
-		ret:reverse(ret)
-	),
-	[ ret, eq]
+EL(_F, q, pvars):=block ([eq:0, p, pv, qq, rr:0, len, ret:[], ss:[]],
+    if not listp(pvars) then error("list required"),
+     len:length(pvars),
+     p:pvars[1],
+     ss:pardiff(_F, p),
+     if len>1 then (
+        for i:2 thru len do (
+            pv:pvars[i],
+            qq: subst('pv(q),pv, pardiff(_F, pv)),
+            display(i, qq, pv),  
+            rr: 'diff(qq, q, i-1), rr: subst( pv,'pv(q), rr ),
+            ss:ss- (-1)^i*rr, 
+            push(pv='diff(pvars[1], q, i-1), ret)
+        ),
+        ret:reverse(ret)
+    ),
+    [ ret, eq+ss]
 );
+
 /*
 EuLagEq2(_F, tt, pvars):=block ([eq:0, p, pv, ret:[]],
 	[p, pv]:pvars,
@@ -909,6 +910,7 @@ eq
 );*/
 
 
+
 /*
 coordinate substitution
 */
@@ -924,6 +926,7 @@ coordsubst(rr, eqs):=block( [lv, ret:rr, qq, z],
 			ret:ratsubst(qq, lv[i], ret)
 			)
 	),
+	ret:subst("^"="^^",ret),
 	ret:trigsimp(ret),
 	ret:ratsimp(ret),
 	ret
@@ -1030,6 +1033,42 @@ grank(lst):=block([r:0, lsta, res, n, q],
 clc(expr):=(
 	sublist(listofvars(expr), lambda([u],  freeof(asymbol, u)))
 );
+
+
+/**
+decomposition of nabla | (A & B) - vectors 
+*/
+graprod(A,B,r):=block([A1,A2,B1, B2],
+    A1: cdirdiff(B,A,r),
+    A2: cdirdiff(A,B,r),
+    B1: A* intmvectdiff(B,r),
+    B2: B* intmvectdiff(A,r),
+    [A1-A2, B2-B1]
+);
+
+/**
+decomposition of nabla | (  [V] & A) :  V, A - vectors, [V], protection
+*/
+decompint(A, V, r):=block([A1, A2],
+	A1:cdirdiff(A,V,r),
+	A2:intmvectdiff(A,r),
+	[A1, -A2*V]
+);
+
+/**
+decomposition of nabla |  (v | B) -:  v - vector , B - bivector 
+nabla |  (v | B) = - v | ( nabla | B) + ( nabla & v) |B
+*/
+graprod2(V,B,r):=block([A1,A2,B1, B2],
+    A2: V| intmvectdiff(B,r),
+    B2: mvectdiff(V,r)|B , 
+    [-A2, B2]
+);
+
+
+/*
+Experimental functions
+*/
 
 /* 
 https://arxiv.org/pdf/2009.08542.pdf 
@@ -1170,12 +1209,12 @@ pintegrate(ff, rv, eqs, tvar, [bnd]):=block([dr, ffs, ker, ret],
  ret
 );
 
-put('cliffordan, 'v19,'version);
+put('cliffordan, 'v2,'version);
 put('cliffordan, "Dimiter Prodanov", 'author);
-put('cliffordan, "(C) - Dimiter Prodanov, 2015 - 2021", 'copyright);
+put('cliffordan, "(C) - Dimiter Prodanov, 2015 - 2025", 'copyright);
 
 print("package name: cliffordan.mac");
 print("author: ", get('cliffordan,'author));
 print("version:", get('cliffordan,'version));
 print("Recommended location: share/contrib");
-print("last update: 7 Jul 2021");
+print("last update: 23 Nov 2024");

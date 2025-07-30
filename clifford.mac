@@ -192,7 +192,7 @@ pfeformat: true;
 	);	
 	/*texput ("\\", " \\circ ", infix);*/
   	
-	"alt-Grassman product type";
+	"alt-Grassmann product type";
 	ipdecompalt:false;
 	
 	
