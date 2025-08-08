@@ -712,7 +712,7 @@ ciELfdiff(_F, rr, pvars):=block(
 /**/
 alias (EuLagEq2, ciELfdiff);
 
-/*Energy-momentum equation*/
+/*Hamiltonian equation*/
 ciELfdiff3(_F, rr, pvars) :=block(
 [eq:0, p, pv, ee, qq, ss:[], zz:[],  vv, lv, dq],
 [p, pv]:pvars,
@@ -850,7 +850,7 @@ ciEL(_F, tt, pvars, smat):=block([eq, p, pv, qq, ee, aa:[], bb:[], es:[], ez:[],
 	eq
 );
 
-
+/* constraints */
 ciEL2(_F, tt, pvars, cvars):=block(
 [eq:0, p, pv, ee, qq, ss:[], zz:[],  vv, lv, cm, _cfr, qm:0 ],
 	[p, pv]:pvars,
@@ -873,7 +873,7 @@ ciEL2(_F, tt, pvars, cvars):=block(
 
 
  
-
+/*EL supporting also higher orders */
 EL(_F, q, pvars):=block ([eq:0, p, pv, qq, rr:0, len, ret:[], ss:[]],
     if not listp(pvars) then error("list required"),
      len:length(pvars),

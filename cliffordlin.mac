@@ -5,6 +5,8 @@ a lightweight package for performing Geometric Algebra calculations
 Clifford Linear algebra functions
 
 version 	
+			1.2.1 8 Aug 2025
+			- tenmatrix added
 			1.2 8 Jul 2023
 			- changes in uvect
 			1.1 Date 4 Dec 2021 
@@ -54,12 +56,7 @@ Linear algebra functions
 
 colvect(n):=transpose(matrix(n));
 
-/*
-vect2mat(vlist):=block([ n],
-	n:min(length(vlist), ndim),
-	genmatrix( lambda([i,j],  scprod( vlist[i] ,  asymbol[j])), n)
-);
-*/
+
 
 vect2mat(vlist, slist):=block(
 	genmatrix( lambda([i,j],  ( vlist[i] @  slist[j])), length(vlist), length(slist))
@@ -214,26 +211,23 @@ uvect(vv):=block( [qq, u],
 	if assume_pos=true then 
 		qq:subst(abs=lambda([u], u),qq),
 	if %divsimp=true then (
-		qq:trigsimp(qq),
-		qq:ratsimp(qq)
+		qq:trigsimp(qq)
 	),
-	vv/(qq)
+	vv/rat(qq)
 );
 
 /* computes the absolute projection */
 proj(v, u):=block([w],
 	w: cinv(u),
 	w: expand( (v @ w)  * u ),
-	w:dotsimpc(w),
-	clifact(w)
+	rat(w)
 );
 
 /* computes the absolute rejection */
 rej(v, u):=block([w ],
 	w: cinv(u),
 	w: expand( v - (v @ w)  * u ),
-	w:dotsimpc(w),
-	clifact(w)
+	rat(w)
 );
 
 /*  Gram-Smidt  orthogonalization
@@ -241,12 +235,13 @@ projection-based
 */
 gramsmidt(vlist):=block([dd:[], n, v, u ],
 	n:length(vlist),
-	push( vlist[1],  dd),
+	push( uvect(vlist[1]),  dd),
 	for k:2 thru n do (
 		u: vlist[k] - proj( vlist[k], dd[1]),
+		display(u),
 		for j:1 thru k-1 do 
-			u: ratsimp(u - proj( u, dd[j])),
-		push(u, dd)
+			u: rat(u - proj( u, dd[j])),
+		push(uvect(u), dd)
 		),
 	reverse(dd)
 );
@@ -363,7 +358,14 @@ moore_penrose_pseudoinverse2(m) := block([mm, z : gensym(), scalarmatrixp : fals
 	map(lambda([v], clicoeff(v, 'list)),gr)
 );
 
-put('cliffordlin, 'v1,'version);
+/*expression to matrix in the vector basis */
+tenmatrix(expr, AA ):=block( [i,j,   lst, vv:vectors(), zi ],  
+	vv: map(cinv, vv  ),  
+	lst: makelist(expr @vv[i], i,ndim  ),  
+	genmatrix( lambda([i,j],  zi:AA@ vv[i],  diff(lst[j], zi) ), ndim, ndim )  
+);
+
+put('cliffordlin, 'v12,'version);
 put('cliffordlin, "Dimiter Prodanov", 'author);
 put('cliffordlin, "(C) - Dimiter Prodanov, 2015 - 2021", 'copyright);
 
@@ -371,4 +373,4 @@ print("package name: cliffordlin.mac");
 print("author: ", get('cliffordlin,'author));
 print("version:", get('cliffordlin,'version));
 print("Recommended location: share/contrib");
-print("last update: 4 Dec 2021");
+print("last update: 8 Aug 2025");
