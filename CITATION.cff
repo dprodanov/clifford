@@ -5,9 +5,7 @@ cff-version: 1.2.0
 title: >-
   Clifford: a lightweight package for performing Geometric
   Algebra calculations
-message: >-
-  If you use this software, please cite it using the
-  metadata from this file.
+message: "If you use this software, please cite it using the metadata from this file."
 type: software
 authors:
   - given-names: Dimiter
@@ -22,3 +20,4 @@ abstract: >-
   Clifford is a lightweight package for performing Geometric
   and Clifford Algebra calculations in Maxima.
 license: LGPL-2.0-or-later
+date-released: 2025-08-08
