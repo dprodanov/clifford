@@ -3,6 +3,12 @@ Clifford algebra in Maxima
 Clifford: a lightweight package for performing Geometric Algebra calculations
 
  @version 
+	
+	2.5.6 Date 27 Aug 2025
+	- qclass moved to climatrep
+	- covectors added
+	- clihdual bug fix
+	
 	2.5.5 Date 19 Jan 2025
 	- changes in scalarpart
 	
@@ -88,7 +94,7 @@ max_version:args(build_info ())[1];
 if orderlessp(max_version,"5.37") then error("Maxima verision ", max_version, " not supported");
  
 ttyoff:true;
- 
+/*  global vriable "private" names start with % */
 "vector symbol";
 asymbol:e;
 "number of dimensions";
@@ -131,7 +137,8 @@ pfeformat: true;
 	different types of products 
 	*/
 	infix ("|", 110, 109);	
-	texput ("|", " \\circ ", infix);
+	texput ("|", " \\cdot ", infix);
+
  	
 	wedgesimp:true;
 	inprotype:sym;
@@ -732,6 +739,8 @@ constructs the vectors of the algebra
 */
 vectors():=makelist(asymbol[i], i, 1, ndim);
 
+covectors():=map(cinvblade, vectors() );
+
 /*
 constructs the  bi-vectors of the algebra
 */
@@ -927,7 +936,6 @@ clifact(expr):=block([lcv:[], ret: expr],
 alias(clicoeff2, clicoeff); 
 /* 
 computes the element decomposition
-clicoeff2 depreciated
 */
 clicoeff(expr, smat):=block([u, ee:[], z:[], cc:[], qq ],
 	if length(%elements)=1 then %elements:elements(),
@@ -969,8 +977,8 @@ solves for a list of vairables in clifford-valued equation
 clisolve(expr, lst):=block([ee, al, u, ret:expr, maperror:false, sol, solveexplicit:true],
 	if inop(expr)="=" then 
 		ret:expand(lhs(expr)-rhs(expr)),
-	[ee, al]:clicoeff(ret,'list),
-	sol:map(lambda( [v], map(lambda( [u], solve(factor(v), u)), lst)), al),
+	[ee, al]:clicoeff(ret,'list), 
+	sol:map(lambda( [v], map(lambda( [u], solve(factor(v), u)), lst)), al), 
 	sol:flatten(sol),
 	sol:setify(sol),
 	listify(sol)
@@ -1204,7 +1212,7 @@ commtable(ee):=
 		  );
 
 /**
- norm with regard to the Clifford product 
+ pseudonorm with regard to the Clifford product 
 */
 cliabs(x):=block([u:expand(x)],
 	u:expand(u.cconjugate(u)),
@@ -1215,8 +1223,7 @@ cliabs(x):=block([u:expand(x)],
 );
 
 
-
-
+/*  to depreciate */
 cnorm(x):=block([u:expand(x), z, v],
 	u:expand(u | cconjugate(u)),
 	u:dotsimpc(u),
@@ -1479,7 +1486,7 @@ clihdual(expr):=block([lste:[], lsti:[], lstj:[], r, l, ss:1, nn, dd, ue:1],
 		nn:num(expr),
 		dd:denom(expr),
 		return(clihdual(nn)/dd))
-	elseif not mapatom(expr) and op(expr)="*" then (
+	elseif not mapatom(expr) and inop(expr)="*" then (
 		[l, r]:subst('nil=1, oppart(expr, lambda([u], scalarp( u)))),
 		if r#1 and l#1 then
 			return (l* clihdual(r))
@@ -1487,7 +1494,7 @@ clihdual(expr):=block([lste:[], lsti:[], lstj:[], r, l, ss:1, nn, dd, ue:1],
 		return(map(clihdual, (expr)))
 	else (
 		/*blade case*/			
-		[l, r]:subst('nil=1, oppart(expr, lambda([u], freeof(asymbol, u)))),
+		[l, r]:subst('nil=1, oppart( dotsimpc(expr), lambda([u], freeof(asymbol, u)))),
 		lste:clv(r),
 		lsti:vectors(),
 		for ue in lste do 
@@ -1497,6 +1504,7 @@ clihdual(expr):=block([lste:[], lsti:[], lstj:[], r, l, ss:1, nn, dd, ue:1],
 		r:substinpart(".", lstj, 0),
 		/* non-degenerate algebra*/
 		ss:1/ss*permsign( append (lste, lstj)),
+		/*ss:1/ss* permsign(lste)* permsign (lstj),*/
 		ss*l*r
 	)
 );
@@ -1586,26 +1594,6 @@ sautom(vv):=predautom(vv, lambda([u,v], not scalarp(u)));
 
 psautom(vv):=predautom(vv, lambda([u,v], maxgrade(u)=ndim));
 
-/*  Shirokov quaternion  type classification 
-to be moved to climatrep
-*/
-qclass (vv) :=block ( [ar, ai, as, br, bi, bc],
-	ar:dotreverse(vv),
-	ai:cinvolve(vv),	
-	br:(vv - ar)/2,
-	br:apply1(br, clifsimp10, clifsimp21),
-	bi:(vv-ai)/2,
-	bi:apply1(bi, clifsimp10, clifsimp21),
-	if verbose=true then display(bi, ar),
-	if br#0 then br:1,
-	if bi#0 then bi:1,
-	/*disp([br, bi]),*/
-	if br=0 and bi=0 then 0
-	elseif bi=1 and br=0 then 1 
-	elseif bi=0 and br=1 then 2
-	elseif bi=1 and br=1 then 3
-);
-
 /**
 class-grade decomposition 
 */
@@ -1672,4 +1660,4 @@ print("package name: clifford.mac");
 print("author: ", get('clifford,'author));
 print("version:", get('clifford,'version));
 print("Recommended location: share/contrib");
-print("last update: 19 Jan 2025");
+print("last update: 10 Aug 2025");
