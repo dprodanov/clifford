@@ -2,11 +2,14 @@
 Clifford algebra
 a lightweight package for  component-wise Geometric Algebra calculations
 
-Clifford analysis
+Clifford analysis; geometric calculs
  
-@version 2.0 Date 8 Jul 2023
+@version 2.1 Date 23 Nov 2024
+		- fix in EL
+		2.0 Date 8 Jul 2023
 		- gradbasis 
 		- assume_pos option 
+		- changes in cndirdiff, ctotprojdiff
 		1.9 Date 18 Dec 2021 
 		- constrained Lagrangians
 		1.8.9 Date 31 Jul 2021
@@ -40,11 +43,11 @@ Clifford analysis
 		- bug fixes
 		1.7 Date 12 Dec 2016
 		- projection derivatives
-		1.6.5 Date 13 Jun 2016
-		1.6 Date 10 Apr 2016
-		1.5 Date 20 Feb 2016
-		1.2 Date 22 Jan 2016
-		1.1 Date 16 Dec 2015
+		1.6 Date 13 Jun 2016
+		1.5 Date 10 Apr 2016
+		1.2-4 Date 20 Feb 2016
+		1.1 Date 22 Jan 2016
+		1.0 Date 16 Dec 2015
 
 @depends 'clifford
 
@@ -90,13 +93,18 @@ if get('cliffordan,'version)=false then (
 	print("warning: redefining @")
 
 );
+/*
+	infix ("o", 130, 129);
+	texput ("o", " \\circ ", infix);
 
+*/	
 %clverbose:false;
 %divsimp:true;
 
+/*
 matchdeclare([%ff, %xx], symbolp, %nn, integerp, %bb, true);
 defmatch(%diffpar, %bb*'diff(%ff, %xx, %nn));
-
+*/
  
 %sclardecl:true;
 /*
@@ -253,13 +261,13 @@ ctotdiff(f, x):=block( [ret:0, lv, u, z],
 */
 conmderivl(f, x):=block([lv, sq],
 	sq:makelist( asymbol[i] @ asymbol[i],  i , ndim),
-	lv:makelist( asymbol[i]@x *sq[i],  i , ndim),
+	lv:makelist( asymbol[i] @x *sq[i],  i , ndim),
 	genmatrix( lambda([i,j], sq[i]* dotsimpc(expand(asymbol[i]. ctotdiff(f, lv[j])))), ndim)
 );
 
 conmderivr(f, x):=block([lv, sq],
 	sq:makelist( asymbol[i] @ asymbol[i],  i , ndim),
-	lv:makelist( asymbol[i]@x *sq[i],  i , ndim),
+	lv:makelist( asymbol[i] @x *sq[i],  i , ndim),
 	genmatrix( lambda([i,j], sq[i]* dotsimpc(expand(ctotdiff(f, lv[j]). asymbol[i]))), ndim)
 );
 
@@ -314,7 +322,7 @@ cdirdiffa(f, v, x):=block( [ret:0, qq, pp, ee, kv, %k:gensym("k"), ipdecomp:true
 	else (
 		 kv:cvect(%k),
 		 lv: invautom( clv(v)),
-		 ret:mvectdiff( kv | f, x),
+		 ret: mvectdiff( kv | f, x),
 		 display(ret),
 		 for ee in lv do (
 		   qq: ee @ v,
@@ -332,18 +340,18 @@ cdirdiffa(f, v, x):=block( [ret:0, qq, pp, ee, kv, %k:gensym("k"), ipdecomp:true
  */
 cdirdiffi(f, v, x):=block ([ret:0, m, z, p],
 	if mapatom(x) then 
-		ret: scalarpart(v)*diff( f, x )
+		ret: v|  diff( f, x )
 	else (
 		lv: sublist( listofvars(x), lambda ([z], freeof(asymbol, z))),		
 		for u in lv do (
 			qq: diff(x, u),
 			m: qq @ qq,
 			if m#0 then m:1/m,
-			uu: (qq | v)*m,
-			ret: ret + uu * subst(".", "*", diff( f, u ))
+			uu: (v | qq )*m, 
+			ret: ret + uu . subst(".", "*", diff( f, u ))
 			)
 	),
-	ret:dotsimpc(ret),
+	ret:dotsimpc(expand(ret)),
 	ret:clifact(ret)
 );
 
@@ -356,7 +364,7 @@ cdirdualdiff(f, v, x):=block( [ret:0],
 );
 
 /*
-@deprecated
+rejective derivative
 */
 cndirdiff(f, v, x):=block( [ret:0, lv, uu:0, m, qq],
 	if mapatom(x) then 
@@ -367,7 +375,7 @@ cndirdiff(f, v, x):=block( [ret:0, lv, uu:0, m, qq],
 			qq: diff(x, u),
 			m: qq @ qq,
 			if m#0 then m:1/m,
-			uu: ( qq. v)*m,
+			uu: ( qq & v)*m,
 			ret: ret + uu. subst(".", "*", diff( f, u ))
 		)
 	),
@@ -376,6 +384,9 @@ cndirdiff(f, v, x):=block( [ret:0, lv, uu:0, m, qq],
 	ret:clifact(ret)
 );
 
+/**
+projective derivative
+*/
 ctotprojdiff(f, v, x):=block( [ret:0, lv, uu:0, qq, gn, ss:0, ipdecomp:true],
 	if mapatom(x) then 
 		ret: scalarpart(v)*diff( f, x )
@@ -386,7 +397,7 @@ ctotprojdiff(f, v, x):=block( [ret:0, lv, uu:0, qq, gn, ss:0, ipdecomp:true],
 			qq: cinvblade(diff(x, u)),
 			uu: dotsimpc(expand(v | qq)),
 	 
-			ret: ret + uu. subst(".", "*", diff( f, u ))
+			ret: ret + uu & subst(".", "*", diff( f, u ))
 			)
 	),
 	ret:expand(ret),
@@ -706,7 +717,7 @@ ciELfdiff(_F, rr, pvars):=block(
 /**/
 alias (EuLagEq2, ciELfdiff);
 
-/*Energy-momentum equation*/
+/*Hamiltonian equation*/
 ciELfdiff3(_F, rr, pvars) :=block(
 [eq:0, p, pv, ee, qq, ss:[], zz:[],  vv, lv, dq],
 [p, pv]:pvars,
@@ -735,15 +746,17 @@ ciELfdiff3(_F, rr, pvars) :=block(
 
 /* constrained EL equation,
 anholonomic constraints
+_F - unconstrained 
+  cm - lagrange vector, _cfr - constraint equations, lv - list of lagrange variables
 */
 ciELfdiff1(_F, rr, pvars, cvars):=block(
-[eq:0, p, pv, ee, qq, ss:[], zz:[],  vv, lv, cm, _cfr, qm:0 ],
+[eq:0, p, pv, ee, qq, ss:[], u,  vv, lv, cm, _cfr, qm:0, eqs ],
 	[p, pv]:pvars,
 	[cm, _cfr, lv]:cvars,  
 	if %clverbose1=true then
 		display( _cfr, cm ,lv),
 	eq:ciELfdiff(_F, rr, pvars),
-	 
+	/* constraint is absent from Lagrangian */
 	qm:parmvectdiff(_cfr, p), 
 	/* getting the anholonomic constraints*/
 	qq: parmvectdiff(_cfr, cm), 
@@ -751,11 +764,13 @@ ciELfdiff1(_F, rr, pvars, cvars):=block(
 		display(qm, qq),
 	/* solving for the constraints*/
 	ss:clisolve(qq, lv),
-	eq:eq + qm,
+	ss:append(map(lambda([u], u=0), lv ), ss ),
+	/* add constraint to Lagrangian*/
+	eqs:eq + qm,
 	/* subsituting the constraints*/
-	eq:subst(ss, eq),
+	eq:subst(ss, eqs),
 	eq:ev(eq, diff),
-	[eq, ss]
+	[ eq, ss,  eqs]
 );
  
 
@@ -844,7 +859,7 @@ ciEL(_F, tt, pvars, smat):=block([eq, p, pv, qq, ee, aa:[], bb:[], es:[], ez:[],
 	eq
 );
 
-
+/* constraints */
 ciEL2(_F, tt, pvars, cvars):=block(
 [eq:0, p, pv, ee, qq, ss:[], zz:[],  vv, lv, cm, _cfr, qm:0 ],
 	[p, pv]:pvars,
@@ -867,31 +882,26 @@ ciEL2(_F, tt, pvars, cvars):=block(
 
 
  
-
-EL(_F, q, pvars):=block ([eq:0, p, pv, qq, rr, len, ret:[]],
-	if not listp(pvars) then error("list required"),
-	 len:length(pvars),
-	 p:pvars[1],
-	 eq:pardiff(_F, p),
-	 if len>1 then (
-		for i:2 thru len do (
-			pv:pvars[i],
-			qq: subst('pv(q), pv, pardiff(_F, pv)),
-			display(qq),
-			for j:1 thru i-1 do (
-				rr:- convderiv(qq, q, p),				
-				rr: subst('diff(p, q)='pv(q), rr),
-				display(q, p, pv,  rr),
-				eq:eq + subst( pv, 'pv(q), rr  ),
-				/*eq:eq+ rr,*/
-				qq:rr
-			),
-			push(pv='diff(pvars[1], q, i-1), ret)
-		),
-		ret:reverse(ret)
-	),
-	[ ret, eq]
+/*EL supporting also higher orders */
+EL(_F, q, pvars):=block ([eq:0, p, pv, qq, rr:0, len, ret:[], ss:[]],
+    if not listp(pvars) then error("list required"),
+     len:length(pvars),
+     p:pvars[1],
+     ss:pardiff(_F, p),
+     if len>1 then (
+        for i:2 thru len do (
+            pv:pvars[i],
+            qq: subst('pv(q),pv, pardiff(_F, pv)),
+            display(i, qq, pv),  
+            rr: 'diff(qq, q, i-1), rr: subst( pv,'pv(q), rr ),
+            ss:ss- (-1)^i*rr, 
+            push(pv='diff(pvars[1], q, i-1), ret)
+        ),
+        ret:reverse(ret)
+    ),
+    [ ret, eq+ss]
 );
+
 /*
 EuLagEq2(_F, tt, pvars):=block ([eq:0, p, pv, ret:[]],
 	[p, pv]:pvars,
@@ -909,6 +919,7 @@ eq
 );*/
 
 
+
 /*
 coordinate substitution
 */
@@ -924,6 +935,7 @@ coordsubst(rr, eqs):=block( [lv, ret:rr, qq, z],
 			ret:ratsubst(qq, lv[i], ret)
 			)
 	),
+	ret:subst("^"="^^",ret),
 	ret:trigsimp(ret),
 	ret:ratsimp(ret),
 	ret
@@ -1031,151 +1043,231 @@ clc(expr):=(
 	sublist(listofvars(expr), lambda([u],  freeof(asymbol, u)))
 );
 
-/* 
-https://arxiv.org/pdf/2009.08542.pdf 
-integration on a star-shaped domain
+
+/**
+decomposition of nabla | (A & B) - vectors 
 */
-potentiategr(expr, r0, r):=block([vv, ee, k, ri, t:gensym("t"), gp, lvc, ker, ret, u],
-	 
-	ee:buildq([t], declare(t, scalar) ), 
-	ev(ee, nouns),
-	ri:invautom(r-r0),
- 	gp:expand(expr),
-	lvc:clc(r),
-	for vv in lvc do
-		gp:subst(vv=r0+t*(vv-r0),gp),
-	ker: ri | gp, 
-	if rat(ker)=0 then ker: ri & gp,
-	/* the dual vectors are the diffential elements, 
-	t is the measure */
-	ker: subst(asymbol=lambda ([u], t*asymbol[u]), ker),
-	display( ker),
-	ret:integrate(ker, t, 0, 1),
-	ker:mvectdiff(ret, r),
-	first(divide(expr,ker))*ret
+graprod(A,B,r):=block([A1,A2,B1, B2],
+    A1: cdirdiff(B,A,r),
+    A2: cdirdiff(A,B,r),
+    B1: A* intmvectdiff(B,r),
+    B2: B* intmvectdiff(A,r),
+    [A1-A2, B2-B1]
 );
 
-potentiategr2(expr, r0, r):=block([vv, ee, k, ri, t:gensym("t"), gp, lvc, ker, ret, u],
-	 
-	ee:buildq([t], declare(t, scalar) ), 
-	ev(ee, nouns),
-	ri:invautom(r-r0),
- 	gp:expand(expr),
-	lvc:clc(r),
-	for vv in lvc do
-		gp:subst(vv=r0+exp(t)*(vv-r0),gp),
-	ker: ri | gp, 
-	if rat(ker)=0 then ker: ri & gp,
-	/* the dual vectors are the diffential elements, 
-	t is the measure */
-	ker: subst(asymbol=lambda ([u], exp(t)*asymbol[u]), ker),	
-	ret:'integrate(ker, t, minf, 1),
-	display( ret),
-	ker:mvectdiff(ret, r),
-	first(divide(expr,ker))*ret
+/**
+decomposition of nabla | (  [v] & A) :  v, A - vectors, [v], protection
+*/
+decompint(A, V, r):=block([A1, A2],
+	A1:cdirdiff(A,V,r),
+	A2:intmvectdiff(A,r),
+	[A1, -A2*V]
 );
 
-/* pole at 0 
-potentiategi(expr, r0, r):=block([vv, ee, k, ri, t:gensym("t"), gp, lvc, dr, ker, ret],
-	k:maxgrade(expr),
-	ee:buildq([t], declare(t, scalar) ), 
-	ev(ee, nouns),
-	ri:invautom(r-r0),
- 	gp:grpart(expr, k),
-	lvc:clc(r),
-	for vv in lvc do
-		gp:subst(vv=r0+t*(vv-r0),gp),
-	ker: expand(ri . gp), 
-	ker:clifact(dotsimpc(ker)),
-	display(gp, ker),
-	ret:-integrate(ker*t^(k-1), t,  1, inf),
-	ker:mvectdiff(ret, r),
-	first(divide(expr,ker))*ret
+/**
+decomposition of nabla |  (v | B) :  v - vector , B - bivector 
+nabla |  (v | B) = - v | ( nabla | B) + ( nabla & v) |B
+*/
+graprod2(V,B,r):=block([A1,A2,B1, B2],
+    A2: V| intmvectdiff(B,r),
+    B2: mvectdiff(V,r)|B , 
+    [-A2, B2]
+);
+
+/*
+Displacements
+*/
+
+/* symmetric gradient tensor
+D =  1/2 (  (A | nabla) V  + nabla (  A  |  V) )
+*/
+
+symgrten(V, A, r):= block ([ret],
+if A='diff then
+  1/2 * (  mvectdiff(V, r,2)    + extmvectdiff (  svectdiff ( V, r),r) )
+else
+  1/2 * (  cdirdiff(V, A, r)    + mvectdiff (  A @  V, r) )
+  
+);
+
+/* antisymmetric gradient tensor
+D =  1/2  A | (nabla & V ) 
+*/
+
+antisymten(V,A,r):=block([ret],
+if A='diff then
+	ret:intmvectdiff( mvectdiff(V, r),r)
+else
+	ret:A | extmvectdiff (V,r),
+	clifact(multthru(ret/2))
+);
+
+/* divergence of a linear map*/
+divmap(V, A, r):=block([ret],
+  ret:intmvectdiff(V,r),
+  extmvectdiff(ret,A)
+);
+
+
+
+/* experimental 
+nablamap(V, A, r):=block( [vv: covectors()],
+   sum( (ak:vv[i], rk: r @vv[i], vv[i]. diff( subst(ak=1, V @ vv[i]), rk)), i , 1,ndim)
 );
 */
-potentiategi(expr, r0, r):=block([vv, ee, k, ri, t:gensym("t"), gp, lvc,  ker, u, ret],
-	 
-	ee:buildq([t], declare(t, scalar) ), 
-	ev(ee, nouns),
-	ri:invautom(r-r0),
- 	gp:expand(expr),
-	lvc:clc(r),
-	/* we can also use an exponential substitution*/
-	for vv in lvc do
-		gp:subst(vv=r0+t*(vv-r0),gp),
-	ker: ri | gp, 
-	if rat(ker)=0 then ker: ri & gp,
-	ker: subst(asymbol=lambda ([u], t*asymbol[u]), ker),
-	display(gp, ker),
-	ret:-integrate(ker, t,  1, inf),
-	ker:mvectdiff(ret, r),
-	first(divide(expr,ker))*ret
+
+/* rotor of a linear map - row convention*/
+rotmap(V, aa, r):=block([ret, V1],
+  V1: mkadjoint2(V,aa),
+  ret: - intmvectdiff(%iv| V1,r),
+  mkadjoint2(ret, aa)
 );
 
-potentiategi2(expr, r0, r):=block([vv, ee, k, ri, t:gensym("t"), gp, lvc,  ker, u, ret],
-	 
-	ee:buildq([t], declare(t, scalar) ), 
-	ev(ee, nouns),
-	ri:invautom(r-r0),
- 	gp:expand(expr),
-	lvc:clc(r),
-	/* we can also use an exponential substitution*/
-	for vv in lvc do
-		gp:subst(vv=r0+exp(t)*(vv-r0),gp),
-	ker: ri | gp, 
-	if rat(ker)=0 then ker: ri & gp,
-	ker: subst(asymbol=lambda ([u], exp(t)*asymbol[u]), ker),
-	ker:factor(ker),
-	ret:-integrate(ker, t,  1, inf), display(ret),
-	ker:mvectdiff(ret, r),
-	first(divide(expr,ker))*ret
+/* row convention */
+rotmap2(T, r):=block([vv:covectors(), xk,i,j ], 
+   -genmatrix(lambda([i,j],   
+                sum((xk: r@ vv[k],   sum(  %iv | (asymbol[i] &  asymbol[k] & asymbol [l])  *diff( T[l,j], xk), l, 1, ndim )), k, 1, ndim) ), 
+    ndim)
 );
 
-/* logarithmic pole at 0 */
-potentiategl(expr, r0, r):=block([vv, ee, k, ri, t:gensym("t"), gp, lvc, ker, ret, u, aa],
-	 
-	ee:buildq([t], declare(t, scalar) ), 
-	ev(ee, nouns),
-	ri:invautom(r-r0),
- 	gp:expand(expr),
-	lvc:clc(r),
-	for vv in lvc do
-		gp:subst(vv=r0+t*(vv-r0),gp),
-	ker:ri | gp,
-	if rat(ker)=0 then ker: ri & gp,
-	ker: subst(asymbol=lambda ([u], t*asymbol[u]), ker),
-	display(gp, ker),
-	aa: sqrt(-cnorm(r-r0)),
-	assume(aa>1),
-	ret:-integrate(ker, t,  1, aa),
-	ker:mvectdiff(ret, r),
-	ret:first(divide(expr,ker))*ret,
-	logcontract(ret)
+/* column convention */
+rotmap3(T, r):=block([vv:covectors(), xk,i,j ], 
+   -genmatrix(lambda([i,j],   
+                sum((xk: r@ vv[k],   sum(  %iv | (asymbol[j] &  asymbol[k] & asymbol [l])  *diff( T[i,l], xk), l, 1, ndim )), k, 1, ndim) ), 
+    ndim)
+);
+
+/* rotor of a linear map - column convention*/
+rotmap4(V, aa, r):=block([ret, vv: covectors(), u, i],
+  ret: - intmvectdiff(%iv| V,r),
+  ret: makelist( (u: aa@vv[i], clifact(diff (ret, u))), i, ndim),
+  transpose(matrix(ret))
+);
+
+rotmap5(V, aa, r):=block([ret, vv: vectors(), u, i],
+  ret: map (lambda([u], -%iv| extmvectdiff( cdirdiff (V, u, aa), r)  ), vv),
+  transpose(matrix(ret))
+);
+ 
+
+
+tenmatrix(expr, AA ):=block( [i,j,  lst, vv:covectors(), zi ],  
+    lst: makelist(expr @ vv[i], i, ndim  ),  
+    genmatrix( lambda([i,j],  zi:AA @ vv[i],  diff(lst[j], zi) ), ndim, ndim )  
+);
+
+/* M- matrix, A - vector
+co-vectors can be the differential forms
+*/
+matrix2tenf(M, A):=block([vv: covectors(),  listarith:true ],
+   /* list of algebra generators */
+	lsta: makelist( A @ vv[i], i, ndim ),
+	(lsta. M).vv
+);
+
+/* adjoint map - matrix-based algorithm  */
+mkadjoint(F, A):=block([M, vv: covectors(), lsta, listarith:true ],
+    M:tenmatrix(F, A), 
+	lsta: makelist( A @ vv[i],i, ndim ),
+	(lsta.transpose(M)).vv
+);
+   
+mkadjoint2(F, aa):=block([ bs: gensym("b"), B, A],
+	B:cvect(bs), A: cvect(aa),
+    subst(bs=aa, extmvectdiff(  B| F, A))
+);
+
+/* Second order tensor maps */
+ 
+
+ten2matrix(expr  ):=block( [i,j,  vv:covectors(), ipdecomp:true],   
+    genmatrix( lambda([i,j],  vv[i] |( expr | vv[j] ) ), ndim, ndim )  
+);
+
+tracet2(F, aa, bb ):= intmvectdiff(mvectdiff(F, bb), aa);
+
+wedge(F, aa, bb ):= extmvectdiff(mvectdiff(F, bb), aa);
+
+
+/*spinot conncetion map*/
+conmap(W, V) := block(
+    [i, vc: covectors(), E_list: vectors(), E, vl, ret, matrix_element_mult:"."],
+    /* 1. Extract the vector components into a standard flat list */
+    vl: makelist(V @ vc[i], i, ndim),
+    /* 3. Setup the basis row matrix */
+    E: matrix(E_list),
+    ret: (1/2) * (E . W . transpose(E)),
+    ret: expand(ret),
+    dotsimpc(ret)
+);
+
+covariant_derivative(Psi_field, W_matrix, V_vector, r) := block(
+    [i, vc: covectors(), vl, T_bivector, partial_Psi, commutator_term, nabla_Psi],
+    
+    /* Step 1: Compute the connection bivector T along the direction of V */
+    T_bivector: conmap(W_matrix, V_vector),
+ 
+    
+    /* Step 3: Compute the standard directional partial derivative: V^mu * \partial_mu(Psi) */
+    partial_Psi: cdirdiff( Psi_field, V_vector, r),
+               
+    /* Step 4: Compute the Clifford matrix commutator: [T, Psi] = T.Psi - Psi.T */
+    /* Using your non-commutative dot product engine */
+    commutator_term: (T_bivector . Psi_field) - (Psi_field . T_bivector),
+    
+    /* Step 5: Assemble total covariant derivative */
+    nabla_Psi: partial_Psi + (1/4) * commutator_term,
+    
+    /* Step 6: Expand and run through the Clifford simplifier */
+    nabla_Psi: expand(nabla_Psi),
+     (dotsimpc(nabla_Psi))
 );
 
 
 
-/* path integral*/
-pintegrate(ff, rv, eqs, tvar, [bnd]):=block([dr, ffs, ker, ret],
- dr:psubst(eqs, rv),
- dr:diff(dr, tvar),
- ffs:psubst(eqs, ff),
- ker:dotsimpc(expand(ffs.dr + dr.ffs)/2),
- ker:trigsimp(ker),
- if not emptyp(bnd) then (
-	bnd:first(bnd),
-	ret:'integrate(ker, tvar, bnd[1], bnd[2])
- ) else 
-	ret:'integrate(ker, tvar),
- ret
+/*Green St Venant or Green-Lagrange tensor **/
+gsv_map(u, v, A, r ):=block([ss:0, du:cdirdiff (u, A, r),  dv:cdirdiff (v, A, r) ],   
+		ss:1/2*(extmvectdiff(1/2* dotreverse(du) | dv, A)  - A )  ,
+		ratsimp(ss)                 
 );
 
-put('cliffordan, 'v19,'version);
+/* Cauchy-Green tensor*/
+cg_map(u, v, A, r ):=block([ss:0, du:cdirdiff (u, A, r),  dv:cdirdiff (v, A, r) ],   
+        du:mkadjoint(du, A), 
+        ss: 1/2*extmvectdiff(  du  | dv, A)  ,
+        ratsimp(ss)                 
+);
+
+/*Madelung tensor*/
+madtens(V, A, r):=block ([ret],
+if A='diff then
+    ( cdirdiff(V, V, r)     + 1/2* b^2 * extmvectdiff (  svectdiff ( V, r),r) )
+else
+    (   (A @ V) * V    +  1/2* b^2 * A * svectdiff ( V, r) )
+);
+
+
+
+/* symmetric map*/
+symmap(F, aa):= block([ret], 
+    ret: F + mkadjoint (F, aa), 
+    extmvectdiff(ret/2, aa)
+);
+
+/* antisymmetric map*/
+antisymmap(F, aa):= block([ret], 
+    ret: F - mkadjoint (F, aa), 
+    extmvectdiff(ret/2, aa)
+);
+
+
+
+put('cliffordan, 'v2,'version);
 put('cliffordan, "Dimiter Prodanov", 'author);
-put('cliffordan, "(C) - Dimiter Prodanov, 2015 - 2021", 'copyright);
+put('cliffordan, "(C) - Dimiter Prodanov, 2015 - 2025", 'copyright);
 
 print("package name: cliffordan.mac");
 print("author: ", get('cliffordan,'author));
 print("version:", get('cliffordan,'version));
 print("Recommended location: share/contrib");
-print("last update: 7 Jul 2021");
+print("last update: 23 Nov 2024");
